@@ -5,11 +5,30 @@
    <meta charset="UTF-8">
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
    <meta name="viewport" content="width=device-width, initial-scale=1">
-   <meta name="author" content="Favorite Cafe">
-   <meta name="description" content="Favorite Cafe - Modern Coffee & Bistro">
+   <meta name="author" content="INEZA RESTO & COFFEE SHOP">
+   <meta name="description" content="INEZA RESTO & COFFEE SHOP - Modern Coffee & Bistro">
 
-   <title>Favorite Cafe - Modern Coffee & Bistro</title>
+   <title>INEZA RESTO & COFFEE SHOP - Modern Coffee & Bistro</title>
    <link rel="icon" type="image/x-icon" href="img/menu/menu.png">
+
+   <!-- Mobile View Auto-Redirect to Foodia Dark Navy Mobile App -->
+   <script>
+      (function () {
+         try {
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('view') === 'desktop') return;
+            var isMobile = (window.innerWidth <= 768) || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+               var activeUser = localStorage.getItem('favcafe_active_user');
+               if (activeUser) {
+                  window.location.replace('mobile_app.html');
+               } else {
+                  window.location.replace('mobile_auth.html');
+               }
+            }
+         } catch (e) { }
+      })();
+   </script>
 
    <link rel="manifest" href="manifest.json">
    <meta name="theme-color" content="#d3a04c">
@@ -637,8 +656,8 @@
             <div class="blogo">
                <div class="bico"><i class="fas fa-mug-hot"></i></div>
                <div>
-                  <div class="bname">Favorite<span>Cafe</span></div>
-                  <div class="bsub">Coffee & Bistro</div>
+                  <div class="bname">INEZA RESTO <span>&amp; COFFEE SHOP</span></div>
+                  <div class="bsub">Resto &amp; Coffee Shop</div>
                </div>
             </div>
          </a>

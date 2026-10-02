@@ -46,7 +46,7 @@ if ($action === 'register') {
         $userId = $pdo->lastInsertId();
         echo json_encode([
             'status' => 'success',
-            'message' => "Welcome to Favorite Cafe, $fullName! Your customer account has been created successfully.",
+            'message' => "Welcome to INEZA RESTO & COFFEE SHOP, $fullName! Your customer account has been created successfully.",
             'user' => [
                 'id' => $userId,
                 'full_name' => $fullName,
@@ -70,9 +70,9 @@ if ($action === 'register') {
         exit;
     }
 
-    // Query user by email from MySQL users table
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
-    $stmt->execute([$email]);
+    // Query user by email or phone from MySQL users table
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? OR (phone IS NOT NULL AND phone = ?) LIMIT 1");
+    $stmt->execute([$email, $email]);
     $user = $stmt->fetch();
 
     // 1. User not found in DB

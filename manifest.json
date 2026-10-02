@@ -1,8 +1,8 @@
 {
-  "name": "Favorite Cafe - Modern Coffee & Bistro",
-  "short_name": "FavoriteCafe",
+  "name": "INEZA RESTO & COFFEE SHOP",
+  "short_name": "InezaResto",
   "description": "Order delicious coffee, snacks, and bistro meals with live order tracking and MoMo payments.",
-  "start_url": "./index.html",
+  "start_url": "./mobile_app.html",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#d3a04c",

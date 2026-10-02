@@ -86,10 +86,16 @@ function checkAuth() {
         try {
             currentUser = JSON.parse(userStr);
         } catch (e) {
-            currentUser = { name: 'James Hawkins', email: 'jameshawkins@mail.com', phone: '+12 345 678 92', address: 'Franklin Avenue, Corner St.London, 24125151' };
+            currentUser = null;
         }
     } else {
-        currentUser = { name: 'James Hawkins', email: 'jameshawkins@mail.com', phone: '+12 345 678 92', address: 'Franklin Avenue, Corner St.London, 24125151' };
+        currentUser = null;
+    }
+
+    if (!currentUser || (!currentUser.email && !currentUser.name && !currentUser.full_name)) {
+        console.warn('[Mobile App] Unauthenticated access detected. Redirecting to mobile_auth.html...');
+        window.location.href = 'mobile_auth.html';
+        return;
     }
 
     renderUserContacts();
@@ -1131,7 +1137,7 @@ function switchTab(tabId, element) {
     }
 
     const titles = {
-        'home': 'Favorite Cafe',
+        'home': 'INEZA RESTO & COFFEE SHOP',
         'menu': 'Cafe Menu',
         'order': 'Shopping Cart',
         'history': 'Your Orders',
@@ -1142,7 +1148,7 @@ function switchTab(tabId, element) {
 
     const headerTitleText = document.getElementById('headerTitleText');
     if (headerTitleText) {
-        headerTitleText.innerText = titles[tabId] || 'Favorite Cafe';
+        headerTitleText.innerText = titles[tabId] || 'INEZA RESTO & COFFEE SHOP';
     }
 
     const globalBackBtn = document.getElementById('globalBackBtn');

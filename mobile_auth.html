@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Favorite Cafe - Mobile App</title>
+    <title>INEZA RESTO & COFFEE SHOP - Mobile App</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -24,8 +24,8 @@
     <!-- Screen 1: Splash Screen -->
     <div id="splashScreen" class="screen active splash-bg">
         <div class="logo-container">
-            <h1>Fav<span class="logo-icon"><i class="fas fa-concierge-bell"></i></span>rite </h1>
-            <h1>Cafe</h1>
+            <h1>Ineza <span class="logo-icon"><i class="fas fa-utensils"></i></span></h1>
+            <h1>Resto &amp; Coffee Shop</h1>
         </div>
         <div class="sunburst"></div>
     </div>
@@ -157,12 +157,6 @@
 
                 <p class="text-center mt-4 text-gray bottom-text">Don't have an account? <a href="#"
                         onclick="showScreen('signupScreen')" class="text-primary fw-bold">SIGN UP</a></p>
-                <!-- <div class="social-login mt-3">
-                    <p class="text-center text-sm text-gray mb-3">Or</p>
-                    <div class="social-icons">
-                        <button type="button" class="social-btn gmail"><i class="fab fa-gmail"></i></button>
-                    </div>
-                </div> -->
             </form>
         </div>
     </div>
@@ -200,6 +194,32 @@
             }
         }
 
+        // Unified Local Storage User Helpers
+        function getLocalUsers() {
+            var u1 = [];
+            var u2 = [];
+            try { u1 = JSON.parse(localStorage.getItem('favcafe_users') || '[]'); } catch (e) { }
+            try { u2 = JSON.parse(localStorage.getItem('favcafe_registered_users') || '[]'); } catch (e) { }
+            var map = {};
+            u1.concat(u2).forEach(function (u) { if (u && u.email) map[u.email] = u; });
+            return Object.values(map);
+        }
+
+        function saveUserSessionAndLocal(userObj) {
+            if (!userObj || !userObj.email) return;
+            localStorage.setItem('favcafe_active_user', JSON.stringify(userObj));
+
+            var users = getLocalUsers();
+            var idx = users.findIndex(function (u) { return u.email === userObj.email; });
+            if (idx >= 0) {
+                users[idx] = Object.assign({}, users[idx], userObj);
+            } else {
+                users.push(userObj);
+            }
+            localStorage.setItem('favcafe_users', JSON.stringify(users));
+            localStorage.setItem('favcafe_registered_users', JSON.stringify(users));
+        }
+
         // Onboarding Carousel Logic
         let currentSlide = 0;
         const slides = document.querySelectorAll('.carousel-slide');
@@ -208,7 +228,6 @@
 
         function updateCarousel() {
             if (currentSlide >= slides.length) {
-                // If past last slide, go to Get Started (SignUp or Login)
                 showScreen('loginScreen');
                 return;
             }
@@ -240,6 +259,16 @@
 
         // Splash Screen auto-transition
         setTimeout(() => {
+            var activeUser = localStorage.getItem('favcafe_active_user');
+            if (activeUser) {
+                try {
+                    var parsed = JSON.parse(activeUser);
+                    if (parsed && parsed.email) {
+                        window.location.href = 'mobile_app.html';
+                        return;
+                    }
+                } catch (e) { }
+            }
             showScreen('onboardingScreen');
         }, 2000);
 
@@ -260,6 +289,7 @@
         // Toast Notification System
         function showMobileToast(message, type = 'success') {
             const container = document.getElementById('mobileToastContainer');
+            if (!container) return;
             const toast = document.createElement('div');
             toast.className = `mobile-toast toast-${type}`;
 
@@ -272,17 +302,14 @@
 
             container.appendChild(toast);
 
-            // Trigger animation
             setTimeout(() => { toast.classList.add('show'); }, 10);
-
-            // Remove after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => { toast.remove(); }, 300);
             }, 3000);
         }
 
-        // API Authentication Logic matching index.html
+        // API Authentication Logic (Supports PHP Backend + Static/Offline Mode)
         async function mobileProcessClientLogin() {
             var email = document.getElementById('loginEmail').value.trim().toLowerCase();
             var pass = document.getElementById('loginPass').value.trim();
@@ -298,38 +325,58 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: email, password: pass })
                 });
-                var data = await res.json();
 
-                if (data.status === 'success') {
-                    var userObj = { name: data.user.full_name || email.split('@')[0], email: email, phone: data.user.phone || '', pass: pass };
-                    localStorage.setItem('favcafe_active_user', JSON.stringify(userObj));
-                    showMobileToast('Login successful! Redirecting...', 'success');
-                    setTimeout(() => { window.location.href = 'mobile_app.html'; }, 1000);
-                    return;
-                } else if (data.status === 'error') {
-                    showMobileToast(data.message, 'error');
-                    return;
+                if (res.ok) {
+                    var contentType = res.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        var data = await res.json();
+                        if (data.status === 'success') {
+                            var userObj = {
+                                name: data.user.full_name || email.split('@')[0],
+                                email: data.user.email || email,
+                                phone: data.user.phone || '',
+                                pass: pass,
+                                id: data.user.id
+                            };
+                            saveUserSessionAndLocal(userObj);
+                            showMobileToast('Login successful! Redirecting...', 'success');
+                            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
+                            return;
+                        } else if (data.status === 'error') {
+                            // Check local storage fallback before rejecting
+                            var localUsers = getLocalUsers();
+                            var localMatch = localUsers.find(function (u) { return u.email === email; });
+                            if (localMatch && localMatch.pass === pass) {
+                                saveUserSessionAndLocal(localMatch);
+                                showMobileToast('Login successful! Redirecting...', 'success');
+                                setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
+                                return;
+                            }
+                            showMobileToast(data.message, 'error');
+                            return;
+                        }
+                    }
                 }
             } catch (e) {
-                console.log('[Auth API] Offline mode fallback');
+                console.log('[Auth API] Static host or offline mode detected', e);
             }
 
-            // Fallback Local Storage logic
-            var registeredUsers = JSON.parse(localStorage.getItem('favcafe_users') || '[]');
+            // Fallback Local Storage logic (GitHub Pages & Offline support)
+            var registeredUsers = getLocalUsers();
             var userInDb = registeredUsers.find(function (u) { return u.email === email; });
 
             if (!userInDb) {
-                showMobileToast('User not found. Please register.', 'error');
+                showMobileToast('User not found. Please sign up first.', 'error');
                 return;
             }
             if (userInDb.pass !== pass) {
-                showMobileToast('Incorrect password.', 'error');
+                showMobileToast('Incorrect password. Please try again.', 'error');
                 return;
             }
 
-            localStorage.setItem('favcafe_active_user', JSON.stringify(userInDb));
+            saveUserSessionAndLocal(userInDb);
             showMobileToast('Login successful! Redirecting...', 'success');
-            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 1000);
+            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
         }
 
         async function mobileProcessClientRegister() {
@@ -339,8 +386,18 @@
             var pass = document.getElementById('regPass').value.trim();
             var confirmPass = document.getElementById('regPassConfirm').value.trim();
 
+            if (!name || !email || !pass) {
+                showMobileToast('Please fill in all required fields.', 'warning');
+                return;
+            }
+
             if (pass !== confirmPass) {
                 showMobileToast('Passwords do not match!', 'error');
+                return;
+            }
+
+            if (pass.length < 6) {
+                showMobileToast('Password must be at least 6 characters long.', 'warning');
                 return;
             }
 
@@ -350,36 +407,47 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ full_name: name, email: email, phone: phone, password: pass })
                 });
-                var data = await res.json();
 
-                if (data.status === 'success') {
-                    var newUser = { name: data.user.full_name || name, email: email, phone: phone, pass: pass };
-                    localStorage.setItem('favcafe_active_user', JSON.stringify(newUser));
-                    showMobileToast('Registration successful! Redirecting...', 'success');
-                    setTimeout(() => { window.location.href = 'mobile_app.html'; }, 1000);
-                    return;
-                } else if (data.status === 'error') {
-                    showMobileToast(data.message, 'error');
-                    return;
+                if (res.ok) {
+                    var contentType = res.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        var data = await res.json();
+                        if (data.status === 'success') {
+                            var newUser = {
+                                name: data.user.full_name || name,
+                                email: email,
+                                phone: phone,
+                                pass: pass,
+                                id: data.user.id
+                            };
+                            saveUserSessionAndLocal(newUser);
+                            showMobileToast('Registration successful! Redirecting...', 'success');
+                            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
+                            return;
+                        } else if (data.status === 'error') {
+                            showMobileToast(data.message, 'error');
+                            return;
+                        }
+                    }
                 }
             } catch (e) {
-                console.log('[Auth API] Offline mode fallback');
+                console.log('[Auth API] Static host or offline mode detected', e);
             }
 
-            // Fallback Local Storage logic
-            var registeredUsers = JSON.parse(localStorage.getItem('favcafe_users') || '[]');
+            // Fallback Local Storage logic (GitHub Pages & Offline support)
+            var registeredUsers = getLocalUsers();
             if (registeredUsers.find(function (u) { return u.email === email; })) {
-                showMobileToast('Email already registered. Please sign in.', 'warning');
+                showMobileToast('An account with this email already exists. Please log in.', 'warning');
+                showScreen('loginScreen');
+                document.getElementById('loginEmail').value = email;
                 return;
             }
 
             var newUser = { name: name, email: email, phone: phone, pass: pass };
-            registeredUsers.push(newUser);
-            localStorage.setItem('favcafe_users', JSON.stringify(registeredUsers));
-            localStorage.setItem('favcafe_active_user', JSON.stringify(newUser));
+            saveUserSessionAndLocal(newUser);
 
             showMobileToast('Registration successful! Redirecting...', 'success');
-            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 1000);
+            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
         }
     </script>
 </body>
