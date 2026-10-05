@@ -841,11 +841,23 @@ function createMenuCard(item) {
         badgeHtml = '<span class="menu-type-badge-sm lunch">🍽️ Lunch</span>';
     }
 
+    const isFav = isFavorite(item.id);
+    const favIconClass = isFav ? 'fas fa-heart text-danger' : 'far fa-heart';
+    const favActiveClass = isFav ? 'active' : '';
+
+    let oldPriceHtml = '';
+    if (item.old_price && parseFloat(item.old_price) > priceVal) {
+        oldPriceHtml = `<span style="text-decoration:line-through; color:#94a3b8; font-size:0.75rem; margin-right:5px;">${formatRWF(item.old_price)}</span>`;
+    }
+
     return `
-        <div class="food-card">
+        <div class="food-card" data-dish-id="${item.id}">
             <div class="food-card-img-wrapper" style="position:relative;">
                 ${badgeHtml}
                 <img src="${img}" class="food-card-img" onerror="this.src='img/menu/1.jpg'" alt="${item.title}">
+                <button type="button" class="food-card-btn-fav ${favActiveClass}" onclick="toggleFavorite(event, ${item.id})" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+                    <i class="${favIconClass}"></i>
+                </button>
                 <button type="button" class="food-card-btn-add" onclick="addToCart(event, ${itemJson})" title="Add to cart">
                     <i class="fas fa-plus"></i>
                 </button>
@@ -854,7 +866,10 @@ function createMenuCard(item) {
                 <div class="food-card-title">${item.title}</div>
                 <div class="food-card-subtitle" title="${subStr}">${subStr}</div>
                 <div class="food-card-footer">
-                    <span class="food-card-price">${priceStr}</span>
+                    <div>
+                        ${oldPriceHtml}
+                        <span class="food-card-price">${priceStr}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1308,56 +1323,208 @@ function filterOrdersListByQuery(query) {
 }
 window.filterOrdersListByQuery = filterOrdersListByQuery;
 
-// FAVORITES / OFFERS
+// FAVORITES / SPECIAL OFFERS
 function loadFavorites() {
     const favStr = localStorage.getItem('favcafe_favorites');
     if (favStr) {
-        try { favorites = JSON.parse(favStr); } catch (e) {}
+        try { favorites = JSON.parse(favStr); } catch (e) { favorites = []; }
+    } else {
+        favorites = [1, 7, 8]; // Default starter favorites (Omelette, Chicken Pizza, Burger)
+        saveFavorites();
     }
 }
 
-function renderFavoriteGrid() {
-    const container = document.getElementById('favoriteGrid');
-    if (!container) return;
-
-    container.innerHTML = '';
-    const items = menuItems.slice(0, 4);
-    items.forEach(item => {
-        container.innerHTML += createMenuCard(item);
-    });
+function saveFavorites() {
+    try {
+        localStorage.setItem('favcafe_favorites', JSON.stringify(favorites));
+    } catch (e) {}
 }
+
+function isFavorite(itemId) {
+    if (!itemId) return false;
+    const id = parseInt(itemId);
+    return favorites.some(fav => parseInt(fav) === id);
+}
+
+function toggleFavorite(event, itemId) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    const id = parseInt(itemId);
+    const idx = favorites.findIndex(fav => parseInt(fav) === id);
+    let isNowFav = false;
+
+    if (idx > -1) {
+        favorites.splice(idx, 1);
+        isNowFav = false;
+        showToast('Removed from Favorites 💔', 'info');
+    } else {
+        favorites.push(id);
+        isNowFav = true;
+        showToast('Saved to Favorites ❤️', 'info');
+    }
+
+    saveFavorites();
+
+    // Dynamically toggle hearts on any food cards currently in view
+    document.querySelectorAll(`.food-card[data-dish-id="${id}"] .food-card-btn-fav`).forEach(btn => {
+        btn.classList.toggle('active', isNowFav);
+        const icon = btn.querySelector('i');
+        if (icon) {
+            icon.className = isNowFav ? 'fas fa-heart text-danger' : 'far fa-heart';
+        }
+        btn.title = isNowFav ? 'Remove from favorites' : 'Add to favorites';
+    });
+
+    renderOffersAndFavoritesView();
+}
+window.toggleFavorite = toggleFavorite;
+
+let currentOffersFilter = 'all';
+
+function setOffersViewFilter(filter) {
+    currentOffersFilter = filter || 'all';
+    document.querySelectorAll('#offersTabPills .btn-offers-pill').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    if (filter === 'deals') {
+        const b = document.getElementById('pillOffersDeals');
+        if (b) b.classList.add('active');
+    } else if (filter === 'favorites') {
+        const b = document.getElementById('pillOffersFavs');
+        if (b) b.classList.add('active');
+    } else {
+        const b = document.getElementById('pillOffersAll');
+        if (b) b.classList.add('active');
+    }
+
+    const dealsSec = document.getElementById('offersDealsSection');
+    const dishesSec = document.getElementById('offersDishesSection');
+    const favsSec = document.getElementById('favoritesSection');
+
+    if (dealsSec) dealsSec.style.display = (filter === 'favorites') ? 'none' : 'block';
+    if (dishesSec) dishesSec.style.display = (filter === 'favorites') ? 'none' : 'block';
+    if (favsSec) favsSec.style.display = (filter === 'deals') ? 'none' : 'block';
+}
+window.setOffersViewFilter = setOffersViewFilter;
+
+function applyPromoCodeDirectly(code) {
+    if (!code) return;
+    try {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(code);
+        }
+    } catch (e) {}
+    localStorage.setItem('favcafe_auto_promo', code);
+    showToast(`Voucher "${code}" applied & copied! 🎁`, 'info');
+
+    // Auto-fill promo input if order view is active
+    const promoInput = document.getElementById('cartPromoInput');
+    if (promoInput) {
+        promoInput.value = code;
+    }
+    switchTab('menu');
+}
+window.applyPromoCodeDirectly = applyPromoCodeDirectly;
+
+function renderOffersAndFavoritesView() {
+    // 1. Render Active Promos & Vouchers
+    const promoContainer = document.getElementById('offersPromoCardsContainer');
+    if (promoContainer) {
+        promoContainer.innerHTML = '';
+        const promosToRender = (appPromos && appPromos.length > 0) ? appPromos : [
+            { id: 1, discount: '20% OFF', title: 'Weekend Special Voucher', subtitle: 'Use code FAV20 on orders above 5,000 RWF', code: 'FAV20' },
+            { id: 2, discount: '15% OFF', title: 'Weekday Lunch Deal', subtitle: 'Enjoy 15% off lunch plates and grills', code: 'LUNCH15' }
+        ];
+
+        promosToRender.forEach(p => {
+            const bgStyle = p.img ? `background: linear-gradient(rgba(15,23,42,0.85), rgba(15,23,42,0.92)), url('${p.img}') center/cover;` : '';
+            const voucherCode = p.code || (p.title && p.title.includes('FAV') ? 'FAV20' : 'FAV20');
+            promoContainer.innerHTML += `
+                <div class="offer-deal-card" style="${bgStyle}">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-coral" style="font-size:0.8rem; padding:4px 10px; border-radius:10px;">
+                            <i class="fas fa-tag me-1"></i>${p.discount || 'Special'}
+                        </span>
+                        <div class="offer-voucher-code" onclick="applyPromoCodeDirectly('${voucherCode}')" title="Tap to copy and use code">
+                            <i class="far fa-copy text-cyan"></i> <span>${voucherCode}</span>
+                        </div>
+                    </div>
+                    <h4 class="text-white fw-bold mb-1" style="font-size:1.05rem;">${p.title}</h4>
+                    <p class="text-muted-custom mb-3" style="font-size:0.82rem; line-height:1.35;">${p.subtitle || 'Special discount available for limited time'}</p>
+                    <div class="d-flex justify-content-between align-items-center pt-2" style="border-top:1px solid rgba(255,255,255,0.08);">
+                        <span style="font-size:0.75rem; color:#38bdf8;"><i class="fas fa-check-circle me-1"></i>Instant auto-discount</span>
+                        <button type="button" class="btn btn-sm btn-cyan-action" onclick="applyPromoCodeDirectly('${voucherCode}')">
+                            <i class="fas fa-shopping-bag me-1"></i> Use Voucher
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // 2. Render Discounted Menu Items
+    const discountGrid = document.getElementById('offersDiscountGrid');
+    if (discountGrid) {
+        discountGrid.innerHTML = '';
+        let discountedDishes = menuItems.filter(item => {
+            return (item.old_price && parseFloat(item.old_price) > parseFloat(item.price)) ||
+                   (item.tags && /special|promo|popular|deal/i.test(item.tags));
+        });
+        if (discountedDishes.length === 0) {
+            discountedDishes = menuItems.slice(0, 4);
+        } else {
+            discountedDishes = discountedDishes.slice(0, 6);
+        }
+        discountedDishes.forEach(item => {
+            discountGrid.innerHTML += createMenuCard(item);
+        });
+    }
+
+    // 3. Render Favorites Grid
+    const favGrid = document.getElementById('favoriteGrid');
+    const emptyState = document.getElementById('favoritesEmptyState');
+    if (favGrid) {
+        favGrid.innerHTML = '';
+        const favItems = menuItems.filter(item => isFavorite(item.id));
+        if (favItems.length > 0) {
+            favItems.forEach(item => {
+                favGrid.innerHTML += createMenuCard(item);
+            });
+            favGrid.style.display = 'grid';
+            if (emptyState) emptyState.style.display = 'none';
+        } else {
+            favGrid.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
+        }
+    }
+
+    // 4. Update Header Badges
+    const offersBadge = document.getElementById('offersBadgeCount');
+    if (offersBadge) {
+        offersBadge.textContent = appPromos ? appPromos.length : 2;
+    }
+    const favsBadge = document.getElementById('favsBadgeCount');
+    if (favsBadge) {
+        favsBadge.textContent = favorites.length;
+    }
+
+    // Re-apply current filter view
+    setOffersViewFilter(currentOffersFilter);
+}
+window.renderOffersAndFavoritesView = renderOffersAndFavoritesView;
+
+function renderFavoriteGrid() {
+    renderOffersAndFavoritesView();
+}
+window.renderFavoriteGrid = renderFavoriteGrid;
 
 function renderOffersPromos() {
-    const container = document.getElementById('offersPromoContainer');
-    if (!container) return;
-    container.innerHTML = '';
-
-    if (!appPromos || appPromos.length === 0) return;
-
-    let html = `
-        <div class="section-title-bar mb-2" style="padding:0;">
-            <h3 style="font-size:1.05rem; color:var(--text-white); font-weight:700;"><i class="fas fa-bullhorn me-2 text-cyan"></i>Active Deals &amp; Vouchers</h3>
-        </div>
-        <div class="d-flex flex-column gap-2 mb-3">
-    `;
-
-    appPromos.forEach(p => {
-        const bgStyle = p.img ? `background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.75)), url('${p.img}') center/cover;` : 'background: linear-gradient(135deg, #1f2b48, #2a3b63);';
-        html += `
-            <div class="p-3 d-flex justify-content-between align-items-center" style="${bgStyle}; border-radius:16px; border:1px solid rgba(255,255,255,0.1); margin-bottom: 8px;">
-                <div>
-                    <span class="badge bg-coral mb-1" style="font-size:0.75rem; padding:3px 8px; border-radius:8px; display:inline-block;">${p.discount}</span>
-                    <h5 class="mb-0 text-white fw-bold" style="font-size:1.05rem;">${p.title}</h5>
-                    <small class="text-light-blue" style="font-size:0.8rem;">${p.subtitle}</small>
-                </div>
-                <button type="button" class="btn btn-sm btn-cyan-action" style="padding: 6px 14px; border-radius: 20px; font-weight: 600;" onclick="switchTab('menu')">Order</button>
-            </div>
-        `;
-    });
-
-    html += `</div>`;
-    container.innerHTML = html;
+    renderOffersAndFavoritesView();
 }
+window.renderOffersPromos = renderOffersPromos;
 
 // REALTIME SYNCHRONIZATION WITH ADMIN DASHBOARD
 function setupRealtimeSync() {
@@ -1458,12 +1625,16 @@ function switchTab(tabId, element) {
         'history': 'Your Orders',
         'notification': 'Notification',
         'profile': 'Profile',
-        'favorite': 'Offers & Deals'
+        'favorite': 'Special Offers & Favorites'
     };
 
     const headerTitleText = document.getElementById('headerTitleText');
     if (headerTitleText) {
         headerTitleText.innerText = titles[tabId] || 'INEZA RESTO & COFFEE SHOP';
+    }
+
+    if (tabId === 'favorite') {
+        renderOffersAndFavoritesView();
     }
 
     const globalBackBtn = document.getElementById('globalBackBtn');

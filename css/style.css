@@ -4691,3 +4691,91 @@ form#checkoutForm::-webkit-scrollbar-thumb:hover {
     font-size: var(--text-xs);
   }
 }
+
+/* ============================================================
+   LANDING PAGE SWIPER SLIDERS
+   ============================================================ */
+.hero-dish-swiper {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+}
+
+.hero-dish-swiper .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-dish-swiper .swiper-slide img {
+  width: 88%;
+  height: 88%;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.hero-swiper-pagination {
+  bottom: 14px !important;
+}
+
+.hero-swiper-pagination .swiper-pagination-bullet {
+  background: var(--primary, #e67e22);
+  opacity: 0.45;
+  width: 8px;
+  height: 8px;
+  transition: all 0.25s ease;
+}
+
+.hero-swiper-pagination .swiper-pagination-bullet-active {
+  opacity: 1;
+  width: 22px;
+  border-radius: 4px;
+  background: var(--primary, #e67e22);
+}
+
+/* Featured Specials Slider */
+.landing-featured-swiper {
+  overflow: hidden;
+  padding: 10px 4px 50px 4px !important;
+}
+
+.landing-slider-pagination .swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.4);
+  opacity: 0.5;
+  width: 9px;
+  height: 9px;
+  transition: all 0.25s ease;
+}
+
+.landing-slider-pagination .swiper-pagination-bullet-active {
+  opacity: 1;
+  width: 26px;
+  border-radius: 6px;
+  background: var(--primary, #e67e22);
+}
+
+.landing-slider-prev,
+.landing-slider-next {
+  transition: all 0.2s ease;
+}
+
+.landing-slider-prev:hover,
+.landing-slider-next:hover {
+  background: var(--primary, #e67e22) !important;
+  border-color: var(--primary, #e67e22) !important;
+  color: #fff !important;
+  transform: translateY(-2px);
+}
+
+.card-hover-zoom {
+  transition: transform 0.4s ease;
+}
+
+.card-hover-zoom:hover {
+  transform: scale(1.06);
+}

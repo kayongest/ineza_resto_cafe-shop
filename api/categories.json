@@ -22,7 +22,7 @@
         "name": "Salads",
         "slug": "salads",
         "icon": "fas fa-leaf",
-        "is_active": 1,
+        "is_active": 0,
         "sort_order": 3,
         "created_at": "2026-10-05 20:04:38"
     },
@@ -31,7 +31,7 @@
         "name": "Sides",
         "slug": "sides",
         "icon": "fas fa-utensils",
-        "is_active": 1,
+        "is_active": 0,
         "sort_order": 4,
         "created_at": "2026-10-05 20:36:13"
     },
@@ -40,7 +40,7 @@
         "name": "Plates",
         "slug": "plates",
         "icon": "fas fa-utensils",
-        "is_active": 1,
+        "is_active": 0,
         "sort_order": 5,
         "created_at": "2026-10-05 20:37:14"
     },
@@ -49,7 +49,7 @@
         "name": "Breakfast",
         "slug": "breakfast",
         "icon": "fas fa-egg",
-        "is_active": 1,
+        "is_active": 0,
         "sort_order": 7,
         "created_at": "2026-10-05 20:51:14"
     },
@@ -58,7 +58,7 @@
         "name": "Coffee",
         "slug": "coffee",
         "icon": "fas fa-coffee",
-        "is_active": 1,
+        "is_active": 0,
         "sort_order": 8,
         "created_at": "2026-10-05 20:51:14"
     },
@@ -67,7 +67,7 @@
         "name": "Tea",
         "slug": "tea",
         "icon": "fas fa-mug-hot",
-        "is_active": 1,
+        "is_active": 0,
         "sort_order": 9,
         "created_at": "2026-10-05 20:51:14"
     },
@@ -76,7 +76,7 @@
         "name": "Grill",
         "slug": "grill",
         "icon": "fas fa-meat",
-        "is_active": 1,
+        "is_active": 0,
         "sort_order": 9,
         "created_at": "2026-10-05 21:03:48"
     }

@@ -2402,6 +2402,11 @@ async function loadDynamicCustomerMenu(isManualRefresh) {
         }
     }
 
+    // Refresh landing page specials slider with latest loaded dishes
+    if (typeof initLandingSliders === 'function') {
+        initLandingSliders(menuItems);
+    }
+
     var availCount = menuItems.filter(function (i) { return parseInt(i.is_available) === 1 || i.is_available === true; }).length;
     if (statusEl) {
         if (isDbSource) {
@@ -2772,3 +2777,145 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+/* ============================================================
+   LANDING PAGE SWIPER SLIDERS INITIALIZATION
+   ============================================================ */
+function initLandingSliders(items) {
+    if (typeof Swiper === 'undefined') {
+        console.warn('[Swiper] Swiper library not yet loaded.');
+        return;
+    }
+
+    // 1. Hero Dish Showcase Swiper
+    var heroEl = document.querySelector('.hero-dish-swiper');
+    if (heroEl && !heroEl.swiper) {
+        try {
+            new Swiper('.hero-dish-swiper', {
+                loop: true,
+                effect: 'fade',
+                fadeEffect: { crossFade: true },
+                speed: 700,
+                autoplay: {
+                    delay: 3500,
+                    disableOnInteraction: false
+                },
+                pagination: {
+                    el: '.hero-swiper-pagination',
+                    clickable: true
+                }
+            });
+        } catch (e) {
+            console.error('[Swiper] Hero slider init error:', e);
+        }
+    }
+
+    // 2. Featured Specials Carousel Swiper
+    var specialsEl = document.querySelector('.landing-featured-swiper');
+    if (specialsEl) {
+        var wrapper = document.getElementById('landingSliderWrapper');
+        if (wrapper && items && Array.isArray(items) && items.length > 0) {
+            var featured = items.filter(function (i) {
+                var isAvail = parseInt(i.is_available) === 1 || i.is_available === true;
+                return isAvail && ((i.tags && /popular|special|promo|deal/i.test(i.tags)) ||
+                       (i.old_price && parseFloat(i.old_price) > parseFloat(i.price)));
+            });
+            if (featured.length < 4) {
+                featured = items.filter(function(i) { return parseInt(i.is_available) === 1 || i.is_available === true; }).slice(0, 8);
+            }
+            if (featured.length > 0) {
+                var slidesHtml = '';
+                featured.forEach(function (item) {
+                    var img = item.image || 'img/banner-img.jpg';
+                    var priceVal = parseFloat(item.price || 0);
+                    var priceStr = formatRWF(priceVal);
+                    var title = item.title || 'Special Dish';
+                    var escapedTitle = title.replace(/'/g, "\\'");
+                    var desc = item.description || 'Crafted fresh daily with the finest bistro ingredients.';
+                    var catName = item.category || 'Specialty';
+                    var badge = (item.menu_type && item.menu_type.toLowerCase() === 'breakfast') ? 'Breakfast Special' : 'Chef Pick';
+
+                    slidesHtml += `
+                        <div class="swiper-slide h-auto">
+                            <div class="card h-100 border-0 shadow-sm" style="background:#1e293b; border-radius:20px; overflow:hidden; border:1px solid rgba(255,255,255,0.08);">
+                                <div style="position:relative; height:200px; overflow:hidden; background:#0f172a;">
+                                    <span class="badge position-absolute top-0 start-0 m-3 px-3 py-1 rounded-pill" style="background:#e67e22; font-size:0.75rem; font-weight:700; z-index:2;">
+                                        ${badge}
+                                    </span>
+                                    <img src="${img}" alt="${title}" class="card-hover-zoom" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='img/banner-img.jpg'">
+                                </div>
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="text-uppercase fw-bold" style="font-size:0.75rem; color:#38bdf8;">${catName}</span>
+                                        <span class="text-warning small"><i class="fas fa-star"></i> 5.0</span>
+                                    </div>
+                                    <h5 class="text-white fw-bold mb-2" style="font-size:1.05rem;">${title}</h5>
+                                    <p class="text-muted small mb-3 flex-grow-1" style="font-size:0.82rem; line-height:1.4;">${desc}</p>
+                                    <div class="d-flex justify-content-between align-items-center pt-3 border-top" style="border-color:rgba(255,255,255,0.08) !important;">
+                                        <span class="fw-bold" style="color:#e67e22; font-size:1.15rem;">${priceStr}</span>
+                                        <button type="button" class="btn btn-sm px-3 rounded-pill text-white fw-bold" style="background:#e67e22;" onclick="addToCart('${escapedTitle}', '${priceVal}', '${img}', 1)">
+                                            <i class="fas fa-plus me-1"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                wrapper.innerHTML = slidesHtml;
+            }
+        }
+
+        if (specialsEl.swiper) {
+            specialsEl.swiper.destroy(true, true);
+        }
+
+        try {
+            new Swiper('.landing-featured-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                loop: true,
+                speed: 600,
+                autoplay: {
+                    delay: 3800,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: true
+                },
+                pagination: {
+                    el: '.landing-slider-pagination',
+                    clickable: true
+                },
+                navigation: {
+                    nextEl: '.landing-slider-next',
+                    prevEl: '.landing-slider-prev'
+                },
+                breakpoints: {
+                    640: {
+                        slidesPerView: 2,
+                        spaceBetween: 20
+                    },
+                    992: {
+                        slidesPerView: 3,
+                        spaceBetween: 24
+                    },
+                    1200: {
+                        slidesPerView: 4,
+                        spaceBetween: 24
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('[Swiper] Specials slider init error:', e);
+        }
+    }
+}
+window.initLandingSliders = initLandingSliders;
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () { initLandingSliders(); }, 120);
+    });
+} else {
+    setTimeout(function () { initLandingSliders(); }, 120);
+}

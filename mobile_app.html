@@ -13,7 +13,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <!-- Foodia Dark Navy CSS -->
-    <link rel="stylesheet" href="css/mobile_app.css?v=5.0">
+    <link rel="stylesheet" href="css/mobile_app.css?v=10.0">
 </head>
 
 <body>
@@ -393,13 +393,58 @@
         <!-- 7. OFFERS / FAVORITE VIEW -->
         <div id="view-favorite" class="tab-view">
             <div class="user-greeting-banner" style="padding-bottom:0.75rem;">
-                <div class="greeting-subtitle">Exclusive Deals</div>
-                <h2 class="greeting-headline">Special Offers &amp; Favorites 🏷️</h2>
+                <div class="greeting-subtitle">Exclusive Deals &amp; Saved Picks</div>
+                <h2 class="greeting-headline">Special Offers &amp; Favorites 🏷️❤️</h2>
             </div>
-            <!-- Dynamic Promo Banners in Offers View -->
-            <div id="offersPromoContainer"></div>
-            <div class="food-grid" id="favoriteGrid">
-                <!-- Dynamic from JS -->
+
+            <!-- Segmented Filter Pills -->
+            <div class="offers-tab-pills" id="offersTabPills">
+                <button type="button" class="btn-offers-pill active" id="pillOffersAll" onclick="setOffersViewFilter('all')">
+                    <i class="fas fa-layer-group me-1"></i> All
+                </button>
+                <button type="button" class="btn-offers-pill" id="pillOffersDeals" onclick="setOffersViewFilter('deals')">
+                    <i class="fas fa-percent me-1"></i> Special Offers <span class="badge rounded-pill bg-coral ms-1" id="offersBadgeCount">0</span>
+                </button>
+                <button type="button" class="btn-offers-pill" id="pillOffersFavs" onclick="setOffersViewFilter('favorites')">
+                    <i class="fas fa-heart me-1 text-danger"></i> Favorites <span class="badge rounded-pill bg-light text-dark ms-1" id="favsBadgeCount">0</span>
+                </button>
+            </div>
+
+            <!-- 1. Active Promo Deals & Vouchers Section -->
+            <div id="offersDealsSection" class="px-4 mb-4">
+                <div class="section-title-bar px-0 mb-2">
+                    <h3 style="font-size:1.05rem; font-weight:700;"><i class="fas fa-fire me-2 text-warning"></i>Active Promos &amp; Vouchers</h3>
+                </div>
+                <div id="offersPromoCardsContainer">
+                    <!-- Dynamic from JS -->
+                </div>
+            </div>
+
+            <!-- 2. Discounted Special Menu Items Section -->
+            <div id="offersDishesSection" class="mb-4">
+                <div class="section-title-bar mb-2">
+                    <h3 style="font-size:1.05rem; font-weight:700;"><i class="fas fa-tags me-2 text-cyan"></i>Discounted Menu Items</h3>
+                </div>
+                <div class="food-grid" id="offersDiscountGrid">
+                    <!-- Dynamic from JS -->
+                </div>
+            </div>
+
+            <!-- 3. Saved Favorite Dishes Section -->
+            <div id="favoritesSection" class="mb-4">
+                <div class="section-title-bar mb-2">
+                    <h3 style="font-size:1.05rem; font-weight:700;"><i class="fas fa-heart me-2 text-danger"></i>Your Favorite Dishes</h3>
+                </div>
+                <div class="food-grid" id="favoriteGrid">
+                    <!-- Dynamic from JS -->
+                </div>
+                <!-- Empty state when no favorites yet -->
+                <div id="favoritesEmptyState" style="display:none;" class="text-center px-4 py-4">
+                    <div style="font-size: 2.8rem; margin-bottom: 12px; color: rgba(255, 94, 87, 0.4);"><i class="far fa-heart"></i></div>
+                    <h4 style="font-size: 1.1rem; color: #fff; font-weight: 700; margin-bottom: 6px;">No Favorites Saved Yet</h4>
+                    <p style="font-size: 0.85rem; color: #94a3b8; max-width: 280px; margin: 0 auto 16px;">Tap the heart icon on any dish across our menu to quickly access your favorite picks here.</p>
+                    <button type="button" class="btn btn-sm btn-cyan-action" onclick="switchTab('menu')">Browse Full Menu</button>
+                </div>
             </div>
         </div>
     </div>
@@ -512,7 +557,7 @@
         </div>
 
         <!-- 4. Offers / Promos -->
-        <div class="bottom-nav-item" data-tab="favorite" onclick="switchTab('favorite', this)" title="Offers">
+        <div class="bottom-nav-item" data-tab="favorite" onclick="switchTab('favorite', this)" title="Special Offers &amp; Favorites">
             <i class="fas fa-percent"></i>
         </div>
 
@@ -568,7 +613,7 @@
     <div id="appToast" class="app-toast">Message</div>
 
     <!-- Scripts -->
-    <script src="js/mobile_app.js?v=9.0"></script>
+    <script src="js/mobile_app.js?v=10.0"></script>
 </body>
 
 </html>
