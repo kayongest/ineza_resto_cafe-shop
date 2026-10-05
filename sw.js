@@ -2,8 +2,10 @@ const CACHE_NAME = 'favorite-cafe-cache-v10';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './mobile_app.html',
   './admin.html',
   './css/style.css',
+  './css/mobile_app.css',
   './css/admin.css',
   './css/bootstrap.min.css',
   './manifest.json'

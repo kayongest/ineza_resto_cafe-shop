@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "title": "Weekend Treat Voucher",
+    "subtitle": "Use Code FAV20 on Orders Above 5,000 RWF",
+    "discount": "20% OFF",
+    "img": "img/promo/promoBanner.png",
+    "is_active": 1,
+    "sort_order": 1,
+    "code": "FAV20"
+  },
+  {
+    "id": 2,
+    "title": "Weekday Lunch Deal",
+    "subtitle": "Enjoy 15% off lunch plates and grills",
+    "discount": "15% OFF",
+    "img": "img/menu/dish_1786025102_4409.png",
+    "is_active": 1,
+    "sort_order": 2,
+    "code": "LUNCH15"
+  },
+  {
+    "id": 3,
+    "title": "Morning Breakfast & Coffee",
+    "subtitle": "Fresh brewed coffee with any breakfast platter",
+    "discount": "SPECIAL",
+    "img": "img/Spanish_Omelette.png",
+    "is_active": 1,
+    "sort_order": 3,
+    "code": "BREKKIE"
+  }
+]

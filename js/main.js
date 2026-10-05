@@ -2539,6 +2539,18 @@ async function loadDynamicCategories() {
 
     if (categories.length === 0) {
         try {
+            var resJson = await fetch('api/categories.json?t=' + Date.now(), { cache: 'no-store' });
+            if (resJson.ok) {
+                var jsonCats = await resJson.json();
+                if (Array.isArray(jsonCats) && jsonCats.length > 0) {
+                    categories = jsonCats.filter(function (c) { return parseInt(c.is_active) === 1 || c.is_active === true; });
+                }
+            }
+        } catch (e) { }
+    }
+
+    if (categories.length === 0) {
+        try {
             var stored = localStorage.getItem('favcafe_categories');
             if (stored) {
                 var parsed = JSON.parse(stored);

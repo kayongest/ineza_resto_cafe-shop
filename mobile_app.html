@@ -614,6 +614,15 @@
 
     <!-- Scripts -->
     <script src="js/mobile_app.js?v=10.0"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js').catch(function() {});
+            });
+        }
+    </script>
 </body>
 
 </html>

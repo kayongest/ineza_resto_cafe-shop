@@ -555,6 +555,19 @@ async function loadMenu() {
         }
     } catch (e) {}
 
+    // Static JSON fallback for GitHub Pages & serverless hosting
+    try {
+        const resJson = await fetch('api/menu.json?t=' + Date.now());
+        if (resJson.ok) {
+            const jsonItems = await resJson.json();
+            if (Array.isArray(jsonItems) && jsonItems.length > 0) {
+                menuItems = jsonItems;
+                try { localStorage.setItem('favcafe_menu_cache', JSON.stringify(menuItems)); } catch (e) {}
+                return;
+            }
+        }
+    } catch (e) {}
+
     const cached = localStorage.getItem('favcafe_menu_cache');
     if (cached) {
         menuItems = JSON.parse(cached);
@@ -601,6 +614,21 @@ async function loadAppCategories() {
         }
     } catch (e) {}
 
+    // Static JSON fallback for GitHub Pages & serverless hosting
+    try {
+        const resJson = await fetch('api/categories.json?t=' + Date.now());
+        if (resJson.ok) {
+            const jsonCats = await resJson.json();
+            if (Array.isArray(jsonCats) && jsonCats.length > 0) {
+                appCategories = jsonCats.filter(c => parseInt(c.is_active) === 1 || c.is_active === true);
+                try {
+                    localStorage.setItem('favcafe_active_categories_cache', JSON.stringify(appCategories));
+                } catch (e) {}
+                return;
+            }
+        }
+    } catch (e) {}
+
     // Fallback: localStorage 'favcafe_categories'
     try {
         const stored = localStorage.getItem('favcafe_categories');
@@ -630,6 +658,21 @@ async function loadAppPromos() {
             const data = await res.json();
             if (data && data.status === 'success' && Array.isArray(data.promos)) {
                 appPromos = data.promos.filter(p => p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true);
+                try {
+                    localStorage.setItem('favcafe_promos_cache', JSON.stringify(appPromos));
+                } catch (e) {}
+                return;
+            }
+        }
+    } catch (e) {}
+
+    // Static JSON fallback for GitHub Pages & serverless hosting
+    try {
+        const resJson = await fetch('api/promos.json?t=' + Date.now());
+        if (resJson.ok) {
+            const jsonPromos = await resJson.json();
+            if (Array.isArray(jsonPromos) && jsonPromos.length > 0) {
+                appPromos = jsonPromos.filter(p => p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true);
                 try {
                     localStorage.setItem('favcafe_promos_cache', JSON.stringify(appPromos));
                 } catch (e) {}

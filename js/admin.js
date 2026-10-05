@@ -2852,6 +2852,21 @@ async function loadAdminCategories() {
     } catch (e) {}
 
     try {
+        var resJson = await fetch('api/categories.json?t=' + Date.now());
+        if (resJson.ok) {
+            var jsonCats = await resJson.json();
+            if (Array.isArray(jsonCats) && jsonCats.length > 0) {
+                adminCategories = jsonCats;
+                saveCategoriesToStorageLocally();
+                renderAdminCategoriesTable();
+                populateCategoryDropdowns();
+                renderAdminMenuCategoryPills();
+                return;
+            }
+        }
+    } catch (e) {}
+
+    try {
         var stored = localStorage.getItem('favcafe_categories');
         if (stored) {
             adminCategories = JSON.parse(stored);
@@ -3300,6 +3315,18 @@ async function loadAdminPromos() {
         }
     } catch (e) {}
 
+    try {
+        var resJson = await fetch('api/promos.json?t=' + Date.now());
+        if (resJson.ok) {
+            var jsonPromos = await resJson.json();
+            if (Array.isArray(jsonPromos) && jsonPromos.length > 0) {
+                adminPromos = jsonPromos;
+                saveAdminPromosLocally();
+                return;
+            }
+        }
+    } catch (e) {}
+
     var stored = localStorage.getItem('favcafe_promos');
     if (stored) {
         try {
@@ -3307,9 +3334,8 @@ async function loadAdminPromos() {
         } catch (e) {}
     } else {
         adminPromos = [
-            { id: 1, title: "Order Salmon Steak Today", subtitle: "And Save Up To", discount: "35%", img: "img/menu/6.jpg", is_active: 1, sort_order: 1 },
-            { id: 2, title: "Fresh Salads", subtitle: "Healthy & Green", discount: "20%", img: "img/menu/1.jpg", is_active: 1, sort_order: 2 },
-            { id: 3, title: "Coffee & Pastries", subtitle: "Morning Special", discount: "15%", img: "img/menu/4.jpg", is_active: 1, sort_order: 3 }
+            { id: 1, title: "Weekend Treat Voucher", subtitle: "Use Code FAV20 on Orders Above 5,000 RWF", discount: "20% OFF", img: "img/promo/promoBanner.png", is_active: 1, sort_order: 1 },
+            { id: 2, title: "Weekday Lunch Deal", subtitle: "Enjoy 15% off lunch plates and grills", discount: "15% OFF", img: "img/menu/dish_1786025102_4409.png", is_active: 1, sort_order: 2 }
         ];
         saveAdminPromos();
     }
