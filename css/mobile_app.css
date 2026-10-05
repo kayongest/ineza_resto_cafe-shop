@@ -276,12 +276,38 @@ body {
     position: relative;
     overflow: hidden;
     box-shadow: 0 10px 25px rgba(255, 94, 87, 0.3);
+    cursor: pointer;
+    background-size: cover !important;
+    background-position: center !important;
+}
+
+.promo-slider-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 12px;
+    padding: 0 1.25rem 1.5rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.promo-slider-container::-webkit-scrollbar {
+    display: none;
+}
+
+.promo-slider-container .promo-coral-card {
+    margin: 0;
+    min-width: 82%;
+    max-width: 88%;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
 }
 
 .promo-tag {
     font-size: 0.95rem;
     font-weight: 600;
     opacity: 0.95;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
 .promo-title-discount {
@@ -289,11 +315,13 @@ body {
     font-weight: 800;
     line-height: 1.1;
     margin: 4px 0 2px;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 
 .promo-note {
     font-size: 0.75rem;
-    opacity: 0.8;
+    opacity: 0.85;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
 /* Section Header */
@@ -1631,4 +1659,25 @@ body.light-theme .btn-cyan-action {
     background: rgba(0, 210, 211, 0.12) !important;
     color: #008b8c !important;
     border-color: #00a8a9 !important;
+}
+
+/* Menu Type Badge on Dish Cards */
+.menu-type-badge-sm {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(4px);
+    color: #fbbf24;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+    z-index: 2;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    letter-spacing: 0.3px;
+}
+.menu-type-badge-sm.lunch {
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.3);
 }

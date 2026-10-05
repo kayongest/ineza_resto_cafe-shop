@@ -26,6 +26,7 @@ if ($pdo === null) {
     } elseif ($action === 'add') {
         $title = isset($data['title']) ? trim($data['title']) : '';
         $category = isset($data['category']) ? trim($data['category']) : 'burgers';
+        $menuType = isset($data['menu_type']) && trim($data['menu_type']) !== '' ? trim($data['menu_type']) : 'lunch';
         $price = isset($data['price']) ? parseFloat($data['price']) : 0;
         $oldPrice = isset($data['old_price']) && $data['old_price'] !== '' ? parseFloat($data['old_price']) : null;
         $image = isset($data['image']) && trim($data['image']) !== '' ? trim($data['image']) : 'img/menu/1.jpg';
@@ -46,6 +47,7 @@ if ($pdo === null) {
             'id' => $newId,
             'title' => $title,
             'category' => $category,
+            'menu_type' => $menuType,
             'price' => $price,
             'old_price' => $oldPrice,
             'image' => $image,
@@ -67,6 +69,7 @@ if ($pdo === null) {
         $id = isset($data['id']) ? intval($data['id']) : 0;
         $title = isset($data['title']) ? trim($data['title']) : '';
         $category = isset($data['category']) ? trim($data['category']) : 'burgers';
+        $menuType = isset($data['menu_type']) && trim($data['menu_type']) !== '' ? trim($data['menu_type']) : 'lunch';
         $price = isset($data['price']) ? parseFloat($data['price']) : 0;
         $oldPrice = isset($data['old_price']) && $data['old_price'] !== '' ? parseFloat($data['old_price']) : null;
         $image = isset($data['image']) && trim($data['image']) !== '' ? trim($data['image']) : 'img/menu/1.jpg';
@@ -86,6 +89,7 @@ if ($pdo === null) {
             if (intval($item['id']) === intval($id)) {
                 $item['title'] = $title;
                 $item['category'] = $category;
+                $item['menu_type'] = $menuType;
                 $item['price'] = $price;
                 $item['old_price'] = $oldPrice;
                 $item['image'] = $image;
@@ -163,23 +167,33 @@ try {
     if (!in_array('reviews_count', $cols)) {
         $pdo->exec("ALTER TABLE menu_items ADD `reviews_count` INT(11) DEFAULT 12");
     }
+    if (!in_array('menu_type', $cols)) {
+        $pdo->exec("ALTER TABLE menu_items ADD `menu_type` VARCHAR(50) NOT NULL DEFAULT 'lunch' AFTER category");
+    }
     
 } catch (PDOException $e) {}
 
 if ($action === 'get') {
-    $stmt = $pdo->query("SELECT * FROM menu_items ORDER BY FIELD(LOWER(category), 'mains', 'coffee', 'tea', 'smoothies', 'shakes', 'juices', 'salads', 'sides'), id ASC");
+    $menuTypeFilter = isset($_GET['menu_type']) ? trim($_GET['menu_type']) : '';
+    if (!empty($menuTypeFilter) && $menuTypeFilter !== 'all') {
+        $stmt = $pdo->prepare("SELECT * FROM menu_items WHERE menu_type = ? OR menu_type = 'all_day' ORDER BY id ASC");
+        $stmt->execute([$menuTypeFilter]);
+    } else {
+        $stmt = $pdo->query("SELECT * FROM menu_items ORDER BY id ASC");
+    }
     $items = $stmt->fetchAll();
     if (!is_array($items) || count($items) === 0) {
         $jsonFile = __DIR__ . '/menu.json';
         if (file_exists($jsonFile)) {
             $jsonItems = json_decode(file_get_contents($jsonFile), true);
             if (is_array($jsonItems) && count($jsonItems) > 0) {
-                $insStmt = $pdo->prepare("INSERT INTO menu_items (id, title, category, price, old_price, image, rating, reviews_count, calories, prep_time, description, tags, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $insStmt = $pdo->prepare("INSERT INTO menu_items (id, title, category, menu_type, price, old_price, image, rating, reviews_count, calories, prep_time, description, tags, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($jsonItems as $item) {
                     $insStmt->execute([
                         $item['id'],
                         $item['title'],
                         $item['category'],
+                        $item['menu_type'] ?? 'lunch',
                         $item['price'],
                         $item['old_price'] ?? null,
                         $item['image'],
@@ -192,7 +206,7 @@ if ($action === 'get') {
                         $item['is_available'] ?? 1
                     ]);
                 }
-                $stmt = $pdo->query("SELECT * FROM menu_items ORDER BY FIELD(LOWER(category), 'mains', 'coffee', 'tea', 'smoothies', 'shakes', 'juices', 'salads', 'sides'), id ASC");
+                $stmt = $pdo->query("SELECT * FROM menu_items ORDER BY id ASC");
                 $items = $stmt->fetchAll();
             }
         }
@@ -203,6 +217,7 @@ if ($action === 'get') {
 } elseif ($action === 'add') {
     $title = isset($data['title']) ? trim($data['title']) : '';
     $category = isset($data['category']) ? trim($data['category']) : 'burgers';
+    $menuType = isset($data['menu_type']) && trim($data['menu_type']) !== '' ? trim($data['menu_type']) : 'lunch';
     $price = isset($data['price']) ? parseFloat($data['price']) : 0;
     $oldPrice = isset($data['old_price']) && $data['old_price'] !== '' ? parseFloat($data['old_price']) : null;
     $image = isset($data['image']) && trim($data['image']) !== '' ? trim($data['image']) : 'img/menu/1.jpg';
@@ -218,9 +233,9 @@ if ($action === 'get') {
         exit;
     }
 
-    $insertSql = "INSERT INTO menu_items (title, category, price, old_price, image, calories, prep_time, rating, reviews_count, description, tags, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+    $insertSql = "INSERT INTO menu_items (title, category, menu_type, price, old_price, image, calories, prep_time, rating, reviews_count, description, tags, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
     $stmt = $pdo->prepare($insertSql);
-    $success = $stmt->execute([$title, $category, $price, $oldPrice, $image, $calories, $prepTime, $rating, $reviewsCount, $description, $tags]);
+    $success = $stmt->execute([$title, $category, $menuType, $price, $oldPrice, $image, $calories, $prepTime, $rating, $reviewsCount, $description, $tags]);
 
     if ($success) {
         $newItemId = $pdo->lastInsertId();
@@ -239,6 +254,7 @@ if ($action === 'get') {
     $id = isset($data['id']) ? intval($data['id']) : 0;
     $title = isset($data['title']) ? trim($data['title']) : '';
     $category = isset($data['category']) ? trim($data['category']) : 'burgers';
+    $menuType = isset($data['menu_type']) && trim($data['menu_type']) !== '' ? trim($data['menu_type']) : 'lunch';
     $price = isset($data['price']) ? parseFloat($data['price']) : 0;
     $oldPrice = isset($data['old_price']) && $data['old_price'] !== '' ? parseFloat($data['old_price']) : null;
     $image = isset($data['image']) && trim($data['image']) !== '' ? trim($data['image']) : 'img/menu/1.jpg';
@@ -254,9 +270,9 @@ if ($action === 'get') {
         exit;
     }
 
-    $updateSql = "UPDATE menu_items SET title=?, category=?, price=?, old_price=?, image=?, calories=?, prep_time=?, rating=?, reviews_count=?, description=?, tags=? WHERE id=?";
+    $updateSql = "UPDATE menu_items SET title=?, category=?, menu_type=?, price=?, old_price=?, image=?, calories=?, prep_time=?, rating=?, reviews_count=?, description=?, tags=? WHERE id=?";
     $stmt = $pdo->prepare($updateSql);
-    $success = $stmt->execute([$title, $category, $price, $oldPrice, $image, $calories, $prepTime, $rating, $reviewsCount, $description, $tags, $id]);
+    $success = $stmt->execute([$title, $category, $menuType, $price, $oldPrice, $image, $calories, $prepTime, $rating, $reviewsCount, $description, $tags, $id]);
 
     if ($success) {
         syncMenuJsonFile($pdo);

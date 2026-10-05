@@ -9,94 +9,42 @@ $data = json_decode($raw, true);
 if (!$data) $data = $_POST;
 
 $action = isset($_GET['action']) ? $_GET['action'] : (isset($data['action']) ? $data['action'] : 'get');
+$jsonPath = __DIR__ . '/categories.json';
 
-if ($pdo === null) {
-    $jsonPath = __DIR__ . '/categories.json';
-    $categories = file_exists($jsonPath) ? json_decode(file_get_contents($jsonPath), true) : [];
-    if (!is_array($categories)) $categories = [];
+// Auto-create table without auto-reseeding deleted categories
+if ($pdo) {
+    try {
+        $tableSql = "
+        CREATE TABLE IF NOT EXISTS `categories` (
+          `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          `name` varchar(100) NOT NULL,
+          `slug` varchar(100) NOT NULL UNIQUE,
+          `icon` varchar(100) DEFAULT 'fas fa-utensils',
+          `is_active` tinyint(1) DEFAULT 1,
+          `sort_order` int(11) DEFAULT 0,
+          `created_at` timestamp DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ";
+        $pdo->exec($tableSql);
+    } catch (PDOException $e) {}
+}
 
-    if ($action === 'get') {
+if ($action === 'get') {
+    if ($pdo === null) {
+        $categories = file_exists($jsonPath) ? json_decode(file_get_contents($jsonPath), true) : [];
+        if (!is_array($categories)) $categories = [];
+        $onlyActive = isset($_GET['active_only']) && $_GET['active_only'] == '1';
+        if ($onlyActive) {
+            $categories = array_values(array_filter($categories, function($c) { return isset($c['is_active']) && ($c['is_active'] == 1 || $c['is_active'] === true); }));
+        }
         echo json_encode(['status' => 'success', 'categories' => $categories, 'source' => 'file_db']);
         exit;
     }
-}
 
-// Auto-create & migrate categories table
-try {
-    $tableSql = "
-    CREATE TABLE IF NOT EXISTS `categories` (
-      `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      `name` varchar(100) NOT NULL,
-      `slug` varchar(100) NOT NULL UNIQUE,
-      `icon` varchar(100) DEFAULT 'fas fa-utensils',
-      `is_active` tinyint(1) DEFAULT 1,
-      `sort_order` int(11) DEFAULT 0,
-      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ";
-    $pdo->exec($tableSql);
-
-    $count = $pdo->query("SELECT COUNT(*) FROM categories")->fetchColumn();
-    if ($count == 0) {
-        $jsonPath = __DIR__ . '/categories.json';
-        if (file_exists($jsonPath)) {
-            $defaultCategories = json_decode(file_get_contents($jsonPath), true);
-            if (is_array($defaultCategories)) {
-                $stmt = $pdo->prepare("INSERT INTO categories (id, name, slug, icon, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
-                foreach ($defaultCategories as $cat) {
-                    $stmt->execute([
-                        $cat['id'],
-                        $cat['name'],
-                        $cat['slug'],
-                        $cat['icon'] ?? 'fas fa-utensils',
-                        $cat['is_active'] ?? 1,
-                        $cat['sort_order'] ?? $cat['id']
-                    ]);
-                }
-            }
-        }
-    }
-} catch (PDOException $e) {}
-
-if ($action === 'get') {
     $onlyActive = isset($_GET['active_only']) && $_GET['active_only'] == '1';
     $sql = $onlyActive ? "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC, id ASC" : "SELECT * FROM categories ORDER BY sort_order ASC, id ASC";
     $stmt = $pdo->query($sql);
     $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Auto-detect any missing categories used in menu_items table
-    try {
-        $usedCategories = $pdo->query("SELECT DISTINCT LOWER(category) as slug FROM menu_items WHERE category IS NOT NULL AND category != ''")->fetchAll(PDO::FETCH_COLUMN);
-        $existingSlugs = array_map(function($c) { return strtolower($c['slug']); }, $categories);
-
-        $maxSort = count($categories);
-        foreach ($usedCategories as $slug) {
-            if (!in_array($slug, $existingSlugs)) {
-                $maxSort++;
-                $catName = ucfirst($slug);
-                $icon = 'fas fa-utensils';
-                if ($slug === 'pizza') $icon = 'fas fa-pizza-slice';
-                if ($slug === 'wraps') $icon = 'fas fa-hotdog';
-                if ($slug === 'burger') $icon = 'fas fa-burger';
-                if ($slug === 'grills') $icon = 'fas fa-meat';
-
-                // Insert into DB
-                try {
-                    $insertStmt = $pdo->prepare("INSERT INTO categories (name, slug, icon, is_active, sort_order) VALUES (?, ?, ?, 1, ?)");
-                    $insertStmt->execute([$catName, $slug, $icon, $maxSort]);
-                    $newId = $pdo->lastInsertId();
-                    $categories[] = [
-                        'id' => $newId,
-                        'name' => $catName,
-                        'slug' => $slug,
-                        'icon' => $icon,
-                        'is_active' => 1,
-                        'sort_order' => $maxSort
-                    ];
-                } catch(PDOException $ex) {}
-            }
-        }
-    } catch (PDOException $e) {}
 
     echo json_encode(['status' => 'success', 'categories' => $categories]);
     exit;
@@ -113,17 +61,25 @@ if ($action === 'get') {
         exit;
     }
 
-    try {
-        $stmt = $pdo->prepare("INSERT INTO categories (name, slug, icon, is_active, sort_order) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $slug, $icon, $isActive, $sortOrder]);
-        $catId = $pdo->lastInsertId();
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO categories (name, slug, icon, is_active, sort_order) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $slug, $icon, $isActive, $sortOrder]);
+            $catId = $pdo->lastInsertId();
 
-        echo json_encode(['status' => 'success', 'message' => 'Category "' . $name . '" created successfully!', 'category_id' => $catId]);
-    } catch (PDOException $e) {
-        if ($e->getCode() == 23000) {
-            echo json_encode(['status' => 'error', 'message' => 'Category with key "' . $slug . '" already exists.']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+            // Sync categories.json
+            try {
+                $all = $pdo->query("SELECT * FROM categories ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+                @file_put_contents($jsonPath, json_encode($all, JSON_PRETTY_PRINT));
+            } catch(Exception $ex) {}
+
+            echo json_encode(['status' => 'success', 'message' => 'Category "' . $name . '" created successfully!', 'category_id' => $catId]);
+        } catch (PDOException $e) {
+            if ($e->getCode() == 23000) {
+                echo json_encode(['status' => 'error', 'message' => 'Category with key "' . $slug . '" already exists.']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
+            }
         }
     }
     exit;
@@ -140,40 +96,82 @@ if ($action === 'get') {
         exit;
     }
 
-    try {
-        $stmt = $pdo->prepare("UPDATE categories SET name = ?, slug = ?, icon = ?, sort_order = ? WHERE id = ?");
-        $stmt->execute([$name, $slug, $icon, $sortOrder, $id]);
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE categories SET name = ?, slug = ?, icon = ?, sort_order = ? WHERE id = ?");
+            $stmt->execute([$name, $slug, $icon, $sortOrder, $id]);
 
-        echo json_encode(['status' => 'success', 'message' => 'Category updated successfully!']);
-    } catch (PDOException $e) {
-        echo json_encode(['status' => 'error', 'message' => 'Update failed: ' . $e->getMessage()]);
+            // Sync categories.json
+            try {
+                $all = $pdo->query("SELECT * FROM categories ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+                @file_put_contents($jsonPath, json_encode($all, JSON_PRETTY_PRINT));
+            } catch(Exception $ex) {}
+
+            echo json_encode(['status' => 'success', 'message' => 'Category updated successfully!']);
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => 'Update failed: ' . $e->getMessage()]);
+        }
     }
     exit;
 
 } elseif ($action === 'toggle') {
-    $id = isset($data['id']) ? intval($data['id']) : 0;
-    if ($id <= 0) {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid Category ID.']);
-        exit;
+    $id = isset($data['id']) ? intval($data['id']) : (isset($_GET['id']) ? intval($_GET['id']) : (isset($_POST['id']) ? intval($_POST['id']) : 0));
+    $slug = isset($data['slug']) ? trim($data['slug']) : (isset($_GET['slug']) ? trim($_GET['slug']) : '');
+
+    if ($pdo) {
+        if ($id > 0 && !empty($slug)) {
+            $stmt = $pdo->prepare("UPDATE categories SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE id = ? OR slug = ?");
+            $stmt->execute([$id, $slug]);
+        } elseif ($id > 0) {
+            $stmt = $pdo->prepare("UPDATE categories SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE id = ?");
+            $stmt->execute([$id]);
+        } elseif (!empty($slug)) {
+            $stmt = $pdo->prepare("UPDATE categories SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE slug = ?");
+            $stmt->execute([$slug]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Invalid Category ID or Slug.']);
+            exit;
+        }
+
+        // Sync categories.json
+        try {
+            $all = $pdo->query("SELECT * FROM categories ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+            @file_put_contents($jsonPath, json_encode($all, JSON_PRETTY_PRINT));
+        } catch(Exception $ex) {}
+
+        echo json_encode(['status' => 'success', 'message' => 'Category status toggled successfully!']);
     }
-
-    $stmt = $pdo->prepare("UPDATE categories SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE id = ?");
-    $stmt->execute([$id]);
-
-    echo json_encode(['status' => 'success', 'message' => 'Category status toggled successfully!']);
     exit;
 
 } elseif ($action === 'delete') {
-    $id = isset($data['id']) ? intval($data['id']) : 0;
-    if ($id <= 0) {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid Category ID.']);
+    $id = isset($data['id']) ? intval($data['id']) : (isset($_GET['id']) ? intval($_GET['id']) : (isset($_POST['id']) ? intval($_POST['id']) : 0));
+    $slug = isset($data['slug']) ? trim($data['slug']) : (isset($_GET['slug']) ? trim($_GET['slug']) : '');
+
+    if ($id <= 0 && empty($slug)) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid Category ID or Slug.']);
         exit;
     }
 
-    $stmt = $pdo->prepare("DELETE FROM categories WHERE id = ?");
-    $stmt->execute([$id]);
+    if ($pdo) {
+        if ($id > 0 && !empty($slug)) {
+            $stmt = $pdo->prepare("DELETE FROM categories WHERE id = ? OR slug = ?");
+            $stmt->execute([$id, $slug]);
+        } elseif ($id > 0) {
+            $stmt = $pdo->prepare("DELETE FROM categories WHERE id = ?");
+            $stmt->execute([$id]);
+        } elseif (!empty($slug)) {
+            $stmt = $pdo->prepare("DELETE FROM categories WHERE slug = ?");
+            $stmt->execute([$slug]);
+        }
 
-    echo json_encode(['status' => 'success', 'message' => 'Category deleted successfully!']);
+        // Sync categories.json
+        try {
+            $all = $pdo->query("SELECT * FROM categories ORDER BY sort_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+            @file_put_contents($jsonPath, json_encode($all, JSON_PRETTY_PRINT));
+        } catch(Exception $ex) {}
+
+        echo json_encode(['status' => 'success', 'message' => 'Category deleted successfully!']);
+    }
     exit;
 }
 ?>

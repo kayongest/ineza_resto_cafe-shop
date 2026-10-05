@@ -3,9 +3,9 @@
    ============================================================ */
 
 :root {
-  --primary: #AA7262;
+  --primary: #b43d15;
   --secondary: #355c6e;
-  --dark: #442406;
+  --dark: #334756;
   --slate: #444654;
   --green: #2d6a4f;
   --cream: #FDF8F5;
@@ -214,7 +214,7 @@ img {
 }
 
 #topbar span {
-  color: #aaa;
+  color: #fffdfd;
   margin-right: 16px;
 }
 

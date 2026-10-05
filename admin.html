@@ -532,13 +532,16 @@
                </div>
             </div>
 
-            <!-- MENU FILTERS & SEARCH ROW -->
+            <!-- MENU TYPE TOGGLE (BREAKFAST vs LUNCH) & FILTERS ROW -->
             <div class="admin-card mb-4 p-3 bg-light border">
-               <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                  <!-- Dynamic Category Filter Pills -->
-                  <div class="d-flex align-items-center gap-1 flex-wrap" id="adminMenuCategoryPills">
-                     <button class="filter-pill active" data-cat="all"
-                        onclick="setAdminMenuCategoryFilter('all', this)">All Categories</button>
+               <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3 pb-3 border-bottom">
+                  <div class="d-flex align-items-center gap-2">
+                     <span class="text-muted small fw-bold text-uppercase"><i class="fas fa-utensils me-1"></i>Menu Type:</span>
+                     <div class="btn-group btn-group-sm" role="group" id="adminMenuTypeTabs">
+                        <button type="button" class="btn btn-primary active" data-type="all" onclick="setAdminMenuTypeFilter('all', this)">All Menus</button>
+                        <button type="button" class="btn btn-outline-primary" data-type="breakfast" onclick="setAdminMenuTypeFilter('breakfast', this)"><i class="fas fa-egg me-1"></i>Breakfast Menu</button>
+                        <button type="button" class="btn btn-outline-primary" data-type="lunch" onclick="setAdminMenuTypeFilter('lunch', this)"><i class="fas fa-hamburger me-1"></i>Lunch Menu</button>
+                     </div>
                   </div>
 
                   <!-- Dish Search Input -->
@@ -548,6 +551,12 @@
                         placeholder="Search dish title, tags..." onkeyup="onAdminMenuSearchChange()"
                         autocomplete="off" />
                   </div>
+               </div>
+
+               <!-- Dynamic Category Filter Pills -->
+               <div class="d-flex align-items-center gap-1 flex-wrap" id="adminMenuCategoryPills">
+                  <button class="filter-pill active" data-cat="all"
+                     onclick="setAdminMenuCategoryFilter('all', this)">All Categories</button>
                </div>
             </div>
 
@@ -1216,12 +1225,20 @@
             </div>
 
             <div class="row g-2">
-               <div class="col-md-6 auth-input-group">
+               <div class="col-md-4 auth-input-group">
+                  <label for="menuType"><i class="fas fa-clock me-1" style="color:var(--primary);"></i>Menu Type *</label>
+                  <select id="menuType" class="form-select" required>
+                     <option value="lunch">🍽️ Lunch Menu</option>
+                     <option value="breakfast">🍳 Breakfast Menu</option>
+                     <option value="all_day">🕒 All Day</option>
+                  </select>
+               </div>
+               <div class="col-md-4 auth-input-group">
                   <label for="menuCategory">Category *</label>
                   <select id="menuCategory" class="form-select" required>
                   </select>
                </div>
-               <div class="col-md-6 auth-input-group">
+               <div class="col-md-4 auth-input-group">
                   <label for="menuPrice">Price (RWF) *</label>
                   <input type="number" step="100" id="menuPrice" class="form-control" placeholder="5500" required />
                </div>
@@ -1737,7 +1754,7 @@
    <!-- Scripts -->
    <script src="js/jquery-3.7.1.min.js"></script>
    <script src="js/bootstrap.bundle.min.js"></script>
-   <script src="js/admin.js?v=6.2"></script>
+   <script src="js/admin.js?v=9.0"></script>
 </body>
 
 </html>

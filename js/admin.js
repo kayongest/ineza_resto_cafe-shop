@@ -510,6 +510,7 @@ function initSidebarTabs() {
             } else if (tabId === 'orders') {
                 if (typeof renderFullOrdersDispatchBoard === 'function') renderFullOrdersDispatchBoard();
             } else if (tabId === 'menu') {
+                if (typeof renderAdminMenuCategoryPills === 'function') renderAdminMenuCategoryPills();
                 if (typeof renderAdminMenuGrid === 'function') renderAdminMenuGrid();
             } else if (tabId === 'categories') {
                 if (typeof renderAdminCategoriesTable === 'function') renderAdminCategoriesTable();
@@ -1682,6 +1683,7 @@ var adminMenuItems = [];
 var adminMenuCurrentPage = 1;
 var adminMenuPerPage = 10;
 var adminMenuCategoryFilter = 'all';
+var adminMenuTypeFilter = 'all';
 
 async function loadAdminMenu() {
     adminMenuItems = [];
@@ -1727,52 +1729,70 @@ async function loadAdminMenu() {
     renderAdminMenu();
 }
 
+function setAdminMenuTypeFilter(type, btn) {
+    adminMenuTypeFilter = (type || 'all').toLowerCase();
+    adminMenuCurrentPage = 1;
+
+    var container = document.getElementById('adminMenuTypeTabs');
+    if (container) {
+        container.querySelectorAll('button').forEach(function(b) {
+            b.classList.remove('active');
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-outline-primary');
+        });
+    }
+    if (btn) {
+        btn.classList.add('active');
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-primary');
+    }
+
+    renderAdminMenuCategoryPills();
+    renderAdminMenu();
+}
+window.setAdminMenuTypeFilter = setAdminMenuTypeFilter;
+
 function renderAdminMenuCategoryPills() {
     var container = document.getElementById('adminMenuCategoryPills');
     if (!container) return;
 
-    var catMap = {};
-    var defaultCats = [
-        { name: 'Coffee', slug: 'coffee' },
-        { name: 'Tea', slug: 'tea' },
-        { name: 'Smoothies', slug: 'smoothies' },
-        { name: 'Shakes', slug: 'shakes' },
-        { name: 'Juices', slug: 'juices' },
-        { name: 'Mains', slug: 'mains' },
-        { name: 'Burger', slug: 'burger' },
-        { name: 'Grills', slug: 'grills' },
-        { name: 'Pizza', slug: 'pizza' },
-        { name: 'Wraps', slug: 'wraps' },
-        { name: 'Salads', slug: 'salads' },
-        { name: 'Sides', slug: 'sides' }
-    ];
+    var list = (typeof adminCategories !== 'undefined' && Array.isArray(adminCategories)) ? adminCategories : [];
 
-    var list = (typeof adminCategories !== 'undefined' && Array.isArray(adminCategories) && adminCategories.length > 0) ? adminCategories : defaultCats;
+    var totalInType = adminMenuItems.filter(function(m) {
+        if (adminMenuTypeFilter === 'all') return true;
+        var mt = (m.menu_type || 'lunch').toLowerCase();
+        return mt === adminMenuTypeFilter || mt === 'all_day';
+    }).length;
 
-    list.forEach(function(c) {
-        if (c && c.slug) {
-            catMap[c.slug.toLowerCase()] = c.name || (c.slug.charAt(0).toUpperCase() + c.slug.slice(1));
-        }
-    });
+    var html = `<button class="filter-pill ${adminMenuCategoryFilter === 'all' ? 'active' : ''}" data-cat="all" onclick="setAdminMenuCategoryFilter('all', this)">All Categories (${totalInType})</button>`;
 
-    adminMenuItems.forEach(function(m) {
-        if (m && m.category) {
-            var slug = m.category.toString().toLowerCase().trim();
-            if (slug && !catMap[slug]) {
-                catMap[slug] = slug.charAt(0).toUpperCase() + slug.slice(1);
-            }
-        }
-    });
+    var recognizedSlugs = [];
 
-    var html = `<button class="filter-pill ${adminMenuCategoryFilter === 'all' ? 'active' : ''}" data-cat="all" onclick="setAdminMenuCategoryFilter('all', this)">All Categories (${adminMenuItems.length})</button>`;
-
-    Object.keys(catMap).forEach(function(slug) {
-        var name = catMap[slug];
+    list.forEach(function(cat) {
+        if (!cat || !cat.slug) return;
+        var slug = cat.slug.toLowerCase().trim();
+        recognizedSlugs.push(slug);
+        var name = cat.name || cat.slug;
         var count = adminMenuItems.filter(function(m) {
-            return m.category && m.category.toString().toLowerCase().trim() === slug;
+            var matchType = (adminMenuTypeFilter === 'all') || ((m.menu_type || 'lunch').toLowerCase() === adminMenuTypeFilter) || ((m.menu_type || 'lunch').toLowerCase() === 'all_day');
+            return matchType && m.category && m.category.toString().toLowerCase().trim() === slug;
         }).length;
-        html += `<button class="filter-pill ${adminMenuCategoryFilter === slug ? 'active' : ''}" data-cat="${slug}" onclick="setAdminMenuCategoryFilter('${slug}', this)">${name} (${count})</button>`;
+
+        var isActive = (adminMenuCategoryFilter === slug) ? 'active' : '';
+        html += `<button class="filter-pill ${isActive}" data-cat="${slug}" onclick="setAdminMenuCategoryFilter('${slug}', this)">${name} (${count})</button>`;
     });
+
+    // Check for any dishes whose category does not exist in Category Management
+    var otherCount = adminMenuItems.filter(function(m) {
+        var matchType = (adminMenuTypeFilter === 'all') || ((m.menu_type || 'lunch').toLowerCase() === adminMenuTypeFilter) || ((m.menu_type || 'lunch').toLowerCase() === 'all_day');
+        var s = (m.category || '').toString().toLowerCase().trim();
+        return matchType && !recognizedSlugs.includes(s);
+    }).length;
+
+    if (otherCount > 0) {
+        var isOtherActive = (adminMenuCategoryFilter === 'other') ? 'active' : '';
+        html += `<button class="filter-pill ${isOtherActive}" data-cat="other" onclick="setAdminMenuCategoryFilter('other', this)">Unassigned / Other (${otherCount})</button>`;
+    }
 
     container.innerHTML = html;
 }
@@ -1811,18 +1831,33 @@ function renderAdminMenu() {
 
     var filtered = adminMenuItems.filter(function(item) {
         if (!item) return false;
-        var itemCat = (item.category || '').toString().toLowerCase();
+        var itemCat = (item.category || '').toString().toLowerCase().trim();
         var itemTitle = (item.title || item.name || '').toString().toLowerCase();
         var itemTags = (item.tags || '').toString().toLowerCase();
 
-        var matchCategory = (adminMenuCategoryFilter === 'all') || (itemCat === adminMenuCategoryFilter);
+        var matchCategory = true;
+        if (adminMenuCategoryFilter !== 'all') {
+            if (adminMenuCategoryFilter === 'other') {
+                var recognizedSlugs = adminCategories.map(function(c) { return (c.slug || '').toLowerCase().trim(); });
+                matchCategory = !recognizedSlugs.includes(itemCat);
+            } else {
+                matchCategory = (itemCat === adminMenuCategoryFilter);
+            }
+        }
+
+        var matchMenuType = true;
+        if (adminMenuTypeFilter !== 'all') {
+            var mType = (item.menu_type || 'lunch').toLowerCase();
+            matchMenuType = (mType === adminMenuTypeFilter || mType === 'all_day');
+        }
+
         var matchSearch = !filterText || (itemTitle.includes(filterText) || itemTags.includes(filterText) || itemCat.includes(filterText));
 
-        return matchCategory && matchSearch;
+        return matchCategory && matchMenuType && matchSearch;
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fas fa-hamburger fa-3x mb-3 opacity-50"></i><h5>No menu items found</h5><p class="small">Try selecting another category or searching for another term.</p></div>';
+        grid.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fas fa-hamburger fa-3x mb-3 opacity-50"></i><h5>No menu items found</h5><p class="small">Try selecting another category or menu type.</p></div>';
         if (infoEl) infoEl.textContent = 'Showing 0 items';
         if (navEl) navEl.innerHTML = '';
         return;
@@ -1848,12 +1883,23 @@ function renderAdminMenu() {
         var itemCategory = (item.category || 'mains').toString().toLowerCase();
         var isAvailable = parseInt(item.is_available) === 1 || item.is_available === true;
 
+        var mType = (item.menu_type || 'lunch').toLowerCase();
+        var menuTypeBadge = '';
+        if (mType === 'breakfast') {
+            menuTypeBadge = '<span class="badge bg-warning text-dark position-absolute" style="top:10px;right:10px;font-size:0.75rem;"><i class="fas fa-egg me-1"></i>Breakfast</span>';
+        } else if (mType === 'lunch') {
+            menuTypeBadge = '<span class="badge bg-primary position-absolute" style="top:10px;right:10px;font-size:0.75rem;"><i class="fas fa-hamburger me-1"></i>Lunch</span>';
+        } else {
+            menuTypeBadge = '<span class="badge bg-secondary position-absolute" style="top:10px;right:10px;font-size:0.75rem;"><i class="fas fa-clock me-1"></i>All Day</span>';
+        }
+
         html += `
             <div class="col-md-6 col-lg-4">
                 <div class="admin-card h-100 mb-0 d-flex flex-column shadow-sm">
                     <div class="position-relative mb-3">
                         <img src="${itemImage}" class="w-100 rounded-3" style="height:170px;object-fit:cover;" alt="${itemTitle}" onerror="this.onerror=null; this.src='img/menu/1.jpg';" />
                         <span class="badge bg-dark position-absolute top-2 start-2 text-capitalize" style="top:10px;left:10px;font-size:0.75rem;">${itemCategory}</span>
+                        ${menuTypeBadge}
                     </div>
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <h5 class="mb-0" style="font-size:1.05rem;">${itemTitle}</h5>
@@ -1916,10 +1962,14 @@ function previewMenuImage(input) {
 }
 
 function openAddMenuModal() {
+    populateCategoryDropdowns();
     var form = document.getElementById('menuItemForm');
     if (form) form.reset();
     document.getElementById('menuItemId').value = '';
     document.getElementById('menuImage').value = 'img/menu/1.jpg';
+    if (document.getElementById('menuType')) {
+        document.getElementById('menuType').value = (adminMenuTypeFilter !== 'all') ? adminMenuTypeFilter : 'lunch';
+    }
     if (document.getElementById('menuCalories')) document.getElementById('menuCalories').value = 400;
     if (document.getElementById('menuRating')) document.getElementById('menuRating').value = '5.0';
     if (document.getElementById('menuReviews')) document.getElementById('menuReviews').value = 12;
@@ -1939,9 +1989,14 @@ function openEditMenuModal(id) {
     var item = adminMenuItems.find(function(i) { return parseInt(i.id) === parseInt(id); });
     if (!item) return;
 
+    populateCategoryDropdowns(item.category);
+
     document.getElementById('menuItemId').value = item.id;
     document.getElementById('menuTitle').value = item.title;
     document.getElementById('menuCategory').value = item.category;
+    if (document.getElementById('menuType')) {
+        document.getElementById('menuType').value = item.menu_type || 'lunch';
+    }
     document.getElementById('menuPrice').value = item.price;
     document.getElementById('menuOldPrice').value = item.old_price || '';
     document.getElementById('menuPrepTime').value = item.prep_time || 15;
@@ -1982,6 +2037,7 @@ async function saveMenuItem(e) {
     var id = document.getElementById('menuItemId').value;
     var title = document.getElementById('menuTitle').value.trim();
     var category = document.getElementById('menuCategory').value;
+    var menuType = document.getElementById('menuType') ? document.getElementById('menuType').value : 'lunch';
     var price = parseFloat(document.getElementById('menuPrice').value);
     var oldPrice = document.getElementById('menuOldPrice').value ? parseFloat(document.getElementById('menuOldPrice').value) : null;
     var prepTime = parseInt(document.getElementById('menuPrepTime').value) || 15;
@@ -2028,6 +2084,7 @@ async function saveMenuItem(e) {
         id: id,
         title: title,
         category: category,
+        menu_type: menuType,
         price: price,
         old_price: oldPrice,
         prep_time: prepTime,
@@ -2045,6 +2102,7 @@ async function saveMenuItem(e) {
         if (existing) {
             existing.title = title;
             existing.category = category;
+            existing.menu_type = menuType;
             existing.price = price;
             existing.old_price = oldPrice;
             existing.prep_time = prepTime;
@@ -2060,6 +2118,7 @@ async function saveMenuItem(e) {
             id: Date.now(),
             title: title,
             category: category,
+            menu_type: menuType,
             price: price,
             old_price: oldPrice,
             prep_time: prepTime,
@@ -2774,52 +2833,51 @@ window.confirmGrantPointsSubmit = confirmGrantPointsSubmit;
    ============================================================ */
 var adminCategories = [];
 
+var _syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('favcafe_sync') : null;
+
 async function loadAdminCategories() {
     try {
-        var res = await fetch('api/categories.php?action=get');
+        var res = await fetch('api/categories.php?action=get&t=' + Date.now());
         if (res.ok) {
             var data = await res.json();
             if (data && data.status === 'success' && Array.isArray(data.categories)) {
                 adminCategories = data.categories;
+                saveCategoriesToStorageLocally();
+                renderAdminCategoriesTable();
+                populateCategoryDropdowns();
+                renderAdminMenuCategoryPills();
+                return;
             }
         }
     } catch (e) {}
 
-    if (adminCategories.length === 0) {
-        try {
-            var stored = localStorage.getItem('favcafe_categories');
-            if (stored) {
-                adminCategories = JSON.parse(stored);
-            }
-        } catch (e) {}
-    }
-
-    if (!adminCategories || adminCategories.length === 0) {
-        adminCategories = [
-            { id: 1, name: 'Coffee', slug: 'coffee', icon: 'fas fa-coffee', is_active: 1, sort_order: 1 },
-            { id: 2, name: 'Tea', slug: 'tea', icon: 'fas fa-mug-hot', is_active: 1, sort_order: 2 },
-            { id: 3, name: 'Smoothies', slug: 'smoothies', icon: 'fas fa-blender', is_active: 1, sort_order: 3 },
-            { id: 4, name: 'Shakes', slug: 'shakes', icon: 'fas fa-glass-martini-alt', is_active: 1, sort_order: 4 },
-            { id: 5, name: 'Juices', slug: 'juices', icon: 'fas fa-cocktail', is_active: 1, sort_order: 5 },
-            { id: 6, name: 'Mains', slug: 'mains', icon: 'fas fa-utensils', is_active: 1, sort_order: 6 },
-            { id: 7, name: 'Burger', slug: 'burger', icon: 'fas fa-hamburger', is_active: 1, sort_order: 7 },
-            { id: 8, name: 'Grills', slug: 'grills', icon: 'fas fa-drumstick-bite', is_active: 1, sort_order: 8 },
-            { id: 9, name: 'Pizza', slug: 'pizza', icon: 'fas fa-pizza-slice', is_active: 1, sort_order: 9 },
-            { id: 10, name: 'Wraps', slug: 'wraps', icon: 'fas fa-hotdog', is_active: 1, sort_order: 10 },
-            { id: 11, name: 'Salads', slug: 'salads', icon: 'fas fa-leaf', is_active: 1, sort_order: 11 },
-            { id: 12, name: 'Sides', slug: 'sides', icon: 'fas fa-bread-slice', is_active: 1, sort_order: 12 }
-        ];
-        saveCategoriesToStorage();
-    }
+    try {
+        var stored = localStorage.getItem('favcafe_categories');
+        if (stored) {
+            adminCategories = JSON.parse(stored);
+        }
+    } catch (e) {}
 
     renderAdminCategoriesTable();
     populateCategoryDropdowns();
+    renderAdminMenuCategoryPills();
+}
+
+function saveCategoriesToStorageLocally() {
+    try {
+        localStorage.setItem('favcafe_categories', JSON.stringify(adminCategories));
+        localStorage.setItem('favcafe_categories_sync_ts', Date.now().toString());
+    } catch (e) {}
 }
 
 function saveCategoriesToStorage() {
-    try {
-        localStorage.setItem('favcafe_categories', JSON.stringify(adminCategories));
-    } catch (e) {}
+    saveCategoriesToStorageLocally();
+
+    if (_syncChannel) {
+        try {
+            _syncChannel.postMessage({ type: 'CATEGORIES_UPDATED', timestamp: Date.now() });
+        } catch (e) {}
+    }
 }
 
 function renderAdminCategoriesTable() {
@@ -2957,82 +3015,81 @@ async function saveCategorySubmit(e) {
         var data = await res.json();
         if (data && data.status === 'success') {
             showToast(data.message, 'success');
+        } else if (data && data.message) {
+            showToast(data.message, 'warning');
         }
     } catch (err) {}
 
-    // Update local memory & storage fallback
-    if (id) {
-        var cat = adminCategories.find(function(c) { return parseInt(c.id) === parseInt(id); });
-        if (cat) {
-            cat.name = name;
-            cat.slug = slug;
-            cat.icon = icon;
-            cat.sort_order = sortOrder;
-        }
-    } else {
-        var newId = Date.now();
-        adminCategories.push({ id: newId, name: name, slug: slug, icon: icon, is_active: 1, sort_order: sortOrder });
-    }
-
-    saveCategoriesToStorage();
     closeCategoryModal();
-    renderAdminCategoriesTable();
-    populateCategoryDropdowns();
+    // Authoritatively re-load categories from MySQL database
+    await loadAdminCategories();
+    saveCategoriesToStorage();
 }
 
 async function toggleCategoryStatus(catId) {
-    var cat = adminCategories.find(function(c) { return parseInt(c.id) === parseInt(catId); });
+    var cat = adminCategories.find(function(c) { return String(c.id) === String(catId) || c.slug === String(catId); });
     if (!cat) return;
 
-    cat.is_active = (parseInt(cat.is_active) === 1 || cat.is_active === true) ? 0 : 1;
-    saveCategoriesToStorage();
+    var newStatus = (parseInt(cat.is_active) === 1 || cat.is_active === true) ? 0 : 1;
+    cat.is_active = newStatus;
     renderAdminCategoriesTable();
+    renderAdminMenuCategoryPills();
 
     try {
         await fetch('api/categories.php?action=toggle', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: catId })
+            body: JSON.stringify({ id: cat.id, slug: cat.slug })
         });
     } catch (e) {}
 
-    showToast('Category "' + cat.name + '" ' + (cat.is_active ? 'enabled' : 'disabled') + '!', 'info');
+    await loadAdminCategories();
+    saveCategoriesToStorage();
+    showToast('Category "' + cat.name + '" ' + (newStatus ? 'enabled' : 'disabled') + '!', 'info');
 }
 
 async function deleteCategory(catId) {
-    var cat = adminCategories.find(function(c) { return parseInt(c.id) === parseInt(catId); });
+    var cat = adminCategories.find(function(c) { return String(c.id) === String(catId) || c.slug === String(catId); });
     if (!cat) return;
 
     if (!confirm('Are you sure you want to delete category "' + cat.name + '"?')) return;
 
-    adminCategories = adminCategories.filter(function(c) { return parseInt(c.id) !== parseInt(catId); });
-    saveCategoriesToStorage();
+    adminCategories = adminCategories.filter(function(c) { return String(c.id) !== String(cat.id) && c.slug !== cat.slug; });
     renderAdminCategoriesTable();
     populateCategoryDropdowns();
+    renderAdminMenuCategoryPills();
 
     try {
         await fetch('api/categories.php?action=delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: catId })
+            body: JSON.stringify({ id: cat.id, slug: cat.slug })
         });
     } catch (e) {}
 
+    await loadAdminCategories();
+    saveCategoriesToStorage();
     showToast('Category deleted successfully.', 'success');
 }
 
-function populateCategoryDropdowns() {
+function populateCategoryDropdowns(selectedVal) {
     var select = document.getElementById('menuCategory');
     if (!select) return;
 
-    var currentVal = select.value;
+    var currentVal = selectedVal !== undefined ? selectedVal : select.value;
     var html = '';
-    adminCategories.forEach(function(cat) {
-        html += `<option value="${cat.slug}">${cat.name}</option>`;
+    var list = (typeof adminCategories !== 'undefined' && Array.isArray(adminCategories)) ? adminCategories : [];
+
+    list.forEach(function(cat) {
+        var isSel = (currentVal && currentVal.toString().toLowerCase() === cat.slug.toLowerCase()) ? 'selected' : '';
+        html += `<option value="${cat.slug}" ${isSel}>${cat.name}</option>`;
     });
 
+    if (currentVal && !list.some(function(c) { return c.slug.toLowerCase() === currentVal.toString().toLowerCase(); })) {
+        html += `<option value="${currentVal}" selected>${currentVal} (Unassigned/Old)</option>`;
+    }
+
     select.innerHTML = html;
-    if (currentVal) select.value = currentVal;
 }
 
 window.loadAdminCategories = loadAdminCategories;
@@ -3230,48 +3287,87 @@ window.uploadCsvMenu = uploadCsvMenu;
    ============================================================ */
 var adminPromos = [];
 
-function loadAdminPromos() {
+async function loadAdminPromos() {
+    try {
+        var res = await fetch('api/promos.php?action=get');
+        if (res.ok) {
+            var data = await res.json();
+            if (data && data.status === 'success' && Array.isArray(data.promos) && data.promos.length > 0) {
+                adminPromos = data.promos;
+                saveAdminPromosLocally();
+                return;
+            }
+        }
+    } catch (e) {}
+
     var stored = localStorage.getItem('favcafe_promos');
     if (stored) {
-        adminPromos = JSON.parse(stored);
+        try {
+            adminPromos = JSON.parse(stored);
+        } catch (e) {}
     } else {
         adminPromos = [
-            { id: 1, title: "Order Salmon Steak Today", subtitle: "And Save Up To", discount: "35%", img: "img/menu/6.jpg" },
-            { id: 2, title: "Fresh Salads", subtitle: "Healthy & Green", discount: "20%", img: "img/menu/1.jpg" },
-            { id: 3, title: "Coffee & Pastries", subtitle: "Morning Special", discount: "15%", img: "img/menu/4.jpg" }
+            { id: 1, title: "Order Salmon Steak Today", subtitle: "And Save Up To", discount: "35%", img: "img/menu/6.jpg", is_active: 1, sort_order: 1 },
+            { id: 2, title: "Fresh Salads", subtitle: "Healthy & Green", discount: "20%", img: "img/menu/1.jpg", is_active: 1, sort_order: 2 },
+            { id: 3, title: "Coffee & Pastries", subtitle: "Morning Special", discount: "15%", img: "img/menu/4.jpg", is_active: 1, sort_order: 3 }
         ];
         saveAdminPromos();
     }
 }
 
-function saveAdminPromos() {
-    localStorage.setItem('favcafe_promos', JSON.stringify(adminPromos));
+function saveAdminPromosLocally() {
+    try {
+        localStorage.setItem('favcafe_promos', JSON.stringify(adminPromos));
+        localStorage.setItem('favcafe_promos_sync_ts', Date.now().toString());
+    } catch (e) {}
 }
 
-function renderAdminPromosGrid() {
-    loadAdminPromos();
+function saveAdminPromos() {
+    saveAdminPromosLocally();
+
+    if (!_syncChannel && ('BroadcastChannel' in window)) {
+        try { _syncChannel = new BroadcastChannel('favcafe_sync'); } catch(e) {}
+    }
+    if (_syncChannel) {
+        try {
+            _syncChannel.postMessage({ type: 'PROMOS_UPDATED', timestamp: Date.now() });
+        } catch (e) {}
+    }
+}
+
+async function renderAdminPromosGrid() {
+    await loadAdminPromos();
     var grid = document.getElementById('adminPromosGrid');
     if (!grid) return;
     grid.innerHTML = '';
     
     if (adminPromos.length === 0) {
-        grid.innerHTML = '<div class="col-12 text-center text-muted py-5">No promos found. Add one above.</div>';
+        grid.innerHTML = '<div class="col-12 text-center text-muted py-5">No promos found. Click "Add New Promo" above.</div>';
         return;
     }
     
     adminPromos.forEach(function(p) {
         var card = document.createElement('div');
         card.className = 'col-md-6 col-lg-4';
+        var isActive = p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true;
+        var statusBadge = isActive ? '<span class="badge bg-success" style="position:absolute; top:10px; left:10px; z-index:2;"><i class="fas fa-check-circle me-1"></i>Active</span>' : '<span class="badge bg-danger" style="position:absolute; top:10px; left:10px; z-index:2;"><i class="fas fa-eye-slash me-1"></i>Disabled</span>';
+        var cardOpacity = isActive ? '1' : '0.65';
+
         card.innerHTML = `
-            <div class="admin-card border h-100 d-flex flex-column" style="overflow:hidden;">
-                <div style="height:150px; background:url('${p.img}') center/cover; position:relative;">
-                    <div style="position:absolute; top:10px; right:10px; background:var(--primary); color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${p.discount}</div>
+            <div class="admin-card border h-100 d-flex flex-column shadow-sm" style="overflow:hidden; opacity:${cardOpacity}; transition:opacity 0.2s;">
+                <div style="height:160px; background:linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.4)), url('${p.img || 'img/promo/promoBanner.png'}') center/cover; position:relative;">
+                    ${statusBadge}
+                    <div style="position:absolute; top:10px; right:10px; background:var(--primary); color:white; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:0.85rem; box-shadow:0 2px 6px rgba(0,0,0,0.2);">${p.discount}</div>
                 </div>
                 <div class="p-3 flex-grow-1">
-                    <div class="text-muted small">${p.subtitle}</div>
-                    <h5 class="mb-3">${p.title}</h5>
+                    <div class="text-muted small text-uppercase fw-semibold mb-1">${p.subtitle}</div>
+                    <h5 class="mb-2 fw-bold text-dark">${p.title}</h5>
+                    <div class="text-muted small"><i class="fas fa-image me-1"></i>${p.img}</div>
                 </div>
                 <div class="p-3 border-top d-flex justify-content-end gap-2 bg-light">
+                    <button class="btn btn-sm ${isActive ? 'btn-outline-warning' : 'btn-outline-success'}" onclick="togglePromoStatus(${p.id})" title="${isActive ? 'Disable promo banner' : 'Enable promo banner'}">
+                        <i class="fas ${isActive ? 'fa-eye-slash' : 'fa-eye'}"></i> ${isActive ? 'Disable' : 'Enable'}
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary" onclick="editPromo(${p.id})"><i class="fas fa-edit"></i> Edit</button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deletePromo(${p.id})"><i class="fas fa-trash"></i> Delete</button>
                 </div>
@@ -3281,14 +3377,37 @@ function renderAdminPromosGrid() {
     });
 }
 
+async function togglePromoStatus(id) {
+    var p = adminPromos.find(x => parseInt(x.id) === parseInt(id));
+    if (!p) return;
+
+    p.is_active = (p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true) ? 0 : 1;
+    saveAdminPromos();
+    renderAdminPromosGrid();
+
+    try {
+        await fetch('api/promos.php?action=toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        });
+    } catch (e) {}
+
+    showToast('Promo "' + p.title + '" ' + (p.is_active ? 'enabled' : 'disabled') + '!', 'info');
+}
+
 function openPromoModal() {
-    document.getElementById('promoForm').reset();
-    document.getElementById('promoId').value = '';
-    document.getElementById('promoModalTitle').innerHTML = '<i class="fas fa-bullhorn me-2" style="color:var(--primary);"></i>Add New Promo';
+    var form = document.getElementById('promoForm');
+    if (form) form.reset();
+    var idInput = document.getElementById('promoId');
+    if (idInput) idInput.value = '';
+    var titleEl = document.getElementById('promoModalTitle');
+    if (titleEl) titleEl.innerHTML = '<i class="fas fa-bullhorn me-2" style="color:var(--primary);"></i>Add New Promo';
     
     var modal = document.getElementById('promoModal');
     if (modal) {
         modal.classList.add('open');
+        modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
 }
@@ -3297,40 +3416,50 @@ function closePromoModal() {
     var modal = document.getElementById('promoModal');
     if (modal) {
         modal.classList.remove('open');
+        modal.style.display = 'none';
         document.body.style.overflow = '';
     }
 }
 
 function editPromo(id) {
-    loadAdminPromos();
-    var p = adminPromos.find(x => x.id === id);
+    var p = adminPromos.find(x => parseInt(x.id) === parseInt(id));
     if (!p) return;
     
     document.getElementById('promoId').value = p.id;
-    document.getElementById('promoTitle').value = p.title;
-    document.getElementById('promoSubtitle').value = p.subtitle;
-    document.getElementById('promoDiscount').value = p.discount;
-    document.getElementById('promoImg').value = p.img;
+    document.getElementById('promoTitle').value = p.title || '';
+    document.getElementById('promoSubtitle').value = p.subtitle || '';
+    document.getElementById('promoDiscount').value = p.discount || '';
+    document.getElementById('promoImg').value = p.img || '';
     
     document.getElementById('promoModalTitle').innerHTML = '<i class="fas fa-bullhorn me-2" style="color:var(--primary);"></i>Edit Promo';
     
     var modal = document.getElementById('promoModal');
     if (modal) {
         modal.classList.add('open');
+        modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
 }
 
-function deletePromo(id) {
-    if (confirm("Are you sure you want to delete this promo?")) {
-        adminPromos = adminPromos.filter(x => x.id !== id);
+async function deletePromo(id) {
+    if (confirm("Are you sure you want to delete this promo banner?")) {
+        adminPromos = adminPromos.filter(x => parseInt(x.id) !== parseInt(id));
         saveAdminPromos();
         renderAdminPromosGrid();
+
+        try {
+            await fetch('api/promos.php?action=delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+        } catch (e) {}
+
         showToast("Promo deleted successfully.", "success");
     }
 }
 
-function savePromoItem(event) {
+async function savePromoItem(event) {
     event.preventDefault();
     var id = document.getElementById('promoId').value;
     var title = document.getElementById('promoTitle').value;
@@ -3338,15 +3467,40 @@ function savePromoItem(event) {
     var discount = document.getElementById('promoDiscount').value;
     var img = document.getElementById('promoImg').value;
     
+    var promoData = {
+        id: id ? parseInt(id) : 0,
+        title: title,
+        subtitle: subtitle,
+        discount: discount,
+        img: img,
+        is_active: 1
+    };
+
+    try {
+        var res = await fetch('api/promos.php?action=save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(promoData)
+        });
+        if (res.ok) {
+            var data = await res.json();
+            if (data && data.id && !id) {
+                promoData.id = data.id;
+            }
+        }
+    } catch (e) {}
+
     if (id) {
-        var idx = adminPromos.findIndex(x => x.id === parseInt(id));
+        var idx = adminPromos.findIndex(x => parseInt(x.id) === parseInt(id));
         if (idx > -1) {
-            adminPromos[idx] = { id: parseInt(id), title: title, subtitle: subtitle, discount: discount, img: img };
+            adminPromos[idx] = Object.assign({}, adminPromos[idx], promoData);
             showToast("Promo updated successfully.", "success");
         }
     } else {
-        var newId = adminPromos.length > 0 ? Math.max(...adminPromos.map(x => x.id)) + 1 : 1;
-        adminPromos.push({ id: newId, title: title, subtitle: subtitle, discount: discount, img: img });
+        if (!promoData.id) {
+            promoData.id = adminPromos.length > 0 ? Math.max(...adminPromos.map(x => parseInt(x.id) || 0)) + 1 : 1;
+        }
+        adminPromos.push(promoData);
         showToast("Promo added successfully.", "success");
     }
     
@@ -3354,8 +3508,12 @@ function savePromoItem(event) {
     closePromoModal();
     renderAdminPromosGrid();
 }
+
+window.loadAdminPromos = loadAdminPromos;
+window.renderAdminPromosGrid = renderAdminPromosGrid;
 window.openPromoModal = openPromoModal;
 window.closePromoModal = closePromoModal;
 window.editPromo = editPromo;
 window.deletePromo = deletePromo;
+window.togglePromoStatus = togglePromoStatus;
 window.savePromoItem = savePromoItem;

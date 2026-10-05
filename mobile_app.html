@@ -62,11 +62,9 @@
                 <!-- Dynamic from JS -->
             </div>
 
-            <!-- Coral Promo Banner -->
-            <div class="promo-coral-card">
-                <div class="promo-tag">Happy Weekend</div>
-                <div class="promo-title-discount">60% OFF</div>
-                <div class="promo-note">*for All Menus</div>
+            <!-- Dynamic Promo Banner Container -->
+            <div id="homePromoBannerContainer" class="promo-banner-wrapper">
+                <!-- Dynamic from Admin Promos -->
             </div>
 
             <!-- Recommended Section -->
@@ -89,6 +87,13 @@
             <div class="search-input-box">
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" id="menuViewSearchInput" placeholder="Search beverages or foods" oninput="executeMenuSearch(this.value)">
+            </div>
+
+            <!-- Menu Type Filter (Breakfast vs Lunch) -->
+            <div class="category-scroll-container mb-2" id="appMenuTypeChips" style="gap:8px;">
+                <button type="button" class="status-pill-btn active" data-type="all" onclick="setAppMenuType('all', this)">All Day</button>
+                <button type="button" class="status-pill-btn" data-type="breakfast" onclick="setAppMenuType('breakfast', this)"><i class="fas fa-egg me-1"></i>Breakfast Menu</button>
+                <button type="button" class="status-pill-btn" data-type="lunch" onclick="setAppMenuType('lunch', this)"><i class="fas fa-hamburger me-1"></i>Lunch Menu</button>
             </div>
 
             <div class="category-scroll-container mb-3" id="menuCategoryChips">
@@ -391,6 +396,8 @@
                 <div class="greeting-subtitle">Exclusive Deals</div>
                 <h2 class="greeting-headline">Special Offers &amp; Favorites 🏷️</h2>
             </div>
+            <!-- Dynamic Promo Banners in Offers View -->
+            <div id="offersPromoContainer"></div>
             <div class="food-grid" id="favoriteGrid">
                 <!-- Dynamic from JS -->
             </div>
@@ -561,7 +568,7 @@
     <div id="appToast" class="app-toast">Message</div>
 
     <!-- Scripts -->
-    <script src="js/mobile_app.js?v=5.0"></script>
+    <script src="js/mobile_app.js?v=9.0"></script>
 </body>
 
 </html>
