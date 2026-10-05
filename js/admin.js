@@ -2836,42 +2836,47 @@ var adminCategories = [];
 var _syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('favcafe_sync') : null;
 
 async function loadAdminCategories() {
+    var isDbConnected = false;
     try {
         var res = await fetch('api/categories.php?action=get&t=' + Date.now());
         if (res.ok) {
             var data = await res.json();
             if (data && data.status === 'success' && Array.isArray(data.categories)) {
                 adminCategories = data.categories;
+                isDbConnected = true;
                 saveCategoriesToStorageLocally();
-                renderAdminCategoriesTable();
-                populateCategoryDropdowns();
-                renderAdminMenuCategoryPills();
-                return;
             }
         }
     } catch (e) {}
 
-    try {
-        var resJson = await fetch('api/categories.json?t=' + Date.now());
-        if (resJson.ok) {
-            var jsonCats = await resJson.json();
-            if (Array.isArray(jsonCats) && jsonCats.length > 0) {
-                adminCategories = jsonCats;
-                saveCategoriesToStorageLocally();
-                renderAdminCategoriesTable();
-                populateCategoryDropdowns();
-                renderAdminMenuCategoryPills();
-                return;
+    // Fallback when PHP database is offline/unreachable (e.g. GitHub Pages)
+    if (!isDbConnected) {
+        var hasStored = false;
+        try {
+            var stored = localStorage.getItem('favcafe_categories');
+            if (stored) {
+                var parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    adminCategories = parsed;
+                    hasStored = true;
+                }
             }
-        }
-    } catch (e) {}
+        } catch (e) {}
 
-    try {
-        var stored = localStorage.getItem('favcafe_categories');
-        if (stored) {
-            adminCategories = JSON.parse(stored);
+        // Only fetch static categories.json if localStorage was completely empty
+        if (!hasStored) {
+            try {
+                var resJson = await fetch('api/categories.json?t=' + Date.now());
+                if (resJson.ok) {
+                    var jsonCats = await resJson.json();
+                    if (Array.isArray(jsonCats) && jsonCats.length > 0) {
+                        adminCategories = jsonCats;
+                        saveCategoriesToStorageLocally();
+                    }
+                }
+            } catch (e) {}
         }
-    } catch (e) {}
+    }
 
     renderAdminCategoriesTable();
     populateCategoryDropdowns();
@@ -3012,7 +3017,7 @@ async function saveCategorySubmit(e) {
     var name = document.getElementById('catName').value.trim();
     var slug = document.getElementById('catSlug').value.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     var icon = document.getElementById('catIcon').value.trim() || 'fas fa-utensils';
-    var sortOrder = parseInt(document.getElementById('catSortOrder').value) || 1;
+    var sortOrder = parseInt(document.getElementById('catSortOrder').value) || (adminCategories.length + 1);
 
     if (!name || !slug) {
         showToast('Category name and filter key are required.', 'warning');
@@ -3021,24 +3026,49 @@ async function saveCategorySubmit(e) {
 
     var payload = { action: id ? 'update' : 'add', id: id, name: name, slug: slug, icon: icon, sort_order: sortOrder, is_active: 1 };
 
+    if (id) {
+        var existing = adminCategories.find(function(c) { return String(c.id) === String(id); });
+        if (existing) {
+            existing.name = name;
+            existing.slug = slug;
+            existing.icon = icon;
+            existing.sort_order = sortOrder;
+        }
+    } else {
+        var newId = adminCategories.length > 0 ? Math.max(...adminCategories.map(function(c) { return parseInt(c.id) || 0; })) + 1 : 1;
+        adminCategories.push({
+            id: newId,
+            name: name,
+            slug: slug,
+            icon: icon,
+            sort_order: sortOrder,
+            is_active: 1,
+            created_at: new Date().toISOString()
+        });
+    }
+
+    saveCategoriesToStorage();
+    renderAdminCategoriesTable();
+    populateCategoryDropdowns();
+    renderAdminMenuCategoryPills();
+    closeCategoryModal();
+
     try {
         var res = await fetch('api/categories.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        var data = await res.json();
-        if (data && data.status === 'success') {
-            showToast(data.message, 'success');
-        } else if (data && data.message) {
-            showToast(data.message, 'warning');
+        if (res.ok) {
+            var data = await res.json();
+            if (data && data.status === 'success') {
+                showToast(data.message || 'Category saved successfully.', 'success');
+                return;
+            }
         }
     } catch (err) {}
 
-    closeCategoryModal();
-    // Authoritatively re-load categories from MySQL database
-    await loadAdminCategories();
-    saveCategoriesToStorage();
+    showToast('Category "' + name + '" saved successfully!', 'success');
 }
 
 async function toggleCategoryStatus(catId) {
@@ -3047,6 +3077,7 @@ async function toggleCategoryStatus(catId) {
 
     var newStatus = (parseInt(cat.is_active) === 1 || cat.is_active === true) ? 0 : 1;
     cat.is_active = newStatus;
+    saveCategoriesToStorage();
     renderAdminCategoriesTable();
     renderAdminMenuCategoryPills();
 
@@ -3058,8 +3089,6 @@ async function toggleCategoryStatus(catId) {
         });
     } catch (e) {}
 
-    await loadAdminCategories();
-    saveCategoriesToStorage();
     showToast('Category "' + cat.name + '" ' + (newStatus ? 'enabled' : 'disabled') + '!', 'info');
 }
 
@@ -3070,6 +3099,7 @@ async function deleteCategory(catId) {
     if (!confirm('Are you sure you want to delete category "' + cat.name + '"?')) return;
 
     adminCategories = adminCategories.filter(function(c) { return String(c.id) !== String(cat.id) && c.slug !== cat.slug; });
+    saveCategoriesToStorage();
     renderAdminCategoriesTable();
     populateCategoryDropdowns();
     renderAdminMenuCategoryPills();
@@ -3082,8 +3112,6 @@ async function deleteCategory(catId) {
         });
     } catch (e) {}
 
-    await loadAdminCategories();
-    saveCategoriesToStorage();
     showToast('Category deleted successfully.', 'success');
 }
 
@@ -3303,41 +3331,44 @@ window.uploadCsvMenu = uploadCsvMenu;
 var adminPromos = [];
 
 async function loadAdminPromos() {
+    var isDbConnected = false;
     try {
-        var res = await fetch('api/promos.php?action=get');
+        var res = await fetch('api/promos.php?action=get&t=' + Date.now());
         if (res.ok) {
             var data = await res.json();
             if (data && data.status === 'success' && Array.isArray(data.promos) && data.promos.length > 0) {
                 adminPromos = data.promos;
+                isDbConnected = true;
                 saveAdminPromosLocally();
-                return;
             }
         }
     } catch (e) {}
 
-    try {
-        var resJson = await fetch('api/promos.json?t=' + Date.now());
-        if (resJson.ok) {
-            var jsonPromos = await resJson.json();
-            if (Array.isArray(jsonPromos) && jsonPromos.length > 0) {
-                adminPromos = jsonPromos;
-                saveAdminPromosLocally();
-                return;
-            }
+    if (!isDbConnected) {
+        var hasStored = false;
+        var stored = localStorage.getItem('favcafe_promos');
+        if (stored) {
+            try {
+                var parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    adminPromos = parsed;
+                    hasStored = true;
+                }
+            } catch (e) {}
         }
-    } catch (e) {}
 
-    var stored = localStorage.getItem('favcafe_promos');
-    if (stored) {
-        try {
-            adminPromos = JSON.parse(stored);
-        } catch (e) {}
-    } else {
-        adminPromos = [
-            { id: 1, title: "Weekend Treat Voucher", subtitle: "Use Code FAV20 on Orders Above 5,000 RWF", discount: "20% OFF", img: "img/promo/promoBanner.png", is_active: 1, sort_order: 1 },
-            { id: 2, title: "Weekday Lunch Deal", subtitle: "Enjoy 15% off lunch plates and grills", discount: "15% OFF", img: "img/menu/dish_1786025102_4409.png", is_active: 1, sort_order: 2 }
-        ];
-        saveAdminPromos();
+        if (!hasStored) {
+            try {
+                var resJson = await fetch('api/promos.json?t=' + Date.now());
+                if (resJson.ok) {
+                    var jsonPromos = await resJson.json();
+                    if (Array.isArray(jsonPromos) && jsonPromos.length > 0) {
+                        adminPromos = jsonPromos;
+                        saveAdminPromosLocally();
+                    }
+                }
+            } catch (e) {}
+        }
     }
 }
 

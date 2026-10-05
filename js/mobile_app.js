@@ -600,13 +600,16 @@ window.formatRWF = formatRWF;
 
 // CATEGORIES DATA FETCHING (SYNCED WITH ADMIN)
 async function loadAppCategories() {
+    let isDbConnected = false;
     try {
         const res = await fetch('api/categories.php?action=get&active_only=1&t=' + Date.now());
         if (res.ok) {
             const data = await res.json();
             if (data && data.status === 'success' && Array.isArray(data.categories)) {
                 appCategories = data.categories.filter(c => parseInt(c.is_active) === 1 || c.is_active === true);
+                isDbConnected = true;
                 try {
+                    localStorage.setItem('favcafe_categories', JSON.stringify(data.categories));
                     localStorage.setItem('favcafe_active_categories_cache', JSON.stringify(appCategories));
                 } catch (e) {}
                 return;
@@ -614,51 +617,57 @@ async function loadAppCategories() {
         }
     } catch (e) {}
 
-    // Static JSON fallback for GitHub Pages & serverless hosting
-    try {
-        const resJson = await fetch('api/categories.json?t=' + Date.now());
-        if (resJson.ok) {
-            const jsonCats = await resJson.json();
-            if (Array.isArray(jsonCats) && jsonCats.length > 0) {
-                appCategories = jsonCats.filter(c => parseInt(c.is_active) === 1 || c.is_active === true);
-                try {
-                    localStorage.setItem('favcafe_active_categories_cache', JSON.stringify(appCategories));
-                } catch (e) {}
-                return;
+    // Fallback for static hosting (GitHub Pages): prioritize user-modified localStorage
+    if (!isDbConnected) {
+        try {
+            const stored = localStorage.getItem('favcafe_categories');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    appCategories = parsed.filter(c => parseInt(c.is_active) === 1 || c.is_active === true);
+                    return;
+                }
             }
-        }
-    } catch (e) {}
+        } catch (e) {}
 
-    // Fallback: localStorage 'favcafe_categories'
-    try {
-        const stored = localStorage.getItem('favcafe_categories');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-                appCategories = parsed.filter(c => parseInt(c.is_active) === 1 || c.is_active === true);
-                return;
+        // First visit / clean cache fallback: fetch default static categories.json
+        try {
+            const resJson = await fetch('api/categories.json?t=' + Date.now());
+            if (resJson.ok) {
+                const jsonCats = await resJson.json();
+                if (Array.isArray(jsonCats) && jsonCats.length > 0) {
+                    appCategories = jsonCats.filter(c => parseInt(c.is_active) === 1 || c.is_active === true);
+                    try {
+                        localStorage.setItem('favcafe_categories', JSON.stringify(jsonCats));
+                        localStorage.setItem('favcafe_active_categories_cache', JSON.stringify(appCategories));
+                    } catch (e) {}
+                    return;
+                }
             }
-        }
-    } catch (e) {}
+        } catch (e) {}
 
-    // Fallback cache
-    try {
-        const cached = localStorage.getItem('favcafe_active_categories_cache');
-        if (cached) {
-            appCategories = JSON.parse(cached);
-        }
-    } catch (e) {}
+        // Fallback cache
+        try {
+            const cached = localStorage.getItem('favcafe_active_categories_cache');
+            if (cached) {
+                appCategories = JSON.parse(cached);
+            }
+        } catch (e) {}
+    }
 }
 
 // PROMOS DATA FETCHING (SYNCED WITH ADMIN)
 async function loadAppPromos() {
+    let isDbConnected = false;
     try {
         const res = await fetch('api/promos.php?action=get&active_only=1&t=' + Date.now());
         if (res.ok) {
             const data = await res.json();
             if (data && data.status === 'success' && Array.isArray(data.promos)) {
                 appPromos = data.promos.filter(p => p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true);
+                isDbConnected = true;
                 try {
+                    localStorage.setItem('favcafe_promos', JSON.stringify(data.promos));
                     localStorage.setItem('favcafe_promos_cache', JSON.stringify(appPromos));
                 } catch (e) {}
                 return;
@@ -666,40 +675,43 @@ async function loadAppPromos() {
         }
     } catch (e) {}
 
-    // Static JSON fallback for GitHub Pages & serverless hosting
-    try {
-        const resJson = await fetch('api/promos.json?t=' + Date.now());
-        if (resJson.ok) {
-            const jsonPromos = await resJson.json();
-            if (Array.isArray(jsonPromos) && jsonPromos.length > 0) {
-                appPromos = jsonPromos.filter(p => p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true);
-                try {
-                    localStorage.setItem('favcafe_promos_cache', JSON.stringify(appPromos));
-                } catch (e) {}
-                return;
+    // Fallback for static hosting (GitHub Pages): prioritize user-modified localStorage
+    if (!isDbConnected) {
+        try {
+            const stored = localStorage.getItem('favcafe_promos');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    appPromos = parsed.filter(p => p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true);
+                    return;
+                }
             }
-        }
-    } catch (e) {}
+        } catch (e) {}
 
-    // Fallback: localStorage 'favcafe_promos'
-    try {
-        const stored = localStorage.getItem('favcafe_promos');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-                appPromos = parsed.filter(p => p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true);
-                return;
+        // First visit / clean cache fallback: fetch default static promos.json
+        try {
+            const resJson = await fetch('api/promos.json?t=' + Date.now());
+            if (resJson.ok) {
+                const jsonPromos = await resJson.json();
+                if (Array.isArray(jsonPromos) && jsonPromos.length > 0) {
+                    appPromos = jsonPromos.filter(p => p.is_active === undefined || parseInt(p.is_active) === 1 || p.is_active === true);
+                    try {
+                        localStorage.setItem('favcafe_promos', JSON.stringify(jsonPromos));
+                        localStorage.setItem('favcafe_promos_cache', JSON.stringify(appPromos));
+                    } catch (e) {}
+                    return;
+                }
             }
-        }
-    } catch (e) {}
+        } catch (e) {}
 
-    // Fallback cache
-    try {
-        const cached = localStorage.getItem('favcafe_promos_cache');
-        if (cached) {
-            appPromos = JSON.parse(cached);
-        }
-    } catch (e) {}
+        // Fallback cache
+        try {
+            const cached = localStorage.getItem('favcafe_promos_cache');
+            if (cached) {
+                appPromos = JSON.parse(cached);
+            }
+        } catch (e) {}
+    }
 }
 
 // RENDER HOME CATEGORIES (ONLY ENABLED ONES)

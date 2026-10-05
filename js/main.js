@@ -2528,14 +2528,29 @@ async function loadDynamicCategories() {
 
     var categories = [];
     try {
-        var res = await fetch('api/categories.php?action=get&active_only=1');
+        var res = await fetch('api/categories.php?action=get&active_only=1&t=' + Date.now());
         if (res.ok) {
             var data = await res.json();
             if (data && data.status === 'success' && Array.isArray(data.categories)) {
-                categories = data.categories;
+                categories = data.categories.filter(function (c) { return parseInt(c.is_active) === 1 || c.is_active === true; });
+                try {
+                    localStorage.setItem('favcafe_categories', JSON.stringify(data.categories));
+                } catch (e) {}
             }
         }
     } catch (e) { }
+
+    if (categories.length === 0) {
+        try {
+            var stored = localStorage.getItem('favcafe_categories');
+            if (stored) {
+                var parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    categories = parsed.filter(function (c) { return parseInt(c.is_active) === 1 || c.is_active === true; });
+                }
+            }
+        } catch (e) { }
+    }
 
     if (categories.length === 0) {
         try {
@@ -2544,18 +2559,6 @@ async function loadDynamicCategories() {
                 var jsonCats = await resJson.json();
                 if (Array.isArray(jsonCats) && jsonCats.length > 0) {
                     categories = jsonCats.filter(function (c) { return parseInt(c.is_active) === 1 || c.is_active === true; });
-                }
-            }
-        } catch (e) { }
-    }
-
-    if (categories.length === 0) {
-        try {
-            var stored = localStorage.getItem('favcafe_categories');
-            if (stored) {
-                var parsed = JSON.parse(stored);
-                if (Array.isArray(parsed)) {
-                    categories = parsed.filter(function (c) { return parseInt(c.is_active) === 1 || c.is_active === true; });
                 }
             }
         } catch (e) { }
@@ -2579,6 +2582,25 @@ async function loadDynamicCategories() {
         });
     });
 }
+
+// Real-time synchronization for landing page categories
+if ('BroadcastChannel' in window) {
+    try {
+        var _mainSync = new BroadcastChannel('favcafe_sync');
+        _mainSync.onmessage = function (e) {
+            if (e && e.data && (e.data.type === 'CATEGORIES_UPDATED' || e.data.type === 'MENU_UPDATED')) {
+                loadDynamicCategories();
+                loadDynamicCustomerMenu();
+            }
+        };
+    } catch (e) {}
+}
+window.addEventListener('storage', function (e) {
+    if (e && (e.key === 'favcafe_categories' || e.key === 'favcafe_categories_sync_ts' || e.key === 'favcafe_menu')) {
+        loadDynamicCategories();
+        loadDynamicCustomerMenu();
+    }
+});
 
 /* EXPLICIT WINDOW SCOPE BINDINGS */
 window.showToast = showToast;
