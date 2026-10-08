@@ -2176,3 +2176,189 @@ body:not(.light-theme) .tracking-summary-card {
     max-width: 70%;
     word-break: break-word;
 }
+
+/* ============================================================
+   Momo Pay Indicators & Mobile MoMo USSD Modal Styles
+   ============================================================ */
+.momo-pay-indicator-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff9e6;
+    border: 1px solid #ffe082;
+    padding: 0.65rem 0.95rem;
+    border-radius: 14px;
+}
+
+body:not(.light-theme) .momo-pay-indicator-box {
+    background: #fff9e6;
+    border: 1px solid #ffe082;
+}
+
+.momo-pay-badge-pill {
+    background: #ffcc00;
+    color: #000;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.momo-pay-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.momo-pay-checkout-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 204, 0, 0.12);
+    border: 1px solid rgba(255, 204, 0, 0.35);
+    padding: 0.6rem 0.9rem;
+    border-radius: 12px;
+}
+
+body.light-theme .momo-pay-checkout-pill {
+    background: #fff9e6;
+    border-color: #ffe082;
+}
+
+.momo-pay-checkout-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+body.light-theme .momo-pay-checkout-title {
+    color: #1e293b;
+}
+
+/* Mobile MoMo USSD Modal Card */
+.mobile-momo-card {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border-radius: 28px !important;
+    max-width: 390px !important;
+    padding: 24px 20px !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35) !important;
+    border: none !important;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+body:not(.light-theme) .mobile-momo-card {
+    background: #ffffff !important;
+    color: #1e293b !important;
+}
+
+.momo-operator-toggle-bar {
+    display: flex;
+    gap: 8px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 4px;
+    border-radius: 999px;
+    margin-bottom: 1rem;
+}
+
+.momo-op-switch-btn {
+    flex: 1;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.momo-op-switch-btn.active-mtn {
+    background: #ffcc00;
+    color: #000;
+    box-shadow: 0 2px 6px rgba(255, 204, 0, 0.4);
+}
+
+.momo-op-switch-btn.active-airtel {
+    background: #e50914;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(229, 9, 20, 0.4);
+}
+
+.momo-op-switch-btn.inactive {
+    background: transparent;
+    color: #64748b;
+}
+
+.mobile-momo-terminal {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: #38bdf8;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.mobile-momo-keypad-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+    max-width: 240px !important;
+    margin: 0 auto 16px auto !important;
+    padding: 12px !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+}
+
+.momo-key-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #1e293b;
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.1s, background-color 0.15s;
+}
+
+.momo-key-btn:active {
+    transform: scale(0.93);
+    background: #e2e8f0;
+}
+
+.momo-key-btn-clear {
+    border-color: #fee2e2;
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.momo-key-btn-clear:active {
+    background: #fecaca;
+}
+
+.momo-key-btn-ok {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+.momo-key-btn-ok:active {
+    background: #dcfce7;
+}

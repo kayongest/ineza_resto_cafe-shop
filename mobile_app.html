@@ -220,6 +220,14 @@
 
                     <!-- Pinned Footer Action Bar -->
                     <div class="cart-footer-action-bar mt-3 pt-3">
+                        <!-- Momo Pay Only Payment Indicator -->
+                        <div class="momo-pay-checkout-pill mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="momo-pay-badge-pill">MOMO PAY</span>
+                                <span class="momo-pay-checkout-title"><i class="fas fa-mobile-alt me-1 text-warning"></i>MTN MoMo &amp; Airtel</span>
+                            </div>
+                            <span class="badge" style="background:#ffcc00; color:#000; font-weight:800; font-size:0.65rem;">ONLY</span>
+                        </div>
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="text-light-blue fw-bold">Total Amount</span>
                             <span id="cartTotal" class="total-amount-cyan fw-bold">0 RWF</span>
@@ -647,8 +655,17 @@
                 <span class="dish-tag-chip">Cheesy</span>
             </div>
 
+            <!-- Momo Pay Accepted Badge before Adding to Cart -->
+            <div class="momo-pay-indicator-box mt-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="momo-pay-badge-pill">MOMO PAY</span>
+                    <span class="momo-pay-text"><i class="fas fa-check-circle text-success me-1"></i>MTN MoMo &amp; Airtel Money</span>
+                </div>
+                <i class="fas fa-mobile-alt text-warning fs-5"></i>
+            </div>
+
             <!-- Confirm Add to Cart CTA Button -->
-            <button type="button" class="btn-cyan-confirm mt-4 w-100" id="modalAddToCartBtn" onclick="confirmModalAddToCart()">
+            <button type="button" class="btn-cyan-confirm mt-3 w-100" id="modalAddToCartBtn" onclick="confirmModalAddToCart()">
                 <i class="fas fa-cart-plus me-2"></i> Add to Cart (<span id="modalAddTotalPrice">5,500 RWF</span>)
             </button>
         </div>
@@ -705,6 +722,70 @@
 
                 <button type="button" class="btn-secondary-custom w-100 mt-4" onclick="closeOrderTrackingModal()">
                     <i class="fas fa-arrow-left me-1"></i> Back to Orders
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         3. MOBILE MOMO USSD / PIN SIMULATOR MODAL (paymenetGateway.png)
+         ============================================================ -->
+    <div id="mobileMomoUssdModal" class="custom-modal-overlay">
+        <div class="custom-modal-dialog mobile-momo-card text-center">
+            <!-- Dual Operator Selector Pills -->
+            <div class="momo-operator-toggle-bar">
+                <button type="button" class="momo-op-switch-btn active-mtn" id="momoOpMtnBtnMobile" onclick="selectMobileMomoOperator('MTN')">
+                    <i class="fas fa-mobile-alt"></i> MTN MoMo
+                </button>
+                <button type="button" class="momo-op-switch-btn inactive" id="momoOpAirtelBtnMobile" onclick="selectMobileMomoOperator('Airtel')">
+                    <i class="fas fa-mobile-alt"></i> Airtel Money
+                </button>
+            </div>
+
+            <div class="mb-2">
+                <h4 class="font-weight-bold mb-1 text-dark" id="mobileMomoProviderTitle" style="font-size:1.15rem; font-weight:700;">MTN Mobile Money</h4>
+                <div class="small text-muted" style="font-size:0.8rem;">Push Request Sent to <strong id="mobileMomoTargetPhone" class="text-dark">+250 788 123 456</strong></div>
+            </div>
+
+            <!-- Realistic Smartphone Terminal Prompt -->
+            <div class="mobile-momo-terminal shadow-sm">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="badge bg-warning text-dark font-monospace" style="font-size:0.65rem;"><i class="fas fa-terminal me-1"></i>USSD PROMPT *182#</span>
+                    <span class="small text-muted font-monospace" style="font-size:0.7rem; color:#94a3b8;">Favorite Cafe POS</span>
+                </div>
+                <div class="small text-light mb-3" style="line-height:1.4; color:#f8fafc;">
+                    "Pay <strong id="mobileMomoPaymentAmount" class="text-warning fs-6" style="color:#ffcc00; font-size:1rem;">0 RWF</strong> to Favorite Cafe &amp; Restaurant? Enter 4-digit PIN:"
+                </div>
+
+                <!-- PIN Dots Display -->
+                <div class="py-2 px-3 rounded text-center" style="background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.12); min-height:44px; display:flex; align-items:center; justify-content:center;">
+                    <div id="mobileMomoPinDots" class="font-monospace text-warning" style="letter-spacing:14px; font-size:1.4rem; color:#ffcc00;">
+                        • • • •
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3x4 Keypad Grid -->
+            <div class="mobile-momo-keypad-grid">
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('1')">1</button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('2')">2</button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('3')">3</button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('4')">4</button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('5')">5</button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('6')">6</button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('7')">7</button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('8')">8</button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('9')">9</button>
+                <button type="button" class="momo-key-btn momo-key-btn-clear" onclick="clearMobilePinDigits()" title="Backspace"><i class="fas fa-backspace"></i></button>
+                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('0')">0</button>
+                <button type="button" class="momo-key-btn momo-key-btn-ok" onclick="confirmMobileMomoSuccess()" title="Approve"><i class="fas fa-check"></i></button>
+            </div>
+
+            <!-- Bottom Action Buttons -->
+            <div class="d-flex gap-2 mt-2 pt-1 mb-1">
+                <button type="button" class="btn btn-outline-secondary w-50 py-2 font-weight-bold rounded-pill" onclick="cancelMobileMomoUssd()" style="border-radius:999px; border:1px solid #cbd5e1; background:transparent; color:#64748b; font-weight:700;">Cancel</button>
+                <button type="button" class="btn btn-success w-50 py-2 font-weight-bold rounded-pill" onclick="confirmMobileMomoSuccess()" style="border-radius:999px; background:#16a34a; border:none; color:#fff; font-weight:700;">
+                    <i class="fas fa-check-circle me-1"></i> Approve
                 </button>
             </div>
         </div>

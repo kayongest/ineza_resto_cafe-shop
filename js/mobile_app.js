@@ -1503,8 +1503,12 @@ function confirmModalAddToCart() {
 window.confirmModalAddToCart = confirmModalAddToCart;
 
 // ============================================================
-// CHECKOUT FUNCTIONALITY (Creates real order synchronized across tabs)
+// CHECKOUT & MOMO PAY USSD / PIN SIMULATOR
 // ============================================================
+let pendingMobileMomoOrder = null;
+let selectedMobileMomoOperator = 'MTN';
+let currentMobilePinDigits = '';
+
 function checkout() {
     if (!cart || cart.length === 0) {
         showToast('⚠️ Your shopping cart is empty!', 'warning');
@@ -1529,7 +1533,7 @@ function checkout() {
         phone: custPhone,
         address: custAddr,
         serviceType: 'delivery',
-        paymentMethod: 'Cash',
+        paymentMethod: 'Momo Pay',
         paymentStatus: 'Paid',
         itemsSummary: itemsSummaryStr,
         items: cart.map(i => ({
@@ -1542,6 +1546,116 @@ function checkout() {
         status: 'Order Received'
     };
 
+    pendingMobileMomoOrder = newOrder;
+    triggerMobileMomoUssd(custPhone, finalTotal);
+}
+window.checkout = checkout;
+
+function triggerMobileMomoUssd(phone, amount) {
+    const titleEl = document.getElementById('mobileMomoProviderTitle');
+    const phoneEl = document.getElementById('mobileMomoTargetPhone');
+    const amountEl = document.getElementById('mobileMomoPaymentAmount');
+
+    if (titleEl) titleEl.textContent = selectedMobileMomoOperator === 'MTN' ? 'MTN Mobile Money' : 'Airtel Money';
+    if (phoneEl) phoneEl.textContent = phone ? `+250 ${phone.replace(/^\+?250/, '').trim()}` : '+250 788 123 456';
+    if (amountEl) amountEl.textContent = `${Number(amount).toLocaleString()} RWF`;
+
+    currentMobilePinDigits = '';
+    updateMobilePinDisplay();
+
+    const modal = document.getElementById('mobileMomoUssdModal');
+    if (modal) modal.classList.add('active');
+
+    showToast(`📱 MoMo Push prompt sent to ${phone || 'your phone'}. Enter 4-digit PIN to approve.`, 'info');
+}
+window.triggerMobileMomoUssd = triggerMobileMomoUssd;
+
+function selectMobileMomoOperator(op) {
+    selectedMobileMomoOperator = op;
+    const mtnBtn = document.getElementById('momoOpMtnBtnMobile');
+    const airtelBtn = document.getElementById('momoOpAirtelBtnMobile');
+    const titleEl = document.getElementById('mobileMomoProviderTitle');
+
+    if (op === 'MTN') {
+        if (mtnBtn) {
+            mtnBtn.className = 'momo-op-switch-btn active-mtn';
+        }
+        if (airtelBtn) {
+            airtelBtn.className = 'momo-op-switch-btn inactive';
+        }
+        if (titleEl) titleEl.textContent = 'MTN Mobile Money';
+    } else {
+        if (mtnBtn) {
+            mtnBtn.className = 'momo-op-switch-btn inactive';
+        }
+        if (airtelBtn) {
+            airtelBtn.className = 'momo-op-switch-btn active-airtel';
+        }
+        if (titleEl) titleEl.textContent = 'Airtel Money';
+    }
+}
+window.selectMobileMomoOperator = selectMobileMomoOperator;
+
+function pressMobilePinDigit(d) {
+    if (currentMobilePinDigits.length < 4) {
+        currentMobilePinDigits += d;
+        updateMobilePinDisplay();
+        if (currentMobilePinDigits.length === 4) {
+            setTimeout(() => {
+                confirmMobileMomoSuccess();
+            }, 350);
+        }
+    }
+}
+window.pressMobilePinDigit = pressMobilePinDigit;
+
+function clearMobilePinDigits() {
+    currentMobilePinDigits = '';
+    updateMobilePinDisplay();
+}
+window.clearMobilePinDigits = clearMobilePinDigits;
+
+function updateMobilePinDisplay() {
+    const dotsEl = document.getElementById('mobileMomoPinDots');
+    if (!dotsEl) return;
+    if (currentMobilePinDigits.length === 0) {
+        dotsEl.innerHTML = '<span style="color:#64748b; letter-spacing:14px;">• • • •</span>';
+    } else {
+        let dots = '';
+        for (let i = 0; i < currentMobilePinDigits.length; i++) {
+            dots += '● ';
+        }
+        for (let j = currentMobilePinDigits.length; j < 4; j++) {
+            dots += '• ';
+        }
+        dotsEl.innerHTML = `<span style="color:#ffcc00; font-weight:bold; letter-spacing:14px;">${dots.trim()}</span>`;
+    }
+}
+
+function cancelMobileMomoUssd() {
+    const modal = document.getElementById('mobileMomoUssdModal');
+    if (modal) modal.classList.remove('active');
+    pendingMobileMomoOrder = null;
+    currentMobilePinDigits = '';
+    updateMobilePinDisplay();
+    showToast('Payment cancelled', 'info');
+}
+window.cancelMobileMomoUssd = cancelMobileMomoUssd;
+
+function confirmMobileMomoSuccess() {
+    const modal = document.getElementById('mobileMomoUssdModal');
+    if (modal) modal.classList.remove('active');
+    currentMobilePinDigits = '';
+    updateMobilePinDisplay();
+
+    if (!pendingMobileMomoOrder) {
+        showToast('No pending order found.', 'warning');
+        return;
+    }
+
+    const orderToSave = pendingMobileMomoOrder;
+    pendingMobileMomoOrder = null;
+
     // Save to localStorage 'favcafe_orders'
     let storedOrders = [];
     try {
@@ -1549,16 +1663,16 @@ function checkout() {
         if (stored) storedOrders = JSON.parse(stored);
     } catch (e) {}
 
-    storedOrders.unshift(newOrder);
+    storedOrders.unshift(orderToSave);
     try {
         localStorage.setItem('favcafe_orders', JSON.stringify(storedOrders));
-        localStorage.setItem('favcafe_orders_signal', JSON.stringify({ type: 'order_created', order: newOrder, ts: Date.now() }));
+        localStorage.setItem('favcafe_orders_signal', JSON.stringify({ type: 'order_created', order: orderToSave, ts: Date.now() }));
     } catch (e) {}
 
     // Broadcast across windows
     try {
         const orderChan = new BroadcastChannel('favcafe_orders_channel');
-        orderChan.postMessage({ type: 'order_created', order: newOrder });
+        orderChan.postMessage({ type: 'order_created', order: orderToSave });
     } catch (e) {}
 
     // Send to backend API
@@ -1566,7 +1680,7 @@ function checkout() {
         fetch('api/orders.php?action=create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newOrder)
+            body: JSON.stringify(orderToSave)
         }).catch(() => {});
     } catch (e) {}
 
@@ -1578,16 +1692,16 @@ function checkout() {
     localStorage.removeItem('favcafe_cart');
     loadCart();
 
-    showToast(`🎉 Order #${newOrder.id} confirmed! Sent to Kitchen.`, 'success');
-    
+    showToast(`🎉 MoMo Payment Approved! Order #${orderToSave.id} placed.`, 'success');
+
     // Switch to Your Orders tab and open tracking
     setTimeout(() => {
         switchTab('history');
         loadMobileOrderHistory();
-        openOrderTrackingModal(newOrder.id);
+        openOrderTrackingModal(orderToSave.id);
     }, 600);
 }
-window.checkout = checkout;
+window.confirmMobileMomoSuccess = confirmMobileMomoSuccess;
 
 // ============================================================
 // YOUR ORDERS & STATUS FILTERING (SCREEN 1)

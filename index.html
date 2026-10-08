@@ -866,6 +866,11 @@
                <span style="font-size:.82rem;color:#aaa;margin-left:9px;">portion</span>
             </div>
             <div class="mptags" id="mpTags"></div>
+            <!-- Momo Pay Accepted Badge before Adding to Cart -->
+            <div class="d-flex align-items-center gap-2 mb-3 px-3 py-2 rounded-3" style="background:#fff9e6; border:1px solid #ffe082; font-size:0.8rem;">
+               <span class="badge rounded-pill" style="background:#ffcc00; color:#000; font-weight:800; font-size:0.7rem; padding:4px 8px;">MOMO PAY</span>
+               <span class="text-dark fw-semibold" style="font-size:0.82rem;"><i class="fas fa-check-circle text-success me-1"></i>Pay via MTN MoMo / Airtel Money</span>
+            </div>
             <button class="mpaddcart" id="mpAddCart"><i class="fas fa-shopping-cart"></i>Add to Cart</button>
          </div>
       </div>
@@ -1468,18 +1473,12 @@
                <input type="text" id="orderCustAddress" class="form-control rounded-3" placeholder="e.g. 108 Kimironko St, House #14" required />
             </div>
 
-            <!-- Payment Method Pills -->
+            <!-- Payment Method: Momo Pay Only -->
             <div class="mb-3">
                <label class="form-label small text-muted font-weight-bold"><i class="fas fa-wallet me-1 text-secondary"></i>Payment Method</label>
                <div class="payment-pills">
-                  <div class="payment-pill active" onclick="selectPaymentMethod('momo', this)">
-                     <i class="fas fa-mobile-alt me-1"></i> Mobile Money
-                  </div>
-                  <div class="payment-pill" onclick="selectPaymentMethod('card', this)">
-                     <i class="fas fa-credit-card me-1"></i> Card / Visa
-                  </div>
-                  <div class="payment-pill" onclick="selectPaymentMethod('cash', this)">
-                     <i class="fas fa-money-bill-wave me-1"></i> Cash
+                  <div class="payment-pill active" style="width:100%; justify-content:center; cursor:default; background:linear-gradient(135deg, #ffcc00, #ffb300); color:#000; font-weight:700; border-color:#e0a800;">
+                     <i class="fas fa-mobile-alt me-2"></i> Momo Pay (MTN / Airtel Mobile Money)
                   </div>
                </div>
             </div>
