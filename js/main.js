@@ -1031,17 +1031,17 @@ function selectMomoOperator(op) {
     if (op === 'MTN') {
         if (mtnBtn) { mtnBtn.style.background = '#ffcc00'; mtnBtn.style.color = '#000'; }
         if (airtelBtn) { airtelBtn.style.background = 'transparent'; airtelBtn.style.color = '#64748b'; }
-        if (title1) title1.textContent = 'MoMo Code';
-        if (code1) code1.textContent = '*181*8*1*004587*Amount#';
-        if (title2) title2.textContent = 'INEZA Resto & Cafe Shop';
-        if (code2) code2.textContent = '*181*8*1*004587*Amount#';
+        if (title1) title1.textContent = 'MoMo Code (004587)';
+        if (code1) code1.textContent = '*182*8*1*004587*Amount#';
+        if (title2) title2.textContent = 'Client Name';
+        if (code2) code2.textContent = 'INEZA Resto & Cafe Shop';
     } else {
         if (mtnBtn) { mtnBtn.style.background = 'transparent'; mtnBtn.style.color = '#64748b'; }
         if (airtelBtn) { airtelBtn.style.background = '#e50914'; airtelBtn.style.color = '#fff'; }
-        if (title1) title1.textContent = 'Airtel Money Code';
+        if (title1) title1.textContent = 'Airtel Money Code (004587)';
         if (code1) code1.textContent = '*182*8*1*004587*Amount#';
-        if (title2) title2.textContent = 'INEZA Resto & Cafe Shop';
-        if (code2) code2.textContent = '*182*8*1*004587*Amount#';
+        if (title2) title2.textContent = 'Client Name';
+        if (code2) code2.textContent = 'INEZA Resto & Cafe Shop';
     }
 }
 

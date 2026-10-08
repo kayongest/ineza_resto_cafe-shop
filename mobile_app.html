@@ -17,7 +17,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <!-- Foodia Dark Navy CSS -->
-    <link rel="stylesheet" href="css/mobile_app.css?v=6.0">
+    <link rel="stylesheet" href="css/mobile_app.css?v=6.5">
 </head>
 
 <body>
@@ -835,47 +835,75 @@
                 </button>
             </div>
 
-            <!-- Main Payment Demo Content (matching paymentDemo.png) -->
+            <!-- Main Payment Demo Content (matching paymentDemo.png & fintech redesign) -->
             <div class="momo-demo-display-box">
                 <!-- 1. MoMo Code Block -->
-                <div class="momo-demo-block">
-                    <h3 class="momo-demo-title" id="momoDemoTitle1">MoMo Code</h3>
-                    <div class="momo-demo-code" id="momoDemoCode1">*181*8*1*004587*Amount#</div>
+                <div class="momo-payment-card-row">
+                    <div class="momo-card-header-line">
+                        <span class="momo-card-label" id="momoDemoTitle1">
+                            <i class="fas fa-qrcode me-1 text-warning"></i> MoMo Code (004587)
+                        </span>
+                        <button type="button" class="momo-btn-copy-chip" onclick="copyMomoCode()" title="Copy USSD Code">
+                            <i class="far fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="momo-card-main-val font-monospace" id="momoDemoCode1">*182*8*1*004587*Amount#</div>
                 </div>
 
                 <!-- 2. Restaurant Merchant Name Block -->
-                <div class="momo-demo-block">
-                    <h3 class="momo-demo-title" id="momoDemoTitle2">INEZA Resto &amp; Cafe Shop</h3>
-                    <div class="momo-demo-code" id="momoDemoCode2">*181*8*1*004587*Amount#</div>
-                </div>
-
-                <!-- Order Total Summary Box -->
-                <div class="p-3 mb-3 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-muted small fw-bold">Order Total:</span>
-                        <span class="fw-bold fs-6 text-dark" id="mobileMomoPaymentAmount">0 RWF</span>
+                <div class="momo-payment-card-row">
+                    <div class="momo-card-header-line">
+                        <span class="momo-card-label" id="momoDemoTitle2">
+                            <i class="fas fa-store me-1 text-cyan"></i> Client Name
+                        </span>
+                        <span class="momo-client-badge-verified">
+                            <i class="fas fa-check-circle"></i> Verified
+                        </span>
                     </div>
-                    <div class="text-muted text-xs" style="font-size:0.75rem;">
-                        Dial the MoMo code on your phone or tap the dial button below:
+                    <div class="momo-card-main-val" id="momoClientMerchantName" style="font-size:1.15rem; font-weight:700;">
+                        INEZA Resto &amp; Cafe Shop
                     </div>
                 </div>
 
-                <!-- Action Buttons: Dial Now & Confirm Order -->
-                <div class="d-flex flex-column gap-2 mt-3">
-                    <a id="momoDialNowLink" href="tel:*181*8*1*004587%23"
-                        class="btn btn-warning w-100 py-3 rounded-pill fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2"
-                        style="background:#ffcc00; border:none; font-size:1rem; text-decoration:none;">
-                        <i class="fas fa-phone-alt"></i> Dial MoMo Code Now
+                <!-- 3. Total Amount Due Banner -->
+                <div class="momo-amount-due-banner">
+                    <div>
+                        <span class="momo-amount-due-label">TOTAL AMOUNT DUE</span>
+                        <div style="font-size:0.7rem; color:#94a3b8; font-weight:500;">Dial USSD string or tap below</div>
+                    </div>
+                    <span class="momo-amount-due-price" id="mobileMomoPaymentAmount">0 RWF</span>
+                </div>
+
+                <!-- 4. Modern Fintech Action Buttons -->
+                <div class="momo-actions-stack">
+                    <a id="momoDialNowLink" href="tel:*182*8*1*004587%23" class="momo-action-btn-dial">
+                        <div class="momo-btn-content">
+                            <div class="momo-btn-icon-circle" style="background:rgba(0,0,0,0.12); color:#000;">
+                                <i class="fas fa-phone-alt"></i>
+                            </div>
+                            <div class="momo-btn-text-group">
+                                <span class="momo-btn-title" id="momoDialBtnTitle">Dial MTN MoMo Code Now</span>
+                                <span class="momo-btn-subtitle" id="momoDialBtnSubtitle">*182*8*1*004587*Amount#</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-external-link-alt" style="font-size:0.85rem; opacity:0.8;"></i>
                     </a>
-                    <button type="button"
-                        class="btn btn-success w-100 py-3 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2"
-                        onclick="confirmMobileMomoSuccess()"
-                        style="background:#16a34a; border:none; font-size:1rem;">
-                        <i class="fas fa-check-circle"></i> I Have Paid / Confirm Order
+
+                    <button type="button" class="momo-action-btn-confirm" onclick="confirmMobileMomoSuccess()">
+                        <div class="momo-btn-content">
+                            <div class="momo-btn-icon-circle" style="background:rgba(255,255,255,0.2); color:#fff;">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="momo-btn-text-group">
+                                <span class="momo-btn-title">I Have Paid • Confirm Order</span>
+                                <span class="momo-btn-subtitle">Dispatches order straight to kitchen</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="font-size:0.85rem; opacity:0.8;"></i>
                     </button>
-                    <button type="button" class="btn btn-link text-muted mt-1 text-decoration-none"
-                        onclick="cancelMobileMomoUssd()" style="font-size:0.85rem;">
-                        Cancel
+
+                    <button type="button" class="momo-action-btn-cancel" onclick="cancelMobileMomoUssd()">
+                        <i class="fas fa-times me-1"></i> Cancel &amp; Modify Cart
                     </button>
                 </div>
             </div>
@@ -883,7 +911,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/mobile_app.js?v=6.3"></script>
+    <script src="js/mobile_app.js?v=6.5"></script>
 </body>
 
 </html>
