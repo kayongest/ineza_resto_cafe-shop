@@ -1,0 +1,42 @@
+[
+    {
+        "id": 1,
+        "title": "*for All Menus",
+        "subtitle": "Happy Weekend",
+        "discount": "50% OFF",
+        "img": "img\/menu\/7.jpg",
+        "is_active": 1,
+        "sort_order": 0,
+        "created_at": "2026-10-05 18:16:25"
+    },
+    {
+        "id": 2,
+        "title": "Fresh Salads",
+        "subtitle": "Healthy & Green",
+        "discount": "80%",
+        "img": "img\/menu\/dish_1791458060_4215.png",
+        "is_active": 1,
+        "sort_order": 0,
+        "created_at": "2026-10-05 18:16:25"
+    },
+    {
+        "id": 3,
+        "title": "Coffee & Pastries",
+        "subtitle": "Morning Special",
+        "discount": "15%",
+        "img": "img\/menu\/5.jpg",
+        "is_active": 1,
+        "sort_order": 0,
+        "created_at": "2026-10-05 18:16:26"
+    },
+    {
+        "id": 5,
+        "title": "Crispy Fried Chicken",
+        "subtitle": "Save up to",
+        "discount": "45% OFF",
+        "img": "img\/menu\/dish_1791458236_6465.png",
+        "is_active": 1,
+        "sort_order": 0,
+        "created_at": "2026-10-08 13:17:16"
+    }
+]

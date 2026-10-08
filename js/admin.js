@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderKitchenGrid();
     renderStaffAndLoyaltyTables();
     loadAdminCategories();
+    loadAdminPromos();
     initSidebarTabs();
     initSearchAndFilter();
 
@@ -520,7 +521,11 @@ function initSidebarTabs() {
             } else if (tabId === 'users') {
                 if (typeof renderStaffAndLoyaltyTables === 'function') renderStaffAndLoyaltyTables();
             } else if (tabId === 'promos') {
-                if (typeof renderAdminPromosGrid === 'function') renderAdminPromosGrid();
+                if (typeof loadAdminPromos === 'function') {
+                    loadAdminPromos();
+                } else if (typeof renderAdminPromosGrid === 'function') {
+                    renderAdminPromosGrid();
+                }
             }
         });
     });
@@ -1733,18 +1738,15 @@ function renderAdminMenuCategoryPills() {
 
     var catMap = {};
     var defaultCats = [
-        { name: 'Coffee', slug: 'coffee' },
-        { name: 'Tea', slug: 'tea' },
-        { name: 'Smoothies', slug: 'smoothies' },
-        { name: 'Shakes', slug: 'shakes' },
-        { name: 'Juices', slug: 'juices' },
-        { name: 'Mains', slug: 'mains' },
-        { name: 'Burger', slug: 'burger' },
-        { name: 'Grills', slug: 'grills' },
+        { name: 'Breakfast', slug: 'breakfast' },
+        { name: 'Burgers', slug: 'burgers' },
         { name: 'Pizza', slug: 'pizza' },
-        { name: 'Wraps', slug: 'wraps' },
+        { name: 'Grill', slug: 'grill' },
+        { name: 'Plates', slug: 'plates' },
         { name: 'Salads', slug: 'salads' },
-        { name: 'Sides', slug: 'sides' }
+        { name: 'Sides', slug: 'sides' },
+        { name: 'Coffee', slug: 'coffee' },
+        { name: 'Tea', slug: 'tea' }
     ];
 
     var list = (typeof adminCategories !== 'undefined' && Array.isArray(adminCategories) && adminCategories.length > 0) ? adminCategories : defaultCats;
@@ -2796,18 +2798,15 @@ async function loadAdminCategories() {
 
     if (!adminCategories || adminCategories.length === 0) {
         adminCategories = [
-            { id: 1, name: 'Coffee', slug: 'coffee', icon: 'fas fa-coffee', is_active: 1, sort_order: 1 },
-            { id: 2, name: 'Tea', slug: 'tea', icon: 'fas fa-mug-hot', is_active: 1, sort_order: 2 },
-            { id: 3, name: 'Smoothies', slug: 'smoothies', icon: 'fas fa-blender', is_active: 1, sort_order: 3 },
-            { id: 4, name: 'Shakes', slug: 'shakes', icon: 'fas fa-glass-martini-alt', is_active: 1, sort_order: 4 },
-            { id: 5, name: 'Juices', slug: 'juices', icon: 'fas fa-cocktail', is_active: 1, sort_order: 5 },
-            { id: 6, name: 'Mains', slug: 'mains', icon: 'fas fa-utensils', is_active: 1, sort_order: 6 },
-            { id: 7, name: 'Burger', slug: 'burger', icon: 'fas fa-hamburger', is_active: 1, sort_order: 7 },
-            { id: 8, name: 'Grills', slug: 'grills', icon: 'fas fa-drumstick-bite', is_active: 1, sort_order: 8 },
-            { id: 9, name: 'Pizza', slug: 'pizza', icon: 'fas fa-pizza-slice', is_active: 1, sort_order: 9 },
-            { id: 10, name: 'Wraps', slug: 'wraps', icon: 'fas fa-hotdog', is_active: 1, sort_order: 10 },
-            { id: 11, name: 'Salads', slug: 'salads', icon: 'fas fa-leaf', is_active: 1, sort_order: 11 },
-            { id: 12, name: 'Sides', slug: 'sides', icon: 'fas fa-bread-slice', is_active: 1, sort_order: 12 }
+            { id: 8, name: 'Breakfast', slug: 'breakfast', icon: 'fas fa-egg', is_active: 1, sort_order: 1 },
+            { id: 2, name: 'Burgers', slug: 'burgers', icon: 'fas fa-burger', is_active: 1, sort_order: 2 },
+            { id: 1, name: 'Pizza', slug: 'pizza', icon: 'fas fa-pizza-slice', is_active: 1, sort_order: 3 },
+            { id: 11, name: 'Grill', slug: 'grill', icon: 'fas fa-fire', is_active: 1, sort_order: 4 },
+            { id: 5, name: 'Plates', slug: 'plates', icon: 'fas fa-concierge-bell', is_active: 1, sort_order: 5 },
+            { id: 3, name: 'Salads', slug: 'salads', icon: 'fas fa-leaf', is_active: 1, sort_order: 6 },
+            { id: 4, name: 'Sides', slug: 'sides', icon: 'fas fa-utensils', is_active: 1, sort_order: 7 },
+            { id: 9, name: 'Coffee', slug: 'coffee', icon: 'fas fa-coffee', is_active: 1, sort_order: 8 },
+            { id: 10, name: 'Tea', slug: 'tea', icon: 'fas fa-mug-hot', is_active: 1, sort_order: 9 }
         ];
         saveCategoriesToStorage();
     }
@@ -2819,6 +2818,7 @@ async function loadAdminCategories() {
 function saveCategoriesToStorage() {
     try {
         localStorage.setItem('favcafe_categories', JSON.stringify(adminCategories));
+        localStorage.setItem('favcafe_categories_updated', Date.now().toString());
     } catch (e) {}
 }
 
@@ -3230,31 +3230,64 @@ window.uploadCsvMenu = uploadCsvMenu;
    ============================================================ */
 var adminPromos = [];
 
-function loadAdminPromos() {
+function previewPromoImage(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var imgPreview = document.getElementById('promoImagePreview');
+            var box = document.getElementById('promoImagePreviewBox');
+            if (imgPreview && box) {
+                imgPreview.src = e.target.result;
+                box.style.display = 'block';
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+window.previewPromoImage = previewPromoImage;
+
+async function loadAdminPromos() {
+    try {
+        var res = await fetch('api/promos.php?action=get');
+        if (res.ok) {
+            var data = await res.json();
+            if (data && data.status === 'success' && Array.isArray(data.promos)) {
+                adminPromos = data.promos;
+                saveAdminPromos();
+                renderAdminPromosGrid();
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('Could not fetch promos from api, falling back to local storage', e);
+    }
+
     var stored = localStorage.getItem('favcafe_promos');
     if (stored) {
-        adminPromos = JSON.parse(stored);
+        try { adminPromos = JSON.parse(stored); } catch (e) {}
     } else {
         adminPromos = [
-            { id: 1, title: "Order Salmon Steak Today", subtitle: "And Save Up To", discount: "35%", img: "img/menu/6.jpg" },
-            { id: 2, title: "Fresh Salads", subtitle: "Healthy & Green", discount: "20%", img: "img/menu/1.jpg" },
-            { id: 3, title: "Coffee & Pastries", subtitle: "Morning Special", discount: "15%", img: "img/menu/4.jpg" }
+            { id: 1, title: "*for All Menus", subtitle: "Happy Weekend", discount: "60% OFF", img: "img/menu/7.jpg" },
+            { id: 2, title: "Fresh Salads", subtitle: "Healthy & Green", discount: "20%", img: "img/menu/3.png" },
+            { id: 3, title: "Coffee & Pastries", subtitle: "Morning Special", discount: "15%", img: "img/menu/5.jpg" }
         ];
         saveAdminPromos();
     }
+    renderAdminPromosGrid();
 }
+window.loadAdminPromos = loadAdminPromos;
 
 function saveAdminPromos() {
     localStorage.setItem('favcafe_promos', JSON.stringify(adminPromos));
+    localStorage.setItem('favcafe_promos_updated', Date.now().toString());
 }
 
 function renderAdminPromosGrid() {
-    loadAdminPromos();
     var grid = document.getElementById('adminPromosGrid');
     if (!grid) return;
     grid.innerHTML = '';
     
-    if (adminPromos.length === 0) {
+    if (!adminPromos || adminPromos.length === 0) {
         grid.innerHTML = '<div class="col-12 text-center text-muted py-5">No promos found. Add one above.</div>';
         return;
     }
@@ -3262,14 +3295,19 @@ function renderAdminPromosGrid() {
     adminPromos.forEach(function(p) {
         var card = document.createElement('div');
         card.className = 'col-md-6 col-lg-4';
+        var mediaHtml = p.img ? 
+            `<img src="${p.img}" alt="${p.title}" style="width:100%; height:160px; object-fit:cover;" onerror="this.onerror=null;this.parentElement.style.background='linear-gradient(135deg, #ff5e57, #ff3f34)';" />` : 
+            `<div style="height:160px; background:linear-gradient(135deg, #ff5e57, #ff3f34); display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; font-weight:800;">${p.discount || 'PROMO'}</div>`;
+
         card.innerHTML = `
-            <div class="admin-card border h-100 d-flex flex-column" style="overflow:hidden;">
-                <div style="height:150px; background:url('${p.img}') center/cover; position:relative;">
-                    <div style="position:absolute; top:10px; right:10px; background:var(--primary); color:white; padding:2px 8px; border-radius:10px; font-weight:bold;">${p.discount}</div>
+            <div class="admin-card border h-100 d-flex flex-column shadow-sm rounded-3" style="overflow:hidden; background:#fff;">
+                <div style="height:160px; position:relative; overflow:hidden; background:#2c3e50;">
+                    ${mediaHtml}
+                    <div style="position:absolute; top:10px; right:10px; background:#ff5e57; color:#fff; padding:4px 12px; border-radius:12px; font-weight:700; font-size:0.85rem; box-shadow:0 2px 6px rgba(0,0,0,0.25);">${p.discount || 'Special'}</div>
                 </div>
                 <div class="p-3 flex-grow-1">
-                    <div class="text-muted small">${p.subtitle}</div>
-                    <h5 class="mb-3">${p.title}</h5>
+                    <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing:0.5px;">${p.subtitle || 'Special Offer'}</div>
+                    <h5 class="mb-1 text-dark" style="font-weight:700;">${p.title || 'Untitled Promo'}</h5>
                 </div>
                 <div class="p-3 border-top d-flex justify-content-end gap-2 bg-light">
                     <button class="btn btn-sm btn-outline-secondary" onclick="editPromo(${p.id})"><i class="fas fa-edit"></i> Edit</button>
@@ -3280,10 +3318,21 @@ function renderAdminPromosGrid() {
         grid.appendChild(card);
     });
 }
+window.renderAdminPromosGrid = renderAdminPromosGrid;
 
 function openPromoModal() {
-    document.getElementById('promoForm').reset();
+    var form = document.getElementById('promoForm');
+    if (form) form.reset();
     document.getElementById('promoId').value = '';
+    document.getElementById('promoImg').value = '';
+    
+    var fileInput = document.getElementById('promoImageFile');
+    if (fileInput) fileInput.value = '';
+    var previewBox = document.getElementById('promoImagePreviewBox');
+    var previewImg = document.getElementById('promoImagePreview');
+    if (previewBox) previewBox.style.display = 'none';
+    if (previewImg) previewImg.src = '';
+    
     document.getElementById('promoModalTitle').innerHTML = '<i class="fas fa-bullhorn me-2" style="color:var(--primary);"></i>Add New Promo';
     
     var modal = document.getElementById('promoModal');
@@ -3292,6 +3341,7 @@ function openPromoModal() {
         document.body.style.overflow = 'hidden';
     }
 }
+window.openPromoModal = openPromoModal;
 
 function closePromoModal() {
     var modal = document.getElementById('promoModal');
@@ -3300,17 +3350,29 @@ function closePromoModal() {
         document.body.style.overflow = '';
     }
 }
+window.closePromoModal = closePromoModal;
 
 function editPromo(id) {
-    loadAdminPromos();
-    var p = adminPromos.find(x => x.id === id);
+    var p = adminPromos.find(x => parseInt(x.id) === parseInt(id));
     if (!p) return;
     
     document.getElementById('promoId').value = p.id;
-    document.getElementById('promoTitle').value = p.title;
-    document.getElementById('promoSubtitle').value = p.subtitle;
-    document.getElementById('promoDiscount').value = p.discount;
-    document.getElementById('promoImg').value = p.img;
+    document.getElementById('promoTitle').value = p.title || '';
+    document.getElementById('promoSubtitle').value = p.subtitle || '';
+    document.getElementById('promoDiscount').value = p.discount || '';
+    document.getElementById('promoImg').value = p.img || '';
+    
+    var fileInput = document.getElementById('promoImageFile');
+    if (fileInput) fileInput.value = '';
+    var previewBox = document.getElementById('promoImagePreviewBox');
+    var previewImg = document.getElementById('promoImagePreview');
+    
+    if (p.img && previewBox && previewImg) {
+        previewImg.src = p.img;
+        previewBox.style.display = 'block';
+    } else if (previewBox) {
+        previewBox.style.display = 'none';
+    }
     
     document.getElementById('promoModalTitle').innerHTML = '<i class="fas fa-bullhorn me-2" style="color:var(--primary);"></i>Edit Promo';
     
@@ -3320,42 +3382,103 @@ function editPromo(id) {
         document.body.style.overflow = 'hidden';
     }
 }
+window.editPromo = editPromo;
 
-function deletePromo(id) {
+async function deletePromo(id) {
     if (confirm("Are you sure you want to delete this promo?")) {
-        adminPromos = adminPromos.filter(x => x.id !== id);
+        try {
+            await fetch('api/promos.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', id: parseInt(id) })
+            });
+        } catch (e) {}
+
+        adminPromos = adminPromos.filter(x => parseInt(x.id) !== parseInt(id));
         saveAdminPromos();
         renderAdminPromosGrid();
         showToast("Promo deleted successfully.", "success");
     }
 }
+window.deletePromo = deletePromo;
 
-function savePromoItem(event) {
-    event.preventDefault();
+async function savePromoItem(event) {
+    if (event) event.preventDefault();
     var id = document.getElementById('promoId').value;
-    var title = document.getElementById('promoTitle').value;
-    var subtitle = document.getElementById('promoSubtitle').value;
-    var discount = document.getElementById('promoDiscount').value;
-    var img = document.getElementById('promoImg').value;
-    
+    var title = document.getElementById('promoTitle').value.trim();
+    var subtitle = document.getElementById('promoSubtitle').value.trim();
+    var discount = document.getElementById('promoDiscount').value.trim();
+    var img = document.getElementById('promoImg').value.trim();
+    var fileInput = document.getElementById('promoImageFile');
+
+    if (!title) {
+        showToast("Please provide a promo title.", "warning");
+        return;
+    }
+
+    // Upload file if selected
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        var formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        try {
+            var uploadRes = await fetch('api/upload.php', {
+                method: 'POST',
+                body: formData
+            });
+            var uploadData = await uploadRes.json();
+            if (uploadData.status === 'success' && uploadData.image_path) {
+                img = uploadData.image_path;
+            } else if (uploadData.message) {
+                showToast(uploadData.message, 'warning', 'Upload Warning');
+            }
+        } catch (uploadErr) {
+            console.log('[Promo Upload] Upload error, trying preview base64');
+            var previewImg = document.getElementById('promoImagePreview');
+            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
+                img = previewImg.src;
+            }
+        }
+    }
+
+    var payload = {
+        action: id ? 'update' : 'add',
+        title: title,
+        subtitle: subtitle,
+        discount: discount,
+        img: img
+    };
+    if (id) payload.id = parseInt(id);
+
+    try {
+        var res = await fetch('api/promos.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+        if (data && data.status === 'success') {
+            await loadAdminPromos();
+            closePromoModal();
+            showToast(data.message || "Promo saved successfully.", "success");
+            return;
+        }
+    } catch (e) {
+        console.warn('Promo save to API failed, fallback to local', e);
+    }
+
     if (id) {
-        var idx = adminPromos.findIndex(x => x.id === parseInt(id));
+        var idx = adminPromos.findIndex(x => parseInt(x.id) === parseInt(id));
         if (idx > -1) {
             adminPromos[idx] = { id: parseInt(id), title: title, subtitle: subtitle, discount: discount, img: img };
-            showToast("Promo updated successfully.", "success");
         }
     } else {
-        var newId = adminPromos.length > 0 ? Math.max(...adminPromos.map(x => x.id)) + 1 : 1;
+        var newId = Date.now();
         adminPromos.push({ id: newId, title: title, subtitle: subtitle, discount: discount, img: img });
-        showToast("Promo added successfully.", "success");
     }
-    
+
     saveAdminPromos();
     closePromoModal();
     renderAdminPromosGrid();
+    showToast("Promo saved successfully.", "success");
 }
-window.openPromoModal = openPromoModal;
-window.closePromoModal = closePromoModal;
-window.editPromo = editPromo;
-window.deletePromo = deletePromo;
 window.savePromoItem = savePromoItem;

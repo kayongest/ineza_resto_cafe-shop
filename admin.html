@@ -41,9 +41,13 @@
                   <input type="text" id="promoDiscount" class="form-control" placeholder="e.g. 35%" required />
                </div>
                <div class="col-md-12">
-                  <label for="promoImg">Image Path / URL *</label>
-                  <input type="text" id="promoImg" class="form-control" placeholder="img/menu/6.jpg" required />
-                  <small class="text-muted">Relative path (e.g. img/menu/1.jpg) or absolute URL.</small>
+                  <label for="promoImageFile" class="form-label"><i class="fas fa-image me-1" style="color:var(--primary);"></i>Upload Promo Image / Poster</label>
+                  <input type="file" id="promoImageFile" class="form-control" accept="image/*" onchange="previewPromoImage(this)" />
+                  <input type="hidden" id="promoImg" value="" />
+                  <small class="text-muted d-block mt-1">Upload a photo for this promo (JPG, PNG, WEBP).</small>
+                  <div class="mt-2 text-center" id="promoImagePreviewBox" style="display:none;">
+                     <img id="promoImagePreview" src="" class="img-thumbnail shadow-sm rounded-3" style="max-height:130px; object-fit:cover;" alt="Promo Preview" />
+                  </div>
                </div>
             </div>
             <div class="mt-4 text-end">
@@ -1737,7 +1741,7 @@
    <!-- Scripts -->
    <script src="js/jquery-3.7.1.min.js"></script>
    <script src="js/bootstrap.bundle.min.js"></script>
-   <script src="js/admin.js?v=6.2"></script>
+   <script src="js/admin.js?v=7.1"></script>
 </body>
 
 </html>

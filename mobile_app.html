@@ -13,7 +13,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <!-- Foodia Dark Navy CSS -->
-    <link rel="stylesheet" href="css/mobile_app.css?v=5.0">
+    <link rel="stylesheet" href="css/mobile_app.css?v=6.0">
 </head>
 
 <body>
@@ -32,12 +32,12 @@
             </div>
         </div>
         <div class="header-right">
-            <button type="button" class="header-icon-btn" onclick="toggleDarkMode()" title="Toggle Sun/Moon Mode">
-                <i class="fas fa-sun" id="darkModeIcon"></i>
+            <button type="button" class="header-icon-btn" onclick="toggleDarkMode()" title="Settings & Theme">
+                <i class="fas fa-cog" id="darkModeIcon"></i>
             </button>
             <div class="cart-icon-wrapper" onclick="switchTab('order')" title="Shopping Cart">
                 <i class="fas fa-shopping-cart text-light-blue" style="font-size:1.25rem;"></i>
-                <span id="cartBadge" class="cart-badge-count">5</span>
+                <span id="cartBadge" class="cart-badge-count">3</span>
             </div>
         </div>
     </header>
@@ -62,17 +62,21 @@
                 <!-- Dynamic from JS -->
             </div>
 
-            <!-- Coral Promo Banner -->
-            <div class="promo-coral-card">
-                <div class="promo-tag">Happy Weekend</div>
-                <div class="promo-title-discount">60% OFF</div>
-                <div class="promo-note">*for All Menus</div>
+            <!-- Dynamic Promos & Banners from Admin Dashboard -->
+            <div id="homePromoBannerContainer">
+                <div class="promo-coral-card" onclick="switchTab('favorite')">
+                    <div class="promo-content">
+                        <div class="promo-tag">Happy Weekend</div>
+                        <div class="promo-title-discount">60% OFF</div>
+                        <div class="promo-note">*for All Menus</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Recommended Section -->
             <div class="section-title-bar">
                 <h3>Recomended 👋</h3>
-                <a href="javascript:void(0);" class="section-link" onclick="switchTab('menu')">View more &gt;</a>
+                <a href="javascript:void(0);" class="section-link" onclick="switchTab('menu')">View more</a>
             </div>
             <div class="food-grid" id="homeRecommended">
                 <!-- Dynamic from JS -->
@@ -89,6 +93,13 @@
             <div class="search-input-box">
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" id="menuViewSearchInput" placeholder="Search beverages or foods" oninput="executeMenuSearch(this.value)">
+            </div>
+
+            <!-- Menu Type Filter (Breakfast vs Lunch) -->
+            <div class="category-scroll-container mb-2" id="appMenuTypeChips" style="gap:8px;">
+                <button type="button" class="status-pill-btn active" data-type="all" onclick="setAppMenuType('all', this)">All Day</button>
+                <button type="button" class="status-pill-btn" data-type="breakfast" onclick="setAppMenuType('breakfast', this)"><i class="fas fa-egg me-1"></i>Breakfast Menu</button>
+                <button type="button" class="status-pill-btn" data-type="lunch" onclick="setAppMenuType('lunch', this)"><i class="fas fa-hamburger me-1"></i>Lunch Menu</button>
             </div>
 
             <div class="category-scroll-container mb-3" id="menuCategoryChips">
@@ -325,7 +336,7 @@
                         <div class="contact-icon-circle me-3"><i class="fas fa-phone"></i></div>
                         <div>
                             <div class="contact-info-label">Mobile Phone</div>
-                            <div class="contact-info-val" id="profilePhoneVal">+12 345 678 92</div>
+                            <div class="contact-info-val" id="profilePhoneVal">078...</div>
                         </div>
                     </div>
                     <button type="button" class="btn-clear-field" onclick="deleteContactField('phone')" title="Clear Phone"><i class="fas fa-times"></i></button>
@@ -388,8 +399,21 @@
         <!-- 7. OFFERS / FAVORITE VIEW -->
         <div id="view-favorite" class="tab-view">
             <div class="user-greeting-banner" style="padding-bottom:0.75rem;">
-                <div class="greeting-subtitle">Exclusive Deals</div>
-                <h2 class="greeting-headline">Special Offers &amp; Favorites 🏷️</h2>
+                <div class="greeting-subtitle">Exclusive Deals & Offers</div>
+                <h2 class="greeting-headline">Special Offers &amp; Promos 🎉</h2>
+            </div>
+
+            <!-- Dynamic Promo Banners in Offers View -->
+            <div class="section-title-bar mb-2">
+                <h3>Active Promos & Banners 🏷️</h3>
+            </div>
+            <div id="offersPromoCardsContainer" class="mb-4">
+                <!-- Dynamic from JS -->
+            </div>
+
+            <!-- Favorite Dishes Section -->
+            <div class="section-title-bar mb-2">
+                <h3>Favorite Dishes ❤️</h3>
             </div>
             <div class="food-grid" id="favoriteGrid">
                 <!-- Dynamic from JS -->
@@ -530,7 +554,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label-custom"><i class="fas fa-phone me-1 text-cyan"></i> Mobile Phone</label>
-                        <input type="tel" id="editProfilePhone" class="form-control-custom" placeholder="e.g. 54213658">
+                        <input type="tel" id="editProfilePhone" class="form-control-custom" placeholder="078...">
                     </div>
                     <div class="mb-3">
                         <label class="form-label-custom"><i class="fas fa-envelope me-1 text-cyan"></i> Email Address</label>
@@ -561,7 +585,7 @@
     <div id="appToast" class="app-toast">Message</div>
 
     <!-- Scripts -->
-    <script src="js/mobile_app.js?v=5.0"></script>
+    <script src="js/mobile_app.js?v=6.3"></script>
 </body>
 
 </html>

@@ -5,9 +5,14 @@
 // GLOBAL STATE
 let currentUser = null;
 let menuItems = [];
+let appCategories = [];
+let appPromos = [];
+let promoCarouselTimer = null;
+let currentPromoIndex = 0;
 let cart = [];
 let favorites = [];
 let activeCategory = 'All';
+let appMenuType = 'all';
 let currentOrderFilter = 'all';
 let isOffline = false;
 
@@ -23,15 +28,20 @@ async function initApp() {
     loadCart();
     loadFavorites();
     await loadMenu();
+    await loadCategories();
+    await loadPromos();
 
     renderHomeCategories();
     renderHomeRecommended();
+    renderHomePromos();
+    renderOffersPromos();
     renderMenuCategories();
     renderMenuGrid();
     renderFavoriteGrid();
     loadMobileOrderHistory();
 
     initNetworkListener();
+    initStorageSyncListener();
 }
 
 // SESSION VALIDATION
@@ -520,28 +530,236 @@ window.toggleSidebarDrawer = toggleSidebarDrawer;
 // CATEGORY ICON CONFIG (SCREEN 4)
 function getCategoryIconConfig(categoryName) {
     const cat = (categoryName || '').toLowerCase();
-    if (cat.includes('salad')) return { icon: 'fas fa-seedling', bg: '#26de81', label: 'Salads' };
-    if (cat.includes('meat') || cat.includes('steak')) return { icon: 'fas fa-drumstick-bite', bg: '#ff5252', label: 'Meat' };
+    if (cat.includes('breakfast') || cat.includes('egg')) return { icon: 'fas fa-egg', bg: '#f39c12', label: 'Breakfast' };
+    if (cat.includes('burger')) return { icon: 'fas fa-hamburger', bg: '#e67e22', label: 'Burgers' };
+    if (cat.includes('pizza')) return { icon: 'fas fa-pizza-slice', bg: '#e74c3c', label: 'Pizza' };
+    if (cat.includes('grill') || cat.includes('meat') || cat.includes('steak')) return { icon: 'fas fa-fire', bg: '#d35400', label: 'Grill' };
+    if (cat.includes('plate') || cat.includes('main')) return { icon: 'fas fa-concierge-bell', bg: '#8e44ad', label: 'Plates' };
+    if (cat.includes('salad')) return { icon: 'fas fa-seedling', bg: '#27ae60', label: 'Salads' };
+    if (cat.includes('side')) return { icon: 'fas fa-utensils', bg: '#16a085', label: 'Sides' };
+    if (cat.includes('coffee')) return { icon: 'fas fa-coffee', bg: '#6f4e37', label: 'Coffee' };
+    if (cat.includes('tea')) return { icon: 'fas fa-mug-hot', bg: '#2ecc71', label: 'Tea' };
     if (cat.includes('pasta') || cat.includes('noodle')) return { icon: 'fas fa-utensils', bg: '#ff7043', label: 'Pasta' };
     if (cat.includes('soup')) return { icon: 'fas fa-bowl-food', bg: '#26c6da', label: 'Soups' };
     if (cat.includes('potato')) return { icon: 'fas fa-border-all', bg: '#a55eea', label: 'Potatoes' };
     if (cat.includes('salmon') || cat.includes('fish')) return { icon: 'fas fa-fish', bg: '#ff79ac', label: 'Fish' };
-    if (cat.includes('burger')) return { icon: 'fas fa-hamburger', bg: '#2b5cff', label: 'Foods' };
     if (cat.includes('wrap') || cat.includes('fast') || cat.includes('snack')) return { icon: 'fas fa-cookie-bite', bg: '#26de81', label: 'Snack' };
-    if (cat.includes('drink') || cat.includes('coffee') || cat.includes('beverage')) return { icon: 'fas fa-coffee', bg: '#ff7043', label: 'Drink' };
-    if (cat.includes('dessert') || cat.includes('dissert') || cat.includes('cake')) return { icon: 'fas fa-ice-cream', bg: '#a55eea', label: 'Dissert' };
+    if (cat.includes('drink') || cat.includes('juice') || cat.includes('beverage')) return { icon: 'fas fa-glass-martini-alt', bg: '#3498db', label: 'Drinks' };
+    if (cat.includes('dessert') || cat.includes('dissert') || cat.includes('ice') || cat.includes('shake') || cat.includes('smoothie')) return { icon: 'fas fa-ice-cream', bg: '#9b59b6', label: 'Dessert' };
     return { icon: 'fas fa-utensils', bg: '#2b5cff', label: categoryName || 'Foods' };
 }
 
 // MENU & DATA FETCHING
-async function loadMenu() {
+async function loadCategories() {
     try {
-        const res = await fetch('api/menu.php?action=get');
+        const res = await fetch('api/categories.php?action=get&active_only=1');
         if (res.ok) {
             const data = await res.json();
-            if (data.status === 'success' && data.data && data.data.length > 0) {
-                menuItems = data.data;
-                localStorage.setItem('favcafe_menu_cache', JSON.stringify(menuItems));
+            if (data && data.status === 'success' && Array.isArray(data.categories)) {
+                appCategories = data.categories;
+                localStorage.setItem('favcafe_categories', JSON.stringify(appCategories));
+                return;
+            }
+        }
+    } catch (e) {}
+
+    const cached = localStorage.getItem('favcafe_categories') || localStorage.getItem('favcafe_mobile_categories');
+    if (cached) {
+        try {
+            const parsed = JSON.parse(cached);
+            appCategories = parsed.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true);
+        } catch (e) {}
+    }
+}
+
+async function loadPromos() {
+    try {
+        const res = await fetch('api/promos.php?action=get&active_only=1');
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.status === 'success' && Array.isArray(data.promos) && data.promos.length > 0) {
+                appPromos = data.promos;
+                localStorage.setItem('favcafe_promos', JSON.stringify(appPromos));
+                return;
+            }
+        }
+    } catch (e) {}
+
+    const stored = localStorage.getItem('favcafe_promos');
+    if (stored) {
+        try { appPromos = JSON.parse(stored); } catch (e) {}
+    }
+
+    if (!appPromos || appPromos.length === 0) {
+        appPromos = [
+            { id: 1, title: "*for All Menus", subtitle: "Happy Weekend", discount: "60% OFF", img: "img/menu/7.jpg" },
+            { id: 2, title: "Fresh Salads", subtitle: "Healthy & Green", discount: "20%", img: "img/menu/3.png" },
+            { id: 3, title: "Coffee & Pastries", subtitle: "Morning Special", discount: "15%", img: "img/menu/5.jpg" }
+        ];
+    }
+}
+
+function renderHomePromos() {
+    const container = document.getElementById('homePromoBannerContainer');
+    if (!container) return;
+
+    if (!appPromos || appPromos.length === 0) {
+        container.innerHTML = `
+            <div class="promo-coral-card" onclick="switchTab('favorite')">
+                <div class="promo-content">
+                    <div class="promo-tag">Happy Weekend</div>
+                    <div class="promo-title-discount">60% OFF</div>
+                    <div class="promo-note">*for All Menus</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div class="promo-carousel-wrapper">';
+    appPromos.forEach((p, idx) => {
+        let discountDisplay = p.discount || '60% OFF';
+        if (discountDisplay && !discountDisplay.toUpperCase().includes('OFF') && discountDisplay.includes('%')) {
+            discountDisplay += ' OFF';
+        }
+        const tagDisplay = p.subtitle || 'Happy Weekend';
+        const noteDisplay = p.title || '*for All Menus';
+
+        html += `
+            <div class="promo-coral-card promo-carousel-slide ${idx === currentPromoIndex ? 'active' : ''}" onclick="switchTab('favorite')">
+                <div class="promo-content">
+                    <div class="promo-tag">${tagDisplay}</div>
+                    <div class="promo-title-discount">${discountDisplay}</div>
+                    <div class="promo-note">${noteDisplay}</div>
+                </div>
+                ${p.img ? `<div class="promo-media"><img src="${p.img}" alt="${tagDisplay}" onerror="this.parentElement.style.display='none';"></div>` : ''}
+            </div>
+        `;
+    });
+
+    if (appPromos.length > 1) {
+        html += '<div class="promo-carousel-dots">';
+        appPromos.forEach((_, idx) => {
+            html += `<span class="promo-dot ${idx === currentPromoIndex ? 'active' : ''}" onclick="switchPromoSlide(${idx})"></span>`;
+        });
+        html += '</div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+
+    startPromoCarouselTimer();
+}
+
+function renderOffersPromos() {
+    const container = document.getElementById('offersPromoCardsContainer');
+    if (!container) return;
+
+    if (!appPromos || appPromos.length === 0) {
+        container.innerHTML = `
+            <div class="promo-coral-card mb-3" style="cursor:pointer;" onclick="switchTab('menu')">
+                <div class="promo-content">
+                    <div class="promo-tag">Happy Weekend</div>
+                    <div class="promo-title-discount">60% OFF</div>
+                    <div class="promo-note">*for All Menus - Browse Menu</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    appPromos.forEach((p) => {
+        let discountDisplay = p.discount || 'Special Offer';
+        if (discountDisplay && !discountDisplay.toUpperCase().includes('OFF') && discountDisplay.includes('%')) {
+            discountDisplay += ' OFF';
+        }
+        const tagDisplay = p.subtitle || 'Promo Offer';
+        const noteDisplay = p.title || '*Available now';
+
+        html += `
+            <div class="promo-coral-card mb-3" style="cursor:pointer;" onclick="switchTab('menu')">
+                <div class="promo-content">
+                    <div class="promo-tag">${tagDisplay}</div>
+                    <div class="promo-title-discount">${discountDisplay}</div>
+                    <div class="promo-note">${noteDisplay} &bull; <span style="text-decoration:underline;">Order Now</span></div>
+                </div>
+                ${p.img ? `<div class="promo-media"><img src="${p.img}" alt="${tagDisplay}" onerror="this.parentElement.style.display='none';"></div>` : ''}
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+window.renderOffersPromos = renderOffersPromos;
+
+function switchPromoSlide(index) {
+    if (!appPromos || appPromos.length <= 1) return;
+    currentPromoIndex = (index + appPromos.length) % appPromos.length;
+    
+    document.querySelectorAll('.promo-carousel-slide').forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === currentPromoIndex);
+    });
+    document.querySelectorAll('.promo-dot').forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === currentPromoIndex);
+    });
+
+    startPromoCarouselTimer();
+}
+window.switchPromoSlide = switchPromoSlide;
+
+function startPromoCarouselTimer() {
+    if (promoCarouselTimer) clearInterval(promoCarouselTimer);
+    if (!appPromos || appPromos.length <= 1) return;
+
+    promoCarouselTimer = setInterval(() => {
+        switchPromoSlide(currentPromoIndex + 1);
+    }, 4500);
+}
+
+function initStorageSyncListener() {
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'favcafe_categories_updated' || e.key === 'favcafe_categories') {
+            loadCategories().then(() => {
+                renderHomeCategories();
+                renderHomeRecommended();
+                renderMenuCategories();
+                executeSearch();
+            });
+        }
+        if (e.key === 'favcafe_promos_updated' || e.key === 'favcafe_promos') {
+            loadPromos().then(() => {
+                renderHomePromos();
+                renderOffersPromos();
+            });
+        }
+    });
+}
+
+async function loadMenu() {
+    try {
+        const res = await fetch('api/menu.php?action=get&t=' + Date.now());
+        if (res.ok) {
+            const data = await res.json();
+            const items = data.items || data.data;
+            if (data.status === 'success' && Array.isArray(items) && items.length > 0) {
+                menuItems = items;
+                sortInitialMenuItems();
+                try { localStorage.setItem('favcafe_menu_cache', JSON.stringify(menuItems)); } catch (e) {}
+                return;
+            }
+        }
+    } catch (e) {}
+
+    // Static JSON fallback
+    try {
+        const resJson = await fetch('api/menu.json?t=' + Date.now());
+        if (resJson.ok) {
+            const jsonItems = await resJson.json();
+            if (Array.isArray(jsonItems) && jsonItems.length > 0) {
+                menuItems = jsonItems;
+                sortInitialMenuItems();
+                try { localStorage.setItem('favcafe_menu_cache', JSON.stringify(menuItems)); } catch (e) {}
                 return;
             }
         }
@@ -550,24 +768,32 @@ async function loadMenu() {
     const cached = localStorage.getItem('favcafe_menu_cache');
     if (cached) {
         menuItems = JSON.parse(cached);
+        sortInitialMenuItems();
         return;
     }
 
     // Default reference menu items matching exact database items
     menuItems = [
-        { id: 1, title: 'Special Favorie omelette', category: 'sides', price: 4500, image: 'img/menu/dish_1786018299_6931.png' },
-        { id: 2, title: 'Chicken Strips and Chips', category: 'burgers', price: 9000, image: 'img/menu/dish_1790004782_1426.png' },
-        { id: 3, title: 'Crispy Fried Chicken', category: 'mains', price: 6000, image: 'img/menu/dish_1786025102_4409.png' },
-        { id: 4, title: 'Chicken and Rice', category: 'mains', price: 9000, image: 'img/menu/dish_1786019674_6493.png' },
-        { id: 5, title: 'Jollof Rice and Chicken', category: 'mains', price: 10000, image: 'img/menu/dish_1786022829_6795.jpg' },
-        { id: 6, title: 'Chef Salad', category: 'salads', price: 4000, image: 'img/menu/dish_1786021881_4037.png' },
-        { id: 7, title: 'Chicken Pizza', category: 'pizza', price: 6000, image: 'img/menu/dish_1786021943_7435.jpg' },
-        { id: 8, title: 'Burger and chips', category: 'burgers', price: 6000, image: 'img/menu/dish_1786028631_2822.jpg' },
-        { id: 9, title: 'Espresso', category: 'black-coffee', price: 1500, image: 'img/menu/dish_1786021975_8115.jpg' },
-        { id: 10, title: 'Americano', category: 'black-coffee', price: 2000, image: 'img/menu/dish_1786022008_6335.jpg' },
-        { id: 13, title: 'Capuccino', category: 'coffee-with-milk', price: 2500, image: 'img/menu/dish_1786022071_9250.png' },
-        { id: 68, title: 'Igisafuriya', category: 'mains', price: 25000, image: 'img/menu/dish_1786028567_9416.png' }
+        { id: 7, title: 'Chicken Pizza', category: 'pizza', menu_type: 'lunch', price: 6000, description: 'Juicy grilled chicken chunks, melted mozzarella, and our signature tomato sauce on a freshly baked crust. Topped with onions, bell peppers, and a sprinkle of oregano. Available in: Regular / Medium / Large', image: 'img/menu/dish_1786021943_7435.jpg' },
+        { id: 63, title: 'Classic Burger', category: 'burgers', menu_type: 'lunch', price: 5000, description: 'A classic beef burger with cheese.', image: 'img/menu/dish_1786028631_2822.jpg' },
+        { id: 66, title: 'Chicken Burger', category: 'burgers', menu_type: 'lunch', price: 6000, description: 'burgers', image: 'img/menu/dish_1790004782_1426.png' },
+        { id: 76, title: 'Crepes', category: 'breakfast', menu_type: 'breakfast', price: 2500, description: 'Crepes with honey & banana', image: 'img/menu/dish_1786018299_6931.png' },
+        { id: 1, title: 'Special Ineza Omelette', category: 'sides', menu_type: 'breakfast', price: 4500, description: 'Fresh farm eggs with tomatoes, onions, and bell peppers.', image: 'img/menu/dish_1786018299_6931.png' },
+        { id: 3, title: 'Crispy Fried Chicken', category: 'plates', menu_type: 'lunch', price: 6000, description: 'Crispy golden seasoned fried chicken pieces.', image: 'img/menu/dish_1786025102_4409.png' }
     ];
+}
+
+function sortInitialMenuItems() {
+    if (!menuItems || menuItems.length === 0) return;
+    const featuredTitles = ['Chicken Pizza', 'Classic Burger', 'Chicken Burger', 'Crepes', 'Omelette', 'Special Favorie'];
+    menuItems.sort((a, b) => {
+        const idxA = featuredTitles.findIndex(t => a.title && a.title.toLowerCase().includes(t.toLowerCase()));
+        const idxB = featuredTitles.findIndex(t => b.title && b.title.toLowerCase().includes(t.toLowerCase()));
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return 0;
+    });
 }
 
 // RWF CURRENCY FORMATTER
@@ -582,22 +808,26 @@ function renderHomeCategories() {
     const container = document.getElementById('homeCategories');
     if (!container) return;
 
-    const presetCategories = ['Foods', 'Drink', 'Snack', 'Dissert', 'Foods', 'Foods', 'Foods'];
-    const categories = [...new Set(menuItems.map(item => item.category || 'Foods'))];
+    if (!appCategories || appCategories.length === 0) {
+        container.innerHTML = '<div class="w-100 text-center py-4" style="color:#8a99ad; font-size:0.9rem; padding: 1.5rem;">No categories displayed</div>';
+        return;
+    }
 
     container.innerHTML = '';
     
-    const catsToRender = categories.length >= 4 ? categories : presetCategories;
-    catsToRender.forEach((cat, idx) => {
-        const conf = getCategoryIconConfig(cat);
-        const escapedCat = cat.replace(/'/g, "\\'");
+    appCategories.forEach((catObj) => {
+        const rawSlug = (catObj.slug || catObj.name || '').toLowerCase();
+        const conf = getCategoryIconConfig(rawSlug);
+        const iconClass = catObj.icon || conf.icon;
+        const displayName = catObj.name || conf.label;
+        const escapedSlug = rawSlug.replace(/'/g, "\\'");
         
         container.innerHTML += `
-            <a href="javascript:void(0);" class="cat-icon-card" onclick="filterByCategory('${escapedCat}'); switchTab('menu');">
+            <a href="javascript:void(0);" class="cat-icon-card" onclick="filterByCategory('${escapedSlug}'); switchTab('menu');">
                 <div class="cat-icon-box" style="background:${conf.bg};">
-                    <i class="${conf.icon}"></i>
+                    <i class="${iconClass}"></i>
                 </div>
-                <span class="cat-icon-label">${conf.label}</span>
+                <span class="cat-icon-label">${displayName}</span>
             </a>
         `;
     });
@@ -608,32 +838,79 @@ function renderHomeRecommended() {
     if (!container) return;
 
     container.innerHTML = '';
-    const recommendations = menuItems.slice(0, 4);
+
+    if (!appCategories || appCategories.length === 0) {
+        container.innerHTML = '<div class="text-center w-100 py-4 text-muted-custom" style="color:#8a99ad; font-size:0.85rem;">No categories displayed</div>';
+        return;
+    }
+
+    const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
+    const validItems = menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()));
+
+    if (validItems.length === 0) {
+        container.innerHTML = '<div class="text-center w-100 py-4 text-muted-custom" style="color:#8a99ad; font-size:0.85rem;">No items available</div>';
+        return;
+    }
+
+    const recommendations = validItems.slice(0, 4);
     recommendations.forEach(item => {
         container.innerHTML += createMenuCard(item);
     });
 }
 
+function setAppMenuType(type, btn) {
+    appMenuType = (type || 'all').toLowerCase();
+    const container = document.getElementById('appMenuTypeChips');
+    if (container) {
+        container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    }
+    if (btn) btn.classList.add('active');
+
+    activeCategory = 'All';
+    renderMenuCategories();
+    executeSearch();
+}
+window.setAppMenuType = setAppMenuType;
+
 function renderMenuCategories() {
     const container = document.getElementById('menuCategoryChips');
     if (!container) return;
-
-    const categories = ['All', ...new Set(menuItems.map(item => item.category || 'Other'))];
     container.innerHTML = '';
 
-    categories.forEach(cat => {
-        const isActive = cat === activeCategory ? 'active' : '';
-        const escapedCat = cat.replace(/'/g, "\\'");
+    if (!appCategories || appCategories.length === 0) {
+        container.innerHTML = '<div class="text-center w-100 py-2" style="color:#8a99ad; font-size:0.85rem;">No categories displayed</div>';
+        return;
+    }
+
+    const list = [{ name: 'All', slug: 'All' }, ...(appCategories || [])];
+
+    list.forEach(cat => {
+        const catSlug = (cat.slug || cat.name || '').toLowerCase();
+
+        // If a specific menu type is selected (e.g. Breakfast), only show categories containing items of that menu type
+        if (cat.slug !== 'All' && appMenuType !== 'all') {
+            const hasItemsInMenuType = menuItems.some(m => {
+                const mt = (m.menu_type || 'lunch').toLowerCase();
+                const mc = (m.category || '').toLowerCase();
+                return (mt === appMenuType || mt === 'all_day') && mc === catSlug;
+            });
+            if (!hasItemsInMenuType) return;
+        }
+
+        const isActive = (catSlug === activeCategory.toLowerCase() || (activeCategory.toLowerCase() === 'all' && cat.slug === 'All')) ? 'active' : '';
+        const escapedSlug = (cat.slug || cat.name || '').toLowerCase().replace(/'/g, "\\'");
+        const displayName = cat.name || cat.slug;
+
         container.innerHTML += `
-            <button type="button" class="status-pill-btn ${isActive}" onclick="filterByCategory('${escapedCat}')">
-                ${cat}
+            <button type="button" class="status-pill-btn ${isActive}" onclick="filterByCategory('${escapedSlug}')">
+                ${displayName}
             </button>
         `;
     });
 }
 
 function filterByCategory(cat) {
-    activeCategory = cat;
+    activeCategory = (cat || 'All');
     renderMenuCategories();
     executeSearch();
 }
@@ -644,10 +921,21 @@ function renderMenuGrid(itemsToRender = null) {
     if (!container) return;
 
     container.innerHTML = '';
-    const items = itemsToRender || menuItems;
+
+    if (!appCategories || appCategories.length === 0) {
+        container.innerHTML = `<div class="text-center w-100 py-5 text-muted-custom" style="color:#8a99ad; font-size:0.95rem;">No categories displayed</div>`;
+        return;
+    }
+
+    const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
+    const items = itemsToRender !== null ? itemsToRender : (
+        activeCategory.toLowerCase() === 'all'
+            ? menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()))
+            : menuItems.filter(item => (item.category || '').toLowerCase().trim() === activeCategory.toLowerCase())
+    );
 
     if (items.length === 0) {
-        container.innerHTML = `<div class="text-center w-100 py-5 text-muted-custom">No items found</div>`;
+        container.innerHTML = `<div class="text-center w-100 py-5 text-muted-custom">No items found for this selection.</div>`;
         return;
     }
 
@@ -660,23 +948,46 @@ function createMenuCard(item) {
     const img = item.image && item.image !== 'undefined' ? item.image : 'img/menu/1.jpg';
     const priceVal = parseFloat(item.price || 0);
     const priceStr = formatRWF(priceVal);
-    const subStr = item.subtitle || item.category || 'Favorite Specialty';
+    const subStr = item.description || item.subtitle || item.category || 'Favorite Specialty';
 
     const itemJson = JSON.stringify(item).replace(/"/g, '&quot;');
+    const mType = (item.menu_type || (item.category && item.category.toLowerCase().includes('breakfast') ? 'breakfast' : 'lunch')).toLowerCase();
+    let badgeHtml = '';
+    if (mType === 'breakfast') {
+        badgeHtml = '<span class="menu-type-badge-sm">🍳 Breakfast</span>';
+    } else {
+        badgeHtml = '<span class="menu-type-badge-sm lunch">🍽️ Lunch</span>';
+    }
+
+    const isFav = isFavorite(item.id);
+    const favIconClass = isFav ? 'fas fa-heart text-danger' : 'far fa-heart';
+    const favActiveClass = isFav ? 'active' : '';
+
+    let oldPriceHtml = '';
+    if (item.old_price && parseFloat(item.old_price) > priceVal) {
+        oldPriceHtml = `<span style="text-decoration:line-through; color:#94a3b8; font-size:0.75rem; margin-right:5px;">${formatRWF(item.old_price)}</span>`;
+    }
 
     return `
-        <div class="food-card">
-            <div class="food-card-img-wrapper">
+        <div class="food-card" data-dish-id="${item.id}">
+            <div class="food-card-img-wrapper" style="position:relative;">
+                ${badgeHtml}
                 <img src="${img}" class="food-card-img" onerror="this.src='img/menu/1.jpg'" alt="${item.title}">
+                <button type="button" class="food-card-btn-fav ${favActiveClass}" onclick="toggleFavorite(event, ${item.id})" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+                    <i class="${favIconClass}"></i>
+                </button>
                 <button type="button" class="food-card-btn-add" onclick="addToCart(event, ${itemJson})" title="Add to cart">
                     <i class="fas fa-plus"></i>
                 </button>
             </div>
             <div class="food-card-body">
                 <div class="food-card-title">${item.title}</div>
-                <div class="food-card-subtitle">${subStr}</div>
+                <div class="food-card-subtitle" title="${subStr}">${subStr}</div>
                 <div class="food-card-footer">
-                    <span class="food-card-price">${priceStr}</span>
+                    <div>
+                        ${oldPriceHtml}
+                        <span class="food-card-price">${priceStr}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -684,13 +995,54 @@ function createMenuCard(item) {
 }
 
 function executeSearch() {
-    const input = document.getElementById('menuSearchInput');
-    const query = input ? input.value.toLowerCase() : '';
+    const input = document.getElementById('menuViewSearchInput') || document.getElementById('menuSearchInput');
+    const query = input ? input.value.toLowerCase().trim() : '';
+
+    if (!appCategories || appCategories.length === 0) {
+        renderMenuGrid([]);
+        return;
+    }
+
+    const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
+
+    // If a category was deleted/disabled while active, gracefully reset to 'All'
+    if (activeCategory.toLowerCase() !== 'all' && activeSlugs.length > 0 && !activeSlugs.includes(activeCategory.toLowerCase())) {
+        activeCategory = 'All';
+        renderMenuCategories();
+    }
 
     const filtered = menuItems.filter(item => {
-        const matchesQuery = item.title.toLowerCase().includes(query) || (item.category && item.category.toLowerCase().includes(query));
-        const matchesCat = activeCategory === 'All' || item.category === activeCategory;
-        return matchesQuery && matchesCat;
+        const itemCat = (item.category || '').toLowerCase().trim();
+        const itemMenuType = (item.menu_type || (itemCat.includes('breakfast') ? 'breakfast' : 'lunch')).toLowerCase().trim();
+
+        // Must belong to an active category
+        if (!activeSlugs.includes(itemCat)) {
+            return false;
+        }
+
+        // 1. Menu Type Filter (Breakfast vs Lunch)
+        if (appMenuType !== 'all') {
+            if (itemMenuType !== appMenuType && itemMenuType !== 'all_day') {
+                return false;
+            }
+        }
+
+        // 2. Category Filter
+        if (activeCategory.toLowerCase() !== 'all') {
+            if (itemCat !== activeCategory.toLowerCase()) {
+                return false;
+            }
+        }
+
+        // 3. Query search
+        if (query) {
+            const matchesQuery = (item.title && item.title.toLowerCase().includes(query)) || 
+                                 (itemCat.includes(query)) ||
+                                 (item.description && item.description.toLowerCase().includes(query));
+            if (!matchesQuery) return false;
+        }
+
+        return true;
     });
 
     renderMenuGrid(filtered);
@@ -698,9 +1050,9 @@ function executeSearch() {
 window.executeSearch = executeSearch;
 
 function executeMenuSearch(val) {
-    const query = (val || '').toLowerCase();
-    const filtered = menuItems.filter(item => item.title.toLowerCase().includes(query) || (item.category && item.category.toLowerCase().includes(query)));
-    renderMenuGrid(filtered);
+    const input = document.getElementById('menuSearchInput');
+    if (input && val !== undefined) input.value = val;
+    executeSearch();
 }
 window.executeMenuSearch = executeMenuSearch;
 
@@ -1099,17 +1451,77 @@ window.filterOrdersListByQuery = filterOrdersListByQuery;
 function loadFavorites() {
     const favStr = localStorage.getItem('favcafe_favorites');
     if (favStr) {
-        try { favorites = JSON.parse(favStr); } catch (e) {}
+        try { favorites = JSON.parse(favStr); } catch (e) { favorites = [7]; }
+    } else {
+        favorites = [7]; // Default favorite Chicken Pizza matching git view
+        saveFavorites();
     }
 }
+
+function saveFavorites() {
+    try {
+        localStorage.setItem('favcafe_favorites', JSON.stringify(favorites));
+    } catch (e) {}
+}
+
+function isFavorite(itemId) {
+    if (!itemId) return false;
+    const id = parseInt(itemId);
+    return favorites.some(fav => parseInt(fav) === id);
+}
+window.isFavorite = isFavorite;
+
+function toggleFavorite(event, itemId) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    const id = parseInt(itemId);
+    const idx = favorites.findIndex(fav => parseInt(fav) === id);
+    let isNowFav = false;
+
+    if (idx > -1) {
+        favorites.splice(idx, 1);
+        isNowFav = false;
+        showToast('Removed from Favorites 💔', 'info');
+    } else {
+        favorites.push(id);
+        isNowFav = true;
+        showToast('Saved to Favorites ❤️', 'info');
+    }
+
+    saveFavorites();
+
+    // Dynamically toggle hearts on any food cards currently in view
+    document.querySelectorAll(`.food-card[data-dish-id="${id}"] .food-card-btn-fav`).forEach(btn => {
+        btn.classList.toggle('active', isNowFav);
+        const icon = btn.querySelector('i');
+        if (icon) {
+            icon.className = isNowFav ? 'fas fa-heart text-danger' : 'far fa-heart';
+        }
+        btn.title = isNowFav ? 'Remove from favorites' : 'Add to favorites';
+    });
+}
+window.toggleFavorite = toggleFavorite;
 
 function renderFavoriteGrid() {
     const container = document.getElementById('favoriteGrid');
     if (!container) return;
 
     container.innerHTML = '';
-    const items = menuItems.slice(0, 4);
-    items.forEach(item => {
+    const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
+    const validItems = (appCategories && appCategories.length > 0)
+        ? menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()))
+        : [];
+
+    if (validItems.length === 0) {
+        container.innerHTML = '<div class="text-center w-100 py-4 text-muted-custom" style="color:#8a99ad; font-size:0.85rem;">No favorite items available</div>';
+        return;
+    }
+
+    const favItems = validItems.filter(item => isFavorite(item.id));
+    const itemsToDisplay = favItems.length > 0 ? favItems : validItems.slice(0, 4);
+    itemsToDisplay.forEach(item => {
         container.innerHTML += createMenuCard(item);
     });
 }
@@ -1158,6 +1570,11 @@ function switchTab(tabId, element) {
         } else {
             globalBackBtn.style.display = 'inline-flex';
         }
+    }
+
+    if (tabId === 'favorite') {
+        renderOffersPromos();
+        renderFavoriteGrid();
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });

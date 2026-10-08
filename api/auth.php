@@ -14,11 +14,11 @@ $action = isset($_GET['action']) ? $_GET['action'] : (isset($data['action']) ? $
 if ($action === 'register') {
     $fullName = isset($data['full_name']) ? trim($data['full_name']) : (isset($data['name']) ? trim($data['name']) : '');
     $email = isset($data['email']) ? strtolower(trim($data['email'])) : '';
-    $phone = isset($data['phone']) ? trim($data['phone']) : null;
+    $phone = isset($data['phone']) ? trim($data['phone']) : '';
     $password = isset($data['password']) ? trim($data['password']) : (isset($data['pass']) ? trim($data['pass']) : '');
 
-    if (empty($fullName) || empty($email) || empty($password)) {
-        echo json_encode(['status' => 'error', 'message' => 'Please complete all required fields.']);
+    if (empty($fullName) || empty($email) || empty($phone) || empty($password)) {
+        echo json_encode(['status' => 'error', 'message' => 'Please complete all required fields including phone number.']);
         exit;
     }
 
@@ -28,8 +28,9 @@ if ($action === 'register') {
     }
 
     // Check if email or phone already exists in DB
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? OR (phone IS NOT NULL AND phone = ?)");
-    $stmt->execute([$email, $phone]);
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? OR (phone IS NOT NULL AND phone != '' AND (phone = ? OR REPLACE(phone, ' ', '') = ?))");
+    $cleanPhone = str_replace([' ', '-', '(', ')'], '', $phone);
+    $stmt->execute([$email, $phone, $cleanPhone]);
     if ($stmt->fetch()) {
         echo json_encode(['status' => 'error', 'message' => 'An account with this email or phone number already exists! Please sign in.']);
         exit;
@@ -62,17 +63,18 @@ if ($action === 'register') {
     exit;
 
 } elseif ($action === 'login') {
-    $email = isset($data['email']) ? strtolower(trim($data['email'])) : '';
+    $loginIdentifier = isset($data['email']) ? trim($data['email']) : (isset($data['phone']) ? trim($data['phone']) : '');
     $password = isset($data['password']) ? trim($data['password']) : (isset($data['pass']) ? trim($data['pass']) : '');
 
-    if (empty($email) || empty($password)) {
-        echo json_encode(['status' => 'error', 'message' => 'Please enter both email address and password.']);
+    if (empty($loginIdentifier) || empty($password)) {
+        echo json_encode(['status' => 'error', 'message' => 'Please enter both email/phone and password.']);
         exit;
     }
 
     // Query user by email or phone from MySQL users table
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? OR (phone IS NOT NULL AND phone = ?) LIMIT 1");
-    $stmt->execute([$email, $email]);
+    $cleanIdent = str_replace([' ', '-', '(', ')'], '', $loginIdentifier);
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(email) = ? OR (phone IS NOT NULL AND phone != '' AND (phone = ? OR REPLACE(phone, ' ', '') = ?)) LIMIT 1");
+    $stmt->execute([strtolower($loginIdentifier), $loginIdentifier, $cleanIdent]);
     $user = $stmt->fetch();
 
     // 1. User not found in DB

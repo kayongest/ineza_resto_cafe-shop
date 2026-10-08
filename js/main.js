@@ -483,14 +483,30 @@ async function processClientRegister() {
     var emailInput = document.getElementById('mRegEmail');
     var phoneInput = document.getElementById('mRegPhone');
     var passInput = document.getElementById('mRegPass');
+    var confirmPassInput = document.getElementById('mRegPassConfirm');
 
     var name = nameInput ? nameInput.value.trim() : '';
     var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
     var phone = phoneInput ? phoneInput.value.trim() : '';
     var pass = passInput ? passInput.value.trim() : '';
+    var confirmPass = confirmPassInput ? confirmPassInput.value.trim() : '';
 
-    if (!name || !email || !phone || !pass) {
-        showToast('Please fill out all registration fields.', 'warning', 'Incomplete Form');
+    if (!name || !email || !phone || !pass || (confirmPassInput && !confirmPass)) {
+        showToast('Please fill out all registration fields, including phone number.', 'warning', 'Incomplete Form');
+        return;
+    }
+
+    // Phone validation (Rwandan 078..., 079..., 072..., 073... or international)
+    var cleanPhone = phone.replace(/[\s\-()]/g, '');
+    var isRwandaPhone = /^(?:\+?250|0)?7[2389]\d{7}$/.test(cleanPhone);
+    var isGeneralPhone = /^\+?\d{8,15}$/.test(cleanPhone);
+    if (!isRwandaPhone && !isGeneralPhone) {
+        showToast('Please enter a valid phone number (e.g. 078...).', 'warning', 'Invalid Phone');
+        return;
+    }
+
+    if (confirmPassInput && pass !== confirmPass) {
+        showToast('Passwords do not match! Please re-type your password.', 'error', 'Password Mismatch');
         return;
     }
 

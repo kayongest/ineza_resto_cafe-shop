@@ -34,7 +34,7 @@
     <div id="onboardingScreen" class="screen">
         <div class="carousel-container" id="carouselContainer">
             <div class="carousel-slide active" id="slide1">
-                <img src="img/menu/mobile_version_Favorite.png" alt="All your favorites">
+                <img src="img/menu/mobile_version_Favorite.svg" alt="All your favorites">
                 <h2>All your favorites</h2>
                 <p>Get all your loved foods in one place,<br>you just place the order we do the rest</p>
             </div>
@@ -76,26 +76,26 @@
                 <!-- NAME -->
                 <div class="input-group">
                     <label>NAME</label>
-                    <input type="text" id="regName" placeholder="John Doe" required autocomplete="name">
+                    <input type="text" id="regName" placeholder="John Doe" required="" autocomplete="name">
                 </div>
 
                 <!-- EMAIL -->
                 <div class="input-group">
                     <label>EMAIL</label>
-                    <input type="email" id="regEmail" placeholder="example@gmail.com" required autocomplete="email">
+                    <input type="email" id="regEmail" placeholder="example@gmail.com" required="" autocomplete="email">
                 </div>
 
                 <!-- PHONE NUMBER (between EMAIL and PASSWORD) -->
                 <div class="input-group">
                     <label>PHONE NUMBER</label>
-                    <input type="tel" id="regPhone" placeholder="078..." required autocomplete="tel">
+                    <input type="tel" id="regPhone" placeholder="078..." required="" autocomplete="tel">
                 </div>
 
                 <!-- PASSWORD -->
                 <div class="input-group">
                     <label>PASSWORD</label>
                     <div class="password-input">
-                        <input type="password" id="regPass" placeholder="••••••••" required autocomplete="new-password">
+                        <input type="password" id="regPass" placeholder="••••••••" required="" autocomplete="new-password">
                         <i class="fas fa-eye-slash toggle-password" onclick="togglePassword(this, 'regPass')"></i>
                     </div>
                 </div>
@@ -104,18 +104,15 @@
                 <div class="input-group">
                     <label>RE-TYPE PASSWORD</label>
                     <div class="password-input">
-                        <input type="password" id="regPassConfirm" placeholder="••••••••" required
-                            autocomplete="new-password">
-                        <i class="fas fa-eye-slash toggle-password"
-                            onclick="togglePassword(this, 'regPassConfirm')"></i>
+                        <input type="password" id="regPassConfirm" placeholder="••••••••" required="" autocomplete="new-password">
+                        <i class="fas fa-eye-slash toggle-password" onclick="togglePassword(this, 'regPassConfirm')"></i>
                     </div>
                 </div>
 
                 <button type="submit" class="btn-primary w-100 mt-4">SIGN UP</button>
 
                 <p class="text-center mt-4 text-gray bottom-text">
-                    Already have an account? <a href="#" onclick="showScreen('loginScreen')"
-                        class="text-primary fw-bold">LOG IN</a>
+                    Already have an account? <a href="#" onclick="showScreen('loginScreen')" class="text-primary fw-bold">LOG IN</a>
                 </p>
             </form>
         </div>
@@ -134,8 +131,8 @@
         <div class="form-container">
             <form id="loginForm" onsubmit="event.preventDefault(); mobileProcessClientLogin();">
                 <div class="input-group">
-                    <label>EMAIL</label>
-                    <input type="email" id="loginEmail" placeholder="example@gmail.com" required>
+                    <label>EMAIL OR PHONE NUMBER</label>
+                    <input type="text" id="loginEmail" placeholder="example@gmail.com or 078..." required autocomplete="username">
                 </div>
                 <div class="input-group mb-1">
                     <label>PASSWORD</label>
@@ -206,11 +203,13 @@
         }
 
         function saveUserSessionAndLocal(userObj) {
-            if (!userObj || !userObj.email) return;
+            if (!userObj || (!userObj.email && !userObj.phone)) return;
             localStorage.setItem('favcafe_active_user', JSON.stringify(userObj));
 
             var users = getLocalUsers();
-            var idx = users.findIndex(function (u) { return u.email === userObj.email; });
+            var idx = users.findIndex(function (u) { 
+                return (userObj.email && u.email === userObj.email) || (userObj.phone && u.phone === userObj.phone); 
+            });
             if (idx >= 0) {
                 users[idx] = Object.assign({}, users[idx], userObj);
             } else {
@@ -263,7 +262,7 @@
             if (activeUser) {
                 try {
                     var parsed = JSON.parse(activeUser);
-                    if (parsed && parsed.email) {
+                    if (parsed && (parsed.email || parsed.phone)) {
                         window.location.href = 'mobile_app.html';
                         return;
                     }
@@ -311,11 +310,12 @@
 
         // API Authentication Logic (Supports PHP Backend + Static/Offline Mode)
         async function mobileProcessClientLogin() {
-            var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+            var loginInput = document.getElementById('loginEmail').value.trim();
+            var emailOrPhone = loginInput.toLowerCase();
             var pass = document.getElementById('loginPass').value.trim();
 
-            if (!email || !pass) {
-                showMobileToast('Please enter both email and password.', 'warning');
+            if (!loginInput || !pass) {
+                showMobileToast('Please enter both email or phone and password.', 'warning');
                 return;
             }
 
@@ -323,7 +323,7 @@
                 var res = await fetch('api/auth.php?action=login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, password: pass })
+                    body: JSON.stringify({ email: emailOrPhone, password: pass })
                 });
 
                 if (res.ok) {
@@ -332,9 +332,10 @@
                         var data = await res.json();
                         if (data.status === 'success') {
                             var userObj = {
-                                name: data.user.full_name || email.split('@')[0],
-                                email: data.user.email || email,
-                                phone: data.user.phone || '',
+                                name: data.user.full_name || (emailOrPhone.includes('@') ? emailOrPhone.split('@')[0] : 'Customer'),
+                                full_name: data.user.full_name || '',
+                                email: data.user.email || (emailOrPhone.includes('@') ? emailOrPhone : ''),
+                                phone: data.user.phone || (!emailOrPhone.includes('@') ? loginInput : ''),
                                 pass: pass,
                                 id: data.user.id
                             };
@@ -345,7 +346,10 @@
                         } else if (data.status === 'error') {
                             // Check local storage fallback before rejecting
                             var localUsers = getLocalUsers();
-                            var localMatch = localUsers.find(function (u) { return u.email === email; });
+                            var localMatch = localUsers.find(function (u) {
+                                return (u.email && u.email.toLowerCase() === emailOrPhone) || 
+                                       (u.phone && (u.phone === loginInput || u.phone.replace(/[\s\-]/g, '') === loginInput.replace(/[\s\-]/g, '')));
+                            });
                             if (localMatch && localMatch.pass === pass) {
                                 saveUserSessionAndLocal(localMatch);
                                 showMobileToast('Login successful! Redirecting...', 'success');
@@ -363,7 +367,10 @@
 
             // Fallback Local Storage logic (GitHub Pages & Offline support)
             var registeredUsers = getLocalUsers();
-            var userInDb = registeredUsers.find(function (u) { return u.email === email; });
+            var userInDb = registeredUsers.find(function (u) {
+                return (u.email && u.email.toLowerCase() === emailOrPhone) || 
+                       (u.phone && (u.phone === loginInput || u.phone.replace(/[\s\-]/g, '') === loginInput.replace(/[\s\-]/g, '')));
+            });
 
             if (!userInDb) {
                 showMobileToast('User not found. Please sign up first.', 'error');
@@ -386,8 +393,18 @@
             var pass = document.getElementById('regPass').value.trim();
             var confirmPass = document.getElementById('regPassConfirm').value.trim();
 
-            if (!name || !email || !pass) {
-                showMobileToast('Please fill in all required fields.', 'warning');
+            // Match all required fields, especially phone number
+            if (!name || !email || !phone || !pass || !confirmPass) {
+                showMobileToast('Please fill in all required fields, including your phone number.', 'warning');
+                return;
+            }
+
+            // Phone number format validation (especially Rwandan 078..., 079..., 072..., 073... or international)
+            var cleanPhone = phone.replace(/[\s\-()]/g, '');
+            var isRwandaPhone = /^(?:\+?250|0)?7[2389]\d{7}$/.test(cleanPhone);
+            var isGeneralPhone = /^\+?\d{8,15}$/.test(cleanPhone);
+            if (!isRwandaPhone && !isGeneralPhone) {
+                showMobileToast('Please enter a valid phone number (e.g. 078...)', 'warning');
                 return;
             }
 
@@ -415,6 +432,7 @@
                         if (data.status === 'success') {
                             var newUser = {
                                 name: data.user.full_name || name,
+                                full_name: data.user.full_name || name,
                                 email: email,
                                 phone: phone,
                                 pass: pass,
@@ -443,7 +461,15 @@
                 return;
             }
 
-            var newUser = { name: name, email: email, phone: phone, pass: pass };
+            // Check if phone already registered
+            if (registeredUsers.find(function (u) { return u.phone && (u.phone === phone || u.phone.replace(/[\s\-]/g, '') === cleanPhone); })) {
+                showMobileToast('An account with this phone number already exists. Please log in.', 'warning');
+                showScreen('loginScreen');
+                document.getElementById('loginEmail').value = phone;
+                return;
+            }
+
+            var newUser = { name: name, full_name: name, email: email, phone: phone, pass: pass, id: Date.now() };
             saveUserSessionAndLocal(newUser);
 
             showMobileToast('Registration successful! Redirecting...', 'success');

@@ -15,7 +15,7 @@
     --text-light-blue: #a0aec0;
     --border-dark: rgba(255, 255, 255, 0.08);
     --font-family: 'Titillium Web', sans-serif;
-    
+
     /* Category Colors */
     --cat-foods: #2b5cff;
     --cat-drink: #ff7043;
@@ -51,14 +51,37 @@ body {
 }
 
 /* Utilities */
-.text-cyan { color: var(--accent-cyan) !important; }
-.text-coral { color: var(--accent-coral) !important; }
-.text-muted-custom { color: var(--text-muted) !important; }
-.text-light-blue { color: var(--text-light-blue) !important; }
-.text-center { text-align: center !important; }
-.fw-bold { font-weight: 700 !important; }
-.fw-600 { font-weight: 600 !important; }
-.rounded-xl { border-radius: 18px !important; }
+.text-cyan {
+    color: var(--accent-cyan) !important;
+}
+
+.text-coral {
+    color: var(--accent-coral) !important;
+}
+
+.text-muted-custom {
+    color: var(--text-muted) !important;
+}
+
+.text-light-blue {
+    color: var(--text-light-blue) !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
+}
+
+.fw-600 {
+    font-weight: 600 !important;
+}
+
+.rounded-xl {
+    border-radius: 18px !important;
+}
 
 .sidebar-footer-box {
     text-align: center !important;
@@ -268,32 +291,118 @@ body {
 
 /* Coral Promo Banner */
 .promo-coral-card {
-    background: linear-gradient(135deg, #ff5e57, #ff3f34);
+    background: linear-gradient(135deg, #232d4b, #16a085);
     border-radius: 20px;
-    padding: 1.5rem 1.25rem;
-    margin: 0 1.25rem 1.5rem;
+    padding: 1.4rem 1.5rem;
+    margin: 0 1.25rem 1.4rem;
     color: var(--text-white);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 10px 25px rgba(255, 94, 87, 0.3);
+    box-shadow: rgb(187 187 187 / 32%) 0px 6px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.promo-coral-card:active {
+    transform: scale(0.985);
+}
+
+.promo-content {
+    flex: 1;
+    min-width: 0;
 }
 
 .promo-tag {
     font-size: 0.95rem;
     font-weight: 600;
     opacity: 0.95;
+    line-height: 1.2;
+    letter-spacing: 0.2px;
 }
 
 .promo-title-discount {
     font-size: 2.2rem;
     font-weight: 800;
     line-height: 1.1;
-    margin: 4px 0 2px;
+    margin: 4px 0 3px;
+    letter-spacing: -0.5px;
 }
 
 .promo-note {
-    font-size: 0.75rem;
-    opacity: 0.8;
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.88;
+}
+
+.promo-media {
+    flex-shrink: 0;
+    width: 90px;
+    height: 90px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.promo-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.promo-carousel-wrapper {
+    position: relative;
+}
+
+.promo-carousel-slide {
+    display: none;
+    animation: fadeInPromo 0.4s ease;
+}
+
+.promo-coral-card.promo-carousel-slide.active {
+    display: flex;
+}
+
+@keyframes fadeInPromo {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.promo-carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: -16px;
+    margin-bottom: 1.25rem;
+}
+
+.promo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background: rgb(168 188 191);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.promo-dot.active {
+    width: 22px;
+    background: #1b746f;
 }
 
 /* Section Header */
@@ -327,11 +436,11 @@ body {
 }
 
 .food-card {
-    background-color: var(--card-dark);
+    background-color: var(--card-dark, #162235);
     border-radius: 18px;
     overflow: hidden;
     position: relative;
-    border: 1px solid var(--border-dark);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.05));
     transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
     flex-direction: column;
@@ -345,14 +454,87 @@ body {
 .food-card-img-wrapper {
     position: relative;
     width: 100%;
-    height: 120px;
+    height: 140px;
     overflow: hidden;
+    background: #0d1522;
 }
 
 .food-card-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.food-card:hover .food-card-img {
+    transform: scale(1.04);
+}
+
+/* Menu Type Badge on Dish Cards */
+.menu-type-badge-sm {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(4px);
+    color: #fbbf24;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    z-index: 2;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    letter-spacing: 0.3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.menu-type-badge-sm.lunch {
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.3);
+}
+
+/* Food Card Heart / Favorite Button */
+.food-card-btn-fav {
+    position: absolute;
+    top: 8px;
+    right: 44px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(22, 29, 49, 0.78);
+    backdrop-filter: blur(4px);
+    color: #cbd5e1;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 2;
+}
+
+.food-card-btn-fav:hover {
+    transform: scale(1.15);
+    color: #ff5e57;
+}
+
+.food-card-btn-fav.active {
+    background: rgba(255, 94, 87, 0.25);
+    color: #ff5e57;
+    border: 1px solid rgba(255, 94, 87, 0.5);
+}
+
+.food-card-btn-fav.active i {
+    animation: favHeartBeat 0.35s ease;
+}
+
+@keyframes favHeartBeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
 }
 
 .food-card-btn-add {
@@ -362,7 +544,7 @@ body {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(22, 29, 49, 0.75);
+    background: rgba(22, 29, 49, 0.78);
     backdrop-filter: blur(4px);
     color: var(--text-white);
     border: none;
@@ -371,22 +553,24 @@ body {
     justify-content: center;
     font-size: 0.85rem;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.2s;
+    z-index: 2;
 }
 
 .food-card-btn-add:hover {
-    background: var(--accent-cyan);
+    background: var(--accent-cyan, #00a8ff);
+    transform: scale(1.1);
 }
 
 .food-card-body {
-    padding: 10px 12px 12px;
+    padding: 10px 12px 14px;
     display: flex;
     flex-direction: column;
     flex: 1;
 }
 
 .food-card-title {
-    font-size: 0.88rem;
+    font-size: 0.92rem;
     font-weight: 700;
     color: var(--text-white);
     line-height: 1.25;
@@ -394,9 +578,15 @@ body {
 }
 
 .food-card-subtitle {
-    font-size: 0.72rem;
-    color: var(--text-muted);
+    font-size: 0.73rem;
+    color: var(--text-muted, #94a3b8);
     margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.35;
+    min-height: 2.7em;
 }
 
 .food-card-footer {
@@ -404,12 +594,13 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-top: auto;
+    padding-top: 4px;
 }
 
 .food-card-price {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--accent-cyan);
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: var(--accent-cyan, #00a8ff);
 }
 
 /* Cart / Checkout View */
@@ -1195,8 +1386,15 @@ body {
     border-radius: 10px;
 }
 
-.sidebar-badge.bg-coral { background: var(--accent-coral); color: white; }
-.sidebar-badge.bg-purple { background: #a55eea; color: white; }
+.sidebar-badge.bg-coral {
+    background: var(--accent-coral);
+    color: white;
+}
+
+.sidebar-badge.bg-purple {
+    background: #a55eea;
+    color: white;
+}
 
 .sidebar-chevron {
     margin-left: auto;
@@ -1264,8 +1462,15 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Custom Toast Popup */

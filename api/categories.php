@@ -64,40 +64,6 @@ if ($action === 'get') {
     $stmt = $pdo->query($sql);
     $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Auto-detect any missing categories used in menu_items table
-    try {
-        $usedCategories = $pdo->query("SELECT DISTINCT LOWER(category) as slug FROM menu_items WHERE category IS NOT NULL AND category != ''")->fetchAll(PDO::FETCH_COLUMN);
-        $existingSlugs = array_map(function($c) { return strtolower($c['slug']); }, $categories);
-
-        $maxSort = count($categories);
-        foreach ($usedCategories as $slug) {
-            if (!in_array($slug, $existingSlugs)) {
-                $maxSort++;
-                $catName = ucfirst($slug);
-                $icon = 'fas fa-utensils';
-                if ($slug === 'pizza') $icon = 'fas fa-pizza-slice';
-                if ($slug === 'wraps') $icon = 'fas fa-hotdog';
-                if ($slug === 'burger') $icon = 'fas fa-burger';
-                if ($slug === 'grills') $icon = 'fas fa-meat';
-
-                // Insert into DB
-                try {
-                    $insertStmt = $pdo->prepare("INSERT INTO categories (name, slug, icon, is_active, sort_order) VALUES (?, ?, ?, 1, ?)");
-                    $insertStmt->execute([$catName, $slug, $icon, $maxSort]);
-                    $newId = $pdo->lastInsertId();
-                    $categories[] = [
-                        'id' => $newId,
-                        'name' => $catName,
-                        'slug' => $slug,
-                        'icon' => $icon,
-                        'is_active' => 1,
-                        'sort_order' => $maxSort
-                    ];
-                } catch(PDOException $ex) {}
-            }
-        }
-    } catch (PDOException $e) {}
-
     echo json_encode(['status' => 'success', 'categories' => $categories]);
     exit;
 
