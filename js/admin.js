@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAdminPromos();
     initSidebarTabs();
     initSearchAndFilter();
+    initCartAdminSettings();
 
     console.log('%c[Favorite Cafe Engine] Live Orders Management System Active', 'color: #27ae60; font-weight: bold; font-size: 14px;');
     console.log('%c[Functions Available] viewOrder(id), editOrder(id), disableOrder(id), refreshAdminOrders()', 'color: #2980b9; font-weight: bold;');
@@ -3488,3 +3489,85 @@ async function savePromoItem(event) {
     showToast("Promo saved successfully.", "success");
 }
 window.savePromoItem = savePromoItem;
+
+// ============================================================
+// CART DRAWER SETTINGS MANAGEMENT (Add Extras & Summary/Discounts)
+// ============================================================
+function getCartAdminSettings() {
+    var defaults = { showExtras: true, showSummaryDiscounts: true };
+    try {
+        var stored = localStorage.getItem('favcafe_cart_settings');
+        if (stored) {
+            var parsed = JSON.parse(stored);
+            return {
+                showExtras: parsed.showExtras !== false,
+                showSummaryDiscounts: parsed.showSummaryDiscounts !== false
+            };
+        }
+    } catch (e) {}
+    return defaults;
+}
+
+function initCartAdminSettings() {
+    var settings = getCartAdminSettings();
+    var extrasCheckbox = document.getElementById('settingToggleExtras');
+    var summaryCheckbox = document.getElementById('settingToggleSummary');
+    var extrasBadge = document.getElementById('badgeExtrasStatus');
+    var summaryBadge = document.getElementById('badgeSummaryStatus');
+
+    if (extrasCheckbox) extrasCheckbox.checked = settings.showExtras;
+    if (summaryCheckbox) summaryCheckbox.checked = settings.showSummaryDiscounts;
+
+    if (extrasBadge) {
+        extrasBadge.textContent = settings.showExtras ? 'ENABLED' : 'DISABLED';
+        extrasBadge.className = settings.showExtras ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
+    if (summaryBadge) {
+        summaryBadge.textContent = settings.showSummaryDiscounts ? 'ENABLED' : 'DISABLED';
+        summaryBadge.className = settings.showSummaryDiscounts ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
+}
+window.initCartAdminSettings = initCartAdminSettings;
+
+function handleCartSettingChange() {
+    var extrasCheckbox = document.getElementById('settingToggleExtras');
+    var summaryCheckbox = document.getElementById('settingToggleSummary');
+    var extrasBadge = document.getElementById('badgeExtrasStatus');
+    var summaryBadge = document.getElementById('badgeSummaryStatus');
+
+    var showExtras = extrasCheckbox ? extrasCheckbox.checked : true;
+    var showSummaryDiscounts = summaryCheckbox ? summaryCheckbox.checked : true;
+
+    if (extrasBadge) {
+        extrasBadge.textContent = showExtras ? 'ENABLED' : 'DISABLED';
+        extrasBadge.className = showExtras ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
+    if (summaryBadge) {
+        summaryBadge.textContent = showSummaryDiscounts ? 'ENABLED' : 'DISABLED';
+        summaryBadge.className = showSummaryDiscounts ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
+
+    var newSettings = { showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts };
+    try {
+        localStorage.setItem('favcafe_cart_settings', JSON.stringify(newSettings));
+        localStorage.setItem('favcafe_cart_settings_signal', JSON.stringify({ showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, ts: Date.now() }));
+    } catch (e) {}
+
+    try {
+        var chan = new BroadcastChannel('favcafe_settings_channel');
+        chan.postMessage({ type: 'cart_settings_updated', settings: newSettings });
+    } catch (e) {}
+
+    if (typeof showToast === 'function') {
+        showToast('Cart drawer options updated & synced to mobile app!', 'success', 'Cart Settings');
+    }
+}
+window.handleCartSettingChange = handleCartSettingChange;
+
+function saveCartAdminSettings() {
+    handleCartSettingChange();
+    if (typeof showToast === 'function') {
+        showToast('All mobile cart settings saved successfully!', 'success', 'Saved');
+    }
+}
+window.saveCartAdminSettings = saveCartAdminSettings;

@@ -6,8 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>INEZA RESTO & COFFEE SHOP - Mobile App</title>
 
+    <!-- PNG fallback (example 48×48) -->
+    <link rel="icon" href="img/restaurant.png" type="image/png" sizes="48x48">
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700;800&display=swap"
+        rel="stylesheet">
 
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -24,7 +28,8 @@
             <button type="button" class="header-icon-btn" onclick="toggleSidebarDrawer()" title="Open Menu Drawer">
                 <i class="fas fa-bars" style="font-size:1.3rem;"></i>
             </button>
-            <a href="javascript:void(0);" class="back-btn" id="globalBackBtn" onclick="switchTab('home')" title="Back to Home" style="display:none;">
+            <a href="javascript:void(0);" class="back-btn" id="globalBackBtn" onclick="switchTab('home')"
+                title="Back to Home" style="display:none;">
                 <i class="fas fa-chevron-left"></i>
             </a>
             <div class="header-title-box">
@@ -54,7 +59,8 @@
             <!-- Search Input Box -->
             <div class="search-input-box">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" id="menuSearchInput" placeholder="Search beverages or foods" oninput="executeSearch()">
+                <input type="text" id="menuSearchInput" placeholder="Search beverages or foods"
+                    oninput="executeSearch()">
             </div>
 
             <!-- Category Icon Cards Slider -->
@@ -92,14 +98,18 @@
 
             <div class="search-input-box">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" id="menuViewSearchInput" placeholder="Search beverages or foods" oninput="executeMenuSearch(this.value)">
+                <input type="text" id="menuViewSearchInput" placeholder="Search beverages or foods"
+                    oninput="executeMenuSearch(this.value)">
             </div>
 
             <!-- Menu Type Filter (Breakfast vs Lunch) -->
             <div class="category-scroll-container mb-2" id="appMenuTypeChips" style="gap:8px;">
-                <button type="button" class="status-pill-btn active" data-type="all" onclick="setAppMenuType('all', this)">All Day</button>
-                <button type="button" class="status-pill-btn" data-type="breakfast" onclick="setAppMenuType('breakfast', this)"><i class="fas fa-egg me-1"></i>Breakfast Menu</button>
-                <button type="button" class="status-pill-btn" data-type="lunch" onclick="setAppMenuType('lunch', this)"><i class="fas fa-hamburger me-1"></i>Lunch Menu</button>
+                <button type="button" class="status-pill-btn active" data-type="all"
+                    onclick="setAppMenuType('all', this)">All Day</button>
+                <button type="button" class="status-pill-btn" data-type="breakfast"
+                    onclick="setAppMenuType('breakfast', this)"><i class="fas fa-egg me-1"></i>Breakfast Menu</button>
+                <button type="button" class="status-pill-btn" data-type="lunch"
+                    onclick="setAppMenuType('lunch', this)"><i class="fas fa-hamburger me-1"></i>Lunch Menu</button>
             </div>
 
             <div class="category-scroll-container mb-3" id="menuCategoryChips">
@@ -114,8 +124,16 @@
         <!-- 3. CART & CHECKOUT VIEW -->
         <div id="view-order" class="tab-view">
             <div class="user-greeting-banner" style="padding-bottom:0.75rem;">
-                <div class="greeting-subtitle">Review Items</div>
-                <h2 class="greeting-headline">My Shopping Cart</h2>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="greeting-subtitle">Review Items</div>
+                        <h2 class="greeting-headline">My Shopping Cart</h2>
+                    </div>
+                    <button type="button" class="btn btn-sm" id="cartClearBtn" onclick="clearCart()"
+                        style="display:none; background:rgba(255, 94, 87, 0.12); border:1px solid rgba(255, 94, 87, 0.35); color:#ff5e57; font-weight:700; border-radius:12px; font-size:0.75rem; padding:6px 12px;">
+                        <i class="fas fa-trash-alt me-1"></i> Clear Cart
+                    </button>
+                </div>
             </div>
 
             <div id="cartContainer">
@@ -124,97 +142,110 @@
 
             <!-- Cart Extras & Summary Footer Container -->
             <div id="cartSummary" style="display:none;">
-                <!-- 1. ADD EXTRAS SECTION -->
-                <div class="cart-extras-section">
+                <!-- 1. ADD EXTRAS SECTION (Toggled via Admin) -->
+                <div class="cart-extras-section" id="cartExtrasSection">
                     <div class="cart-extras-header" onclick="toggleCartExtrasCollapse()" style="cursor:pointer;">
                         <div class="d-flex align-items-center gap-2">
                             <i class="fas fa-plus-circle text-cyan"></i>
                             <span class="fw-bold">ADD EXTRAS:</span>
                         </div>
-                        <i class="fas fa-chevron-down text-muted-custom" id="cartExtrasChevron" style="transition: transform 0.3s ease;"></i>
+                        <i class="fas fa-chevron-down text-muted-custom" id="cartExtrasChevron"
+                            style="transition: transform 0.3s ease;"></i>
                     </div>
                     <div class="cart-extras-grid mt-2" id="cartExtrasGrid">
-                       <div class="extra-pill-btn" onclick="addExtraToCart('Avocado', 500, 'img/menu/1.jpg')">
-                          <span>Avocado <small>(500)</small></span>
-                          <i class="fas fa-plus"></i>
-                       </div>
-                       <div class="extra-pill-btn" onclick="addExtraToCart('Kachumbari', 0, 'img/menu/2.jpg')">
-                          <span>Kachumbari <span class="free-text">(FREE)</span></span>
-                          <i class="fas fa-plus"></i>
-                       </div>
-                       <div class="extra-pill-btn" onclick="addExtraToCart('Mayonnaise', 0, 'img/menu/3.jpg')">
-                          <span>Mayonnaise <span class="free-text">(FREE)</span></span>
-                          <i class="fas fa-plus"></i>
-                       </div>
-                       <div class="extra-pill-btn" onclick="addExtraToCart('Chili Sauce', 0, 'img/menu/4.jpg')">
-                          <span>Chili Sauce <span class="free-text">(FREE)</span></span>
-                          <i class="fas fa-plus"></i>
-                       </div>
+                        <div class="extra-pill-btn" onclick="addExtraToCart('Avocado', 500, 'img/menu/1.jpg')">
+                            <span>Avocado <small>(500)</small></span>
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="extra-pill-btn" onclick="addExtraToCart('Kachumbari', 0, 'img/menu/2.jpg')">
+                            <span>Kachumbari <span class="free-text">(FREE)</span></span>
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="extra-pill-btn" onclick="addExtraToCart('Mayonnaise', 0, 'img/menu/3.jpg')">
+                            <span>Mayonnaise <span class="free-text">(FREE)</span></span>
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="extra-pill-btn" onclick="addExtraToCart('Chili Sauce', 0, 'img/menu/4.jpg')">
+                            <span>Chili Sauce <span class="free-text">(FREE)</span></span>
+                            <i class="fas fa-plus"></i>
+                        </div>
                     </div>
                 </div>
 
                 <!-- 2. CART DRAWER FOOTER SECTION -->
-                <div class="cart-drawer-footer">
-                    <!-- Collapsible Footer Header -->
-                    <div class="cart-footer-header" onclick="toggleCartFooterCollapse()" style="cursor:pointer;">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="fas fa-receipt text-cyan"></i>
-                            <span class="fw-bold text-white">Summary &amp; Discounts</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="loyalty-pts-badge" id="loyaltyBadgeText">2,500 Pts</span>
-                            <i class="fas fa-chevron-up text-muted-custom" id="cartFooterChevron" style="transition: transform 0.3s ease;"></i>
-                        </div>
-                    </div>
-
-                    <!-- Collapsible Footer Body -->
-                    <div class="cart-footer-collapsible-body" id="cartFooterCollapsibleBody">
-                        <!-- Promo Code Row -->
-                        <div class="cart-promo-row mt-3">
-                            <div class="cart-input-pill-container">
-                                <input type="text" class="cart-promo-input" id="cartPromoInput" placeholder="Promo code (e.g. FAV20)">
-                                <button class="btn btn-cyan-action" type="button" onclick="applyPromoCode()">Apply</button>
+                <div class="cart-drawer-footer" id="cartDrawerFooter">
+                    <!-- Collapsible Summary & Discounts Module (Toggled via Admin) -->
+                    <div id="cartSummaryDiscountsSection">
+                        <!-- Collapsible Footer Header -->
+                        <div class="cart-footer-header" onclick="toggleCartFooterCollapse()" style="cursor:pointer;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-receipt text-cyan"></i>
+                                <span class="fw-bold text-white">Summary &amp; Discounts</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="loyalty-pts-badge" id="loyaltyBadgeText">2,500 Pts</span>
+                                <i class="fas fa-chevron-up text-muted-custom" id="cartFooterChevron"
+                                    style="transition: transform 0.3s ease;"></i>
                             </div>
                         </div>
 
-                        <!-- Loyalty Points Redemption Box -->
-                        <div class="cart-loyalty-box mt-3" id="cartLoyaltyBox">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="text-white text-sm fw-bold">
-                                    <i class="fas fa-star text-warning me-1"></i>Redeem Loyalty Points
+                        <!-- Collapsible Footer Body -->
+                        <div class="cart-footer-collapsible-body" id="cartFooterCollapsibleBody">
+                            <!-- Promo Code Row -->
+                            <div class="cart-promo-row mt-3">
+                                <div class="cart-input-pill-container">
+                                    <input type="text" class="cart-promo-input" id="cartPromoInput"
+                                        placeholder="Promo code (e.g. FAV20)">
+                                    <button class="btn btn-cyan-action" type="button"
+                                        onclick="applyPromoCode()">Apply</button>
                                 </div>
-                                <small class="text-muted-custom">Available: <span class="text-cyan fw-bold" id="userPointsVal">2,500</span> Pts</small>
-                            </div>
-                            
-                            <div class="d-flex gap-2 mb-2">
-                                <button type="button" class="loyalty-pill-btn" onclick="quickSelectLoyaltyPoints(500)">500 Pts</button>
-                                <button type="button" class="loyalty-pill-btn" onclick="quickSelectLoyaltyPoints(1000)">1,000 Pts</button>
-                                <button type="button" class="loyalty-pill-btn active" onclick="quickSelectLoyaltyPoints('all')">Use All</button>
                             </div>
 
-                            <div class="cart-input-pill-container">
-                                <input type="number" class="custom-loyalty-input" id="customLoyaltyInput" placeholder="Enter custom pts">
-                                <button type="button" class="btn btn-cyan-action" onclick="applyCustomLoyaltyPoints()">Redeem</button>
-                            </div>
-                            <div id="loyaltyAppliedNotice" class="text-cyan text-xs mt-2" style="display:none;"></div>
-                        </div>
+                            <!-- Loyalty Points Redemption Box -->
+                            <div class="cart-loyalty-box mt-3" id="cartLoyaltyBox">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="text-white text-sm fw-bold">
+                                        <i class="fas fa-star text-warning me-1"></i>Redeem Loyalty Points
+                                    </div>
+                                    <small class="text-muted-custom">Available: <span class="text-cyan fw-bold"
+                                            id="userPointsVal">2,500</span> Pts</small>
+                                </div>
 
-                        <!-- Summary Breakdown -->
-                        <div class="summary-line mt-3">
-                            <span>Subtotal</span>
-                            <span id="cartSubtotal">0 RWF</span>
-                        </div>
-                        <div class="summary-line" id="deliveryFeeRow">
-                            <span>Delivery Fee</span>
-                            <span id="cartDeliveryFee">1,000 RWF</span>
-                        </div>
-                        <div class="summary-line" id="promoDiscountRow" style="display:none;">
-                            <span>Promo Discount</span>
-                            <span id="cartPromoDiscount" class="text-success">-0 RWF</span>
-                        </div>
-                        <div class="summary-line" id="loyaltyDiscountRow" style="display:none;">
-                            <span>Loyalty Discount</span>
-                            <span id="cartLoyaltyDiscount" class="text-cyan">-0 RWF</span>
+                                <div class="d-flex gap-2 mb-2">
+                                    <button type="button" class="loyalty-pill-btn"
+                                        onclick="quickSelectLoyaltyPoints(500)">500 Pts</button>
+                                    <button type="button" class="loyalty-pill-btn"
+                                        onclick="quickSelectLoyaltyPoints(1000)">1,000 Pts</button>
+                                    <button type="button" class="loyalty-pill-btn active"
+                                        onclick="quickSelectLoyaltyPoints('all')">Use All</button>
+                                </div>
+
+                                <div class="cart-input-pill-container">
+                                    <input type="number" class="custom-loyalty-input" id="customLoyaltyInput"
+                                        placeholder="Enter custom pts">
+                                    <button type="button" class="btn btn-cyan-action"
+                                        onclick="applyCustomLoyaltyPoints()">Redeem</button>
+                                </div>
+                                <div id="loyaltyAppliedNotice" class="text-cyan text-xs mt-2" style="display:none;"></div>
+                            </div>
+
+                            <!-- Summary Breakdown -->
+                            <div class="summary-line mt-3">
+                                <span>Subtotal</span>
+                                <span id="cartSubtotal">0 RWF</span>
+                            </div>
+                            <div class="summary-line" id="deliveryFeeRow">
+                                <span>Delivery Fee</span>
+                                <span id="cartDeliveryFee">1,000 RWF</span>
+                            </div>
+                            <div class="summary-line" id="promoDiscountRow" style="display:none;">
+                                <span>Promo Discount</span>
+                                <span id="cartPromoDiscount" class="text-success">-0 RWF</span>
+                            </div>
+                            <div class="summary-line" id="loyaltyDiscountRow" style="display:none;">
+                                <span>Loyalty Discount</span>
+                                <span id="cartLoyaltyDiscount" class="text-cyan">-0 RWF</span>
+                            </div>
                         </div>
                     </div>
 
@@ -224,9 +255,11 @@
                         <div class="momo-pay-checkout-pill mb-3">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="momo-pay-badge-pill">MOMO PAY</span>
-                                <span class="momo-pay-checkout-title"><i class="fas fa-mobile-alt me-1 text-warning"></i>MTN MoMo &amp; Airtel</span>
+                                <span class="momo-pay-checkout-title"><i
+                                        class="fas fa-mobile-alt me-1 text-warning"></i>MTN MoMo &amp; Airtel</span>
                             </div>
-                            <span class="badge" style="background:#ffcc00; color:#000; font-weight:800; font-size:0.65rem;">ONLY</span>
+                            <span class="badge"
+                                style="background:#ffcc00; color:#000; font-weight:800; font-size:0.65rem;">ONLY</span>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="text-light-blue fw-bold">Total Amount</span>
@@ -237,11 +270,34 @@
                 </div>
             </div>
 
+            <!-- Unauthenticated / Login Required State -->
+            <div id="cartLoginPrompt" class="text-center py-5" style="display:none;">
+                <div class="mb-3">
+                    <div style="width:72px; height:72px; border-radius:50%; background:rgba(0, 210, 211, 0.12); border:1px solid rgba(0, 210, 211, 0.3); display:inline-flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-user-lock text-cyan" style="font-size:2rem;"></i>
+                    </div>
+                </div>
+                <h3 class="text-white fw-bold mb-2">Login to Make Order</h3>
+                <p class="text-light-blue text-sm mb-4" style="max-width:320px; margin:0 auto; line-height:1.5;">
+                    Sign in to your account to place delicious orders, redeem loyalty points, and track delivery in real time!
+                </p>
+                <button type="button" class="btn-cyan-confirm px-4" style="width:auto; display:inline-block;" onclick="window.location.href='mobile_auth.html'">
+                    <i class="fas fa-sign-in-alt me-2"></i> Log In / Sign Up
+                </button>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius:20px; font-size:0.8rem; color:#94a3b8; border-color:#334155; padding:6px 16px;" onclick="switchTab('menu')">
+                        Continue Browsing Menu
+                    </button>
+                </div>
+            </div>
+
+            <!-- Authenticated Empty Cart State -->
             <div id="emptyCart" class="text-center py-5" style="display:none;">
                 <i class="fas fa-shopping-bag text-muted-custom mb-3" style="font-size:3rem; opacity:0.4;"></i>
                 <h3 class="text-white fw-bold">Your cart is empty</h3>
                 <p class="text-light-blue text-sm mt-1">Browse our menu to add items to your cart!</p>
-                <button class="btn-cyan-confirm mt-4 px-4" style="width:auto; display:inline-block;" onclick="switchTab('menu')">Browse Menu</button>
+                <button class="btn-cyan-confirm mt-4 px-4" style="width:auto; display:inline-block;"
+                    onclick="switchTab('menu')"><i class="fas fa-utensils me-2"></i>Browse Menu</button>
             </div>
         </div>
 
@@ -250,7 +306,8 @@
             <!-- Search input -->
             <div class="search-input-box mt-3">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" placeholder="Search beverages or foods" oninput="filterOrdersListByQuery(this.value)">
+                <input type="text" placeholder="Search beverages or foods"
+                    oninput="filterOrdersListByQuery(this.value)">
             </div>
 
             <!-- Status Filter Pills -->
@@ -285,7 +342,8 @@
                     <img src="img/chefs/1.jpg" onerror="this.src='img/menu/1.jpg'" class="notif-avatar" alt="Lily">
                     <div class="notif-content">
                         <div class="notif-user-name">Lily MacDonald</div>
-                        <div class="notif-text-msg">Your order #0012345 has been confirmed and is being prepared in the kitchen.</div>
+                        <div class="notif-text-msg">Your order #0012345 has been confirmed and is being prepared in the
+                            kitchen.</div>
                     </div>
                     <div class="notif-time-tag"><i class="far fa-clock me-1"></i>12 min ago</div>
                 </div>
@@ -303,7 +361,8 @@
                     <img src="img/chefs/3.jpg" onerror="this.src='img/menu/3.jpg'" class="notif-avatar" alt="Lily">
                     <div class="notif-content">
                         <div class="notif-user-name">Lily MacDonald</div>
-                        <div class="notif-text-msg">Special weekend discount of 60% OFF has been activated for you!</div>
+                        <div class="notif-text-msg">Special weekend discount of 60% OFF has been activated for you!
+                        </div>
                     </div>
                     <div class="notif-time-tag"><i class="far fa-clock me-1"></i>12 min ago</div>
                 </div>
@@ -323,12 +382,15 @@
         <div id="view-profile" class="tab-view" style="padding-top: 0.5rem;">
             <!-- Profile Hero -->
             <div class="profile-hero-card">
-                <div class="profile-avatar-container" onclick="triggerAvatarUpload()" style="cursor: pointer; position: relative;" title="Click to change profile picture">
-                    <img src="img/chefs/1.jpg" onerror="this.src='img/menu/1.jpg'" class="profile-avatar-img" id="profileUserAvatar" alt="User Avatar">
+                <div class="profile-avatar-container" onclick="triggerAvatarUpload()"
+                    style="cursor: pointer; position: relative;" title="Click to change profile picture">
+                    <img src="img/chefs/1.jpg" onerror="this.src='img/menu/1.jpg'" class="profile-avatar-img"
+                        id="profileUserAvatar" alt="User Avatar">
                     <div class="avatar-edit-badge"><i class="fas fa-camera"></i></div>
                 </div>
                 <!-- Hidden Avatar File Input -->
-                <input type="file" id="profileAvatarFileInput" accept="image/*" style="display: none;" onchange="handleAvatarFileSelect(this)">
+                <input type="file" id="profileAvatarFileInput" accept="image/*" style="display: none;"
+                    onchange="handleAvatarFileSelect(this)">
                 <h3 class="profile-name" id="profileTabName">James Hawkins</h3>
                 <div class="profile-badge-gold" id="profileMemberTier">GOLD MEMBER</div>
             </div>
@@ -338,11 +400,13 @@
                 <div class="profile-section-header">
                     <h4>Contacts</h4>
                     <div class="d-flex align-items-center gap-2">
-                        <a href="javascript:void(0);" class="section-link" onclick="openMobileAuthModal('profile_edit')"><i class="fas fa-edit me-1"></i>Edit</a>
+                        <a href="javascript:void(0);" class="section-link"
+                            onclick="openMobileAuthModal('profile_edit')"><i class="fas fa-edit me-1"></i>Edit</a>
                     </div>
                 </div>
 
-                <div class="contact-row-item" id="contactRowPhone" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="contact-row-item" id="contactRowPhone"
+                    style="display: flex; align-items: center; justify-content: space-between;">
                     <div class="d-flex align-items-center flex-grow-1">
                         <div class="contact-icon-circle me-3"><i class="fas fa-phone"></i></div>
                         <div>
@@ -350,10 +414,12 @@
                             <div class="contact-info-val" id="profilePhoneVal">078...</div>
                         </div>
                     </div>
-                    <button type="button" class="btn-clear-field" onclick="deleteContactField('phone')" title="Clear Phone"><i class="fas fa-times"></i></button>
+                    <button type="button" class="btn-clear-field" onclick="deleteContactField('phone')"
+                        title="Clear Phone"><i class="fas fa-times"></i></button>
                 </div>
 
-                <div class="contact-row-item" id="contactRowEmail" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="contact-row-item" id="contactRowEmail"
+                    style="display: flex; align-items: center; justify-content: space-between;">
                     <div class="d-flex align-items-center flex-grow-1">
                         <div class="contact-icon-circle me-3"><i class="fas fa-envelope"></i></div>
                         <div>
@@ -361,18 +427,22 @@
                             <div class="contact-info-val" id="profileEmailVal">jameshawkins@mail.com</div>
                         </div>
                     </div>
-                    <button type="button" class="btn-clear-field" onclick="deleteContactField('email')" title="Clear Email"><i class="fas fa-times"></i></button>
+                    <button type="button" class="btn-clear-field" onclick="deleteContactField('email')"
+                        title="Clear Email"><i class="fas fa-times"></i></button>
                 </div>
 
-                <div class="contact-row-item" id="contactRowAddress" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="contact-row-item" id="contactRowAddress"
+                    style="display: flex; align-items: center; justify-content: space-between;">
                     <div class="d-flex align-items-center flex-grow-1">
                         <div class="contact-icon-circle me-3"><i class="fas fa-map-marker-alt"></i></div>
                         <div>
                             <div class="contact-info-label">Address</div>
-                            <div class="contact-info-val" id="profileAddressVal">Franklin Avenue, Corner St.London, 24125151</div>
+                            <div class="contact-info-val" id="profileAddressVal">Franklin Avenue, Corner St.London,
+                                24125151</div>
                         </div>
                     </div>
-                    <button type="button" class="btn-clear-field" onclick="deleteContactField('address')" title="Clear Address"><i class="fas fa-times"></i></button>
+                    <button type="button" class="btn-clear-field" onclick="deleteContactField('address')"
+                        title="Clear Address"><i class="fas fa-times"></i></button>
                 </div>
 
                 <!-- Custom Dynamic Contacts List -->
@@ -383,7 +453,8 @@
             <div class="profile-section-card">
                 <div class="profile-section-header">
                     <h4>Your Reward 🏆</h4>
-                    <a href="javascript:void(0);" class="section-link" onclick="showToast('🏆 Rewards History Loaded')">History</a>
+                    <a href="javascript:void(0);" class="section-link"
+                        onclick="showToast('🏆 Rewards History Loaded')">History</a>
                 </div>
 
                 <div class="reward-cards-row">
@@ -436,7 +507,8 @@
     <div class="sidebar-overlay" id="sidebarDrawerOverlay" onclick="toggleSidebarDrawer()"></div>
     <aside class="sidebar-drawer" id="sidebarDrawer">
         <div class="sidebar-header-cyan">
-            <img src="img/chefs/1.jpg" onerror="this.src='img/menu/1.jpg'" class="sidebar-avatar-img" id="sidebarUserAvatar" alt="Avatar">
+            <img src="img/chefs/1.jpg" onerror="this.src='img/menu/1.jpg'" class="sidebar-avatar-img"
+                id="sidebarUserAvatar" alt="Avatar">
             <div>
                 <div class="sidebar-user-greeting">Good Morning</div>
                 <div class="sidebar-user-name" id="sidebarUserName">Henry Decosta</div>
@@ -446,7 +518,8 @@
         <div class="sidebar-group-title">MAIN MENU</div>
 
         <!-- 1. Notification -->
-        <a href="javascript:void(0);" class="sidebar-nav-item" onclick="switchTab('notification'); toggleSidebarDrawer();">
+        <a href="javascript:void(0);" class="sidebar-nav-item"
+            onclick="switchTab('notification'); toggleSidebarDrawer();">
             <i class="far fa-bell nav-icon"></i>
             <span>Notification</span>
             <span class="sidebar-badge bg-coral">1</span>
@@ -481,7 +554,8 @@
             <i class="fas fa-chevron-right sidebar-chevron"></i>
         </a>
 
-        <a href="javascript:void(0);" class="sidebar-nav-item" onclick="showToast('💬 Chat Feature Clicked'); toggleSidebarDrawer();">
+        <a href="javascript:void(0);" class="sidebar-nav-item"
+            onclick="showToast('💬 Chat Feature Clicked'); toggleSidebarDrawer();">
             <i class="far fa-comment nav-icon"></i>
             <span>Chat</span>
             <span class="sidebar-badge bg-purple">5</span>
@@ -517,15 +591,18 @@
         </div>
 
         <div class="sidebar-footer-box text-center" style="text-align: center !important; width: 100%;">
-            <div class="fw-bold text-white text-xs text-center" style="text-align: center !important;">Favorite Cafe</div>
-            <div class="text-muted-custom text-xs text-center" style="text-align: center !important;">App Version 1.0</div>
+            <div class="fw-bold text-white text-xs text-center" style="text-align: center !important;">Favorite Cafe
+            </div>
+            <div class="text-muted-custom text-xs text-center" style="text-align: center !important;">App Version 1.0
+            </div>
         </div>
     </aside>
 
     <!-- Bottom Navigation Bar (5 Icons) -->
     <nav class="bottom-nav-bar" id="bottomNav">
         <!-- 1. Notification Bell -->
-        <div class="bottom-nav-item" data-tab="notification" onclick="switchTab('notification', this)" title="Notifications">
+        <div class="bottom-nav-item" data-tab="notification" onclick="switchTab('notification', this)"
+            title="Notifications">
             <i class="far fa-bell"></i>
         </div>
 
@@ -555,7 +632,8 @@
         <div class="custom-modal-dialog">
             <div class="custom-modal-header">
                 <h3><i class="fas fa-id-card me-2 text-cyan"></i>Edit Contacts</h3>
-                <button type="button" class="modal-close-btn" onclick="closeMobileAuthModal('profile_edit')">&times;</button>
+                <button type="button" class="modal-close-btn"
+                    onclick="closeMobileAuthModal('profile_edit')">&times;</button>
             </div>
             <div class="custom-modal-body">
                 <form id="editContactsForm" onsubmit="event.preventDefault(); saveMobileProfileContacts();">
@@ -564,27 +642,35 @@
                         <input type="text" id="editProfileName" class="form-control-custom" placeholder="John Doe">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label-custom"><i class="fas fa-phone me-1 text-cyan"></i> Mobile Phone</label>
+                        <label class="form-label-custom"><i class="fas fa-phone me-1 text-cyan"></i> Mobile
+                            Phone</label>
                         <input type="tel" id="editProfilePhone" class="form-control-custom" placeholder="078...">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label-custom"><i class="fas fa-envelope me-1 text-cyan"></i> Email Address</label>
-                        <input type="email" id="editProfileEmail" class="form-control-custom" placeholder="e.g. testa@gmail.com">
+                        <label class="form-label-custom"><i class="fas fa-envelope me-1 text-cyan"></i> Email
+                            Address</label>
+                        <input type="email" id="editProfileEmail" class="form-control-custom"
+                            placeholder="e.g. testa@gmail.com">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label-custom"><i class="fas fa-map-marker-alt me-1 text-cyan"></i> Address</label>
-                        <textarea id="editProfileAddress" class="form-control-custom" rows="2" placeholder="Enter delivery/contact address"></textarea>
+                        <label class="form-label-custom"><i class="fas fa-map-marker-alt me-1 text-cyan"></i>
+                            Address</label>
+                        <textarea id="editProfileAddress" class="form-control-custom" rows="2"
+                            placeholder="Enter delivery/contact address"></textarea>
                     </div>
 
                     <!-- Dynamic Extra Contacts Section -->
-                    <div class="extra-contacts-header d-flex justify-content-between align-items-center mb-2 pt-2 border-top-dark" style="padding-top: 10px; margin-top: 10px;">
+                    <div class="extra-contacts-header d-flex justify-content-between align-items-center mb-2 pt-2 border-top-dark"
+                        style="padding-top: 10px; margin-top: 10px;">
                         <span class="fw-bold text-xs text-muted-custom">CUSTOM CONTACTS</span>
-                        <button type="button" class="btn-add-contact-sm" onclick="addCustomContactInput()"><i class="fas fa-plus me-1"></i>Add Contact</button>
+                        <button type="button" class="btn-add-contact-sm" onclick="addCustomContactInput()"><i
+                                class="fas fa-plus me-1"></i>Add Contact</button>
                     </div>
                     <div id="modalCustomContactsContainer"></div>
 
                     <div class="d-flex gap-2 mt-4" style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                        <button type="button" class="btn-secondary-custom flex-1" onclick="closeMobileAuthModal('profile_edit')">Cancel</button>
+                        <button type="button" class="btn-secondary-custom flex-1"
+                            onclick="closeMobileAuthModal('profile_edit')">Cancel</button>
                         <button type="submit" class="btn-cyan-confirm flex-1">Save Contacts</button>
                     </div>
                 </form>
@@ -612,7 +698,8 @@
             <!-- Star Rating & Review Count -->
             <div class="item-modal-rating-row" id="modalDishRatingRow">
                 <div class="stars-gold" id="modalDishStars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                        class="fas fa-star"></i><i class="fas fa-star"></i>
                 </div>
                 <span class="rating-text" id="modalDishRatingText">5 (12 reviews)</span>
             </div>
@@ -659,13 +746,15 @@
             <div class="momo-pay-indicator-box mt-3">
                 <div class="d-flex align-items-center gap-2">
                     <span class="momo-pay-badge-pill">MOMO PAY</span>
-                    <span class="momo-pay-text"><i class="fas fa-check-circle text-success me-1"></i>MTN MoMo &amp; Airtel Money</span>
+                    <span class="momo-pay-text"><i class="fas fa-check-circle text-success me-1"></i>MTN MoMo &amp;
+                        Airtel Money</span>
                 </div>
                 <i class="fas fa-mobile-alt text-warning fs-5"></i>
             </div>
 
             <!-- Confirm Add to Cart CTA Button -->
-            <button type="button" class="btn-cyan-confirm mt-3 w-100" id="modalAddToCartBtn" onclick="confirmModalAddToCart()">
+            <button type="button" class="btn-cyan-confirm mt-3 w-100" id="modalAddToCartBtn"
+                onclick="confirmModalAddToCart()">
                 <i class="fas fa-cart-plus me-2"></i> Add to Cart (<span id="modalAddTotalPrice">5,500 RWF</span>)
             </button>
         </div>
@@ -678,12 +767,14 @@
         <div class="custom-modal-dialog" style="max-width: 480px; padding: 1.5rem 1.25rem;">
             <div class="custom-modal-header" style="border-bottom: none; padding-bottom: 0;">
                 <div>
-                    <h3 id="trackingOrderCodeText" style="font-size: 1.15rem; color:#fff; font-weight:700;">Order #FC-0000</h3>
+                    <h3 id="trackingOrderCodeText" style="font-size: 1.15rem; color:#fff; font-weight:700;">Order
+                        #FC-0000</h3>
                     <span id="trackingStatusBadgePill" class="order-status-badge mt-1" style="font-size:0.75rem;">
                         <span class="status-pill-dot" style="background:#ffa502;"></span> Order Received
                     </span>
                 </div>
-                <button type="button" class="modal-circle-close-btn" onclick="closeOrderTrackingModal()">&times;</button>
+                <button type="button" class="modal-circle-close-btn"
+                    onclick="closeOrderTrackingModal()">&times;</button>
             </div>
 
             <div class="custom-modal-body mt-2">
@@ -705,7 +796,7 @@
                         <span class="tracking-summary-label">
                             <i class="fas fa-user-tag me-2"></i>Service &amp; Location:
                         </span>
-                        <span class="tracking-location-badge text-end" id="trackingServiceOption">Delivery (Kimironko 108) • Cash</span>
+                        <span class="tracking-location-badge text-end" id="trackingServiceOption">Delivery (Kimironko 108) • Momo Pay</span>
                     </div>
                 </div>
 
@@ -734,32 +825,42 @@
         <div class="custom-modal-dialog mobile-momo-card text-center">
             <!-- Dual Operator Selector Pills -->
             <div class="momo-operator-toggle-bar">
-                <button type="button" class="momo-op-switch-btn active-mtn" id="momoOpMtnBtnMobile" onclick="selectMobileMomoOperator('MTN')">
+                <button type="button" class="momo-op-switch-btn active-mtn" id="momoOpMtnBtnMobile"
+                    onclick="selectMobileMomoOperator('MTN')">
                     <i class="fas fa-mobile-alt"></i> MTN MoMo
                 </button>
-                <button type="button" class="momo-op-switch-btn inactive" id="momoOpAirtelBtnMobile" onclick="selectMobileMomoOperator('Airtel')">
+                <button type="button" class="momo-op-switch-btn inactive" id="momoOpAirtelBtnMobile"
+                    onclick="selectMobileMomoOperator('Airtel')">
                     <i class="fas fa-mobile-alt"></i> Airtel Money
                 </button>
             </div>
 
             <div class="mb-2">
-                <h4 class="font-weight-bold mb-1 text-dark" id="mobileMomoProviderTitle" style="font-size:1.15rem; font-weight:700;">MTN Mobile Money</h4>
-                <div class="small text-muted" style="font-size:0.8rem;">Push Request Sent to <strong id="mobileMomoTargetPhone" class="text-dark">+250 788 123 456</strong></div>
+                <h4 class="font-weight-bold mb-1 text-dark" id="mobileMomoProviderTitle"
+                    style="font-size:1.15rem; font-weight:700;">MTN Mobile Money</h4>
+                <div class="small text-muted" style="font-size:0.8rem;">Push Request Sent to <strong
+                        id="mobileMomoTargetPhone" class="text-dark">+250 788 123 456</strong></div>
             </div>
 
             <!-- Realistic Smartphone Terminal Prompt -->
             <div class="mobile-momo-terminal shadow-sm">
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="badge bg-warning text-dark font-monospace" style="font-size:0.65rem;"><i class="fas fa-terminal me-1"></i>USSD PROMPT *182#</span>
-                    <span class="small text-muted font-monospace" style="font-size:0.7rem; color:#94a3b8;">Favorite Cafe POS</span>
+                    <span class="badge bg-warning text-dark font-monospace" style="font-size:0.65rem;"><i
+                            class="fas fa-terminal me-1"></i>USSD PROMPT *182#</span>
+                    <span class="small text-muted font-monospace" style="font-size:0.7rem; color:#94a3b8;">Favorite Cafe
+                        POS</span>
                 </div>
                 <div class="small text-light mb-3" style="line-height:1.4; color:#f8fafc;">
-                    "Pay <strong id="mobileMomoPaymentAmount" class="text-warning fs-6" style="color:#ffcc00; font-size:1rem;">0 RWF</strong> to Favorite Cafe &amp; Restaurant? Enter 4-digit PIN:"
+                    "Pay <strong id="mobileMomoPaymentAmount" class="text-warning fs-6"
+                        style="color:#ffcc00; font-size:1rem;">0 RWF</strong> to Favorite Cafe &amp; Restaurant? Enter
+                    4-digit PIN:"
                 </div>
 
                 <!-- PIN Dots Display -->
-                <div class="py-2 px-3 rounded text-center" style="background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.12); min-height:44px; display:flex; align-items:center; justify-content:center;">
-                    <div id="mobileMomoPinDots" class="font-monospace text-warning" style="letter-spacing:14px; font-size:1.4rem; color:#ffcc00;">
+                <div class="py-2 px-3 rounded text-center"
+                    style="background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.12); min-height:44px; display:flex; align-items:center; justify-content:center;">
+                    <div id="mobileMomoPinDots" class="font-monospace text-warning"
+                        style="letter-spacing:14px; font-size:1.4rem; color:#ffcc00;">
                         • • • •
                     </div>
                 </div>
@@ -776,15 +877,21 @@
                 <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('7')">7</button>
                 <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('8')">8</button>
                 <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('9')">9</button>
-                <button type="button" class="momo-key-btn momo-key-btn-clear" onclick="clearMobilePinDigits()" title="Backspace"><i class="fas fa-backspace"></i></button>
+                <button type="button" class="momo-key-btn momo-key-btn-clear" onclick="clearMobilePinDigits()"
+                    title="Backspace"><i class="fas fa-backspace"></i></button>
                 <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('0')">0</button>
-                <button type="button" class="momo-key-btn momo-key-btn-ok" onclick="confirmMobileMomoSuccess()" title="Approve"><i class="fas fa-check"></i></button>
+                <button type="button" class="momo-key-btn momo-key-btn-ok" onclick="confirmMobileMomoSuccess()"
+                    title="Approve"><i class="fas fa-check"></i></button>
             </div>
 
             <!-- Bottom Action Buttons -->
             <div class="d-flex gap-2 mt-2 pt-1 mb-1">
-                <button type="button" class="btn btn-outline-secondary w-50 py-2 font-weight-bold rounded-pill" onclick="cancelMobileMomoUssd()" style="border-radius:999px; border:1px solid #cbd5e1; background:transparent; color:#64748b; font-weight:700;">Cancel</button>
-                <button type="button" class="btn btn-success w-50 py-2 font-weight-bold rounded-pill" onclick="confirmMobileMomoSuccess()" style="border-radius:999px; background:#16a34a; border:none; color:#fff; font-weight:700;">
+                <button type="button" class="btn btn-outline-secondary w-50 py-2 font-weight-bold rounded-pill"
+                    onclick="cancelMobileMomoUssd()"
+                    style="border-radius:999px; border:1px solid #cbd5e1; background:transparent; color:#64748b; font-weight:700;">Cancel</button>
+                <button type="button" class="btn btn-success w-50 py-2 font-weight-bold rounded-pill"
+                    onclick="confirmMobileMomoSuccess()"
+                    style="border-radius:999px; background:#16a34a; border:none; color:#fff; font-weight:700;">
                     <i class="fas fa-check-circle me-1"></i> Approve
                 </button>
             </div>

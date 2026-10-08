@@ -90,6 +90,17 @@ function initNetworkListener() {
 }
 
 // AUTH & USER STATE
+function isUserLoggedIn() {
+    if (!currentUser) {
+        const userStr = localStorage.getItem('favcafe_active_user');
+        if (userStr) {
+            try { currentUser = JSON.parse(userStr); } catch (e) {}
+        }
+    }
+    return Boolean(currentUser && (currentUser.email || currentUser.name || currentUser.full_name || currentUser.id));
+}
+window.isUserLoggedIn = isUserLoggedIn;
+
 function checkAuth() {
     const userStr = localStorage.getItem('favcafe_active_user');
     if (userStr) {
@@ -102,13 +113,30 @@ function checkAuth() {
         currentUser = null;
     }
 
-    if (!currentUser || (!currentUser.email && !currentUser.name && !currentUser.full_name)) {
-        console.warn('[Mobile App] Unauthenticated access detected. Redirecting to mobile_auth.html...');
-        window.location.href = 'mobile_auth.html';
-        return;
+    if (currentUser && (currentUser.email || currentUser.name || currentUser.full_name)) {
+        renderUserContacts();
+    } else {
+        renderGuestContacts();
+    }
+}
+
+function renderGuestContacts() {
+    const greetingUser = document.getElementById('greetingUserName');
+    if (greetingUser) greetingUser.innerText = 'Guest 👋';
+
+    const greetingTime = document.getElementById('greetingTimeText');
+    if (greetingTime) {
+        const hour = new Date().getHours();
+        if (hour < 12) greetingTime.innerText = 'Good Morning';
+        else if (hour < 17) greetingTime.innerText = 'Good Afternoon';
+        else greetingTime.innerText = 'Good Evening';
     }
 
-    renderUserContacts();
+    const profileTabName = document.getElementById('profileTabName');
+    if (profileTabName) profileTabName.innerText = 'Guest User';
+
+    const sidebarUserName = document.getElementById('sidebarUserName');
+    if (sidebarUserName) sidebarUserName.innerText = 'Guest User';
 }
 
 function renderUserContacts() {
@@ -736,12 +764,31 @@ function initStorageSyncListener() {
         if (e.key === 'favcafe_orders' || e.key === 'favcafe_orders_signal') {
             loadMobileOrderHistory();
         }
+        if (e.key === 'favcafe_cart_settings' || e.key === 'favcafe_cart_settings_signal') {
+            applyCartDrawerSettings();
+        }
+        if (e.key === 'favcafe_cart') {
+            loadCart();
+        }
+        if (e.key === 'favcafe_active_user') {
+            checkAuth();
+            renderCartItems();
+        }
     });
 
     try {
         const orderChan = new BroadcastChannel('favcafe_orders_channel');
         orderChan.onmessage = (ev) => {
             loadMobileOrderHistory();
+        };
+    } catch (e) {}
+
+    try {
+        const settingsChan = new BroadcastChannel('favcafe_settings_channel');
+        settingsChan.onmessage = (ev) => {
+            if (ev.data && ev.data.type === 'cart_settings_updated') {
+                applyCartDrawerSettings();
+            }
         };
     } catch (e) {}
 }
@@ -1072,27 +1119,64 @@ let appliedLoyaltyPoints = 0;
 let promoDiscountAmount = 0;
 let appliedPromoCode = '';
 
+function applyCartDrawerSettings() {
+    let settings = { showExtras: true, showSummaryDiscounts: true };
+    try {
+        const stored = localStorage.getItem('favcafe_cart_settings');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            settings = {
+                showExtras: parsed.showExtras !== false,
+                showSummaryDiscounts: parsed.showSummaryDiscounts !== false
+            };
+        }
+    } catch (e) {}
+
+    const extrasEl = document.getElementById('cartExtrasSection');
+    const summaryDiscountsEl = document.getElementById('cartSummaryDiscountsSection');
+
+    if (extrasEl) {
+        extrasEl.style.display = settings.showExtras ? 'block' : 'none';
+    }
+    if (summaryDiscountsEl) {
+        summaryDiscountsEl.style.display = settings.showSummaryDiscounts ? 'block' : 'none';
+    }
+}
+window.applyCartDrawerSettings = applyCartDrawerSettings;
+
+function clearCart() {
+    cart = [];
+    appliedLoyaltyPoints = 0;
+    promoDiscountAmount = 0;
+    appliedPromoCode = '';
+    localStorage.setItem('favcafe_cart', JSON.stringify([]));
+    renderCartItems();
+    showToast('🛒 Shopping cart cleared', 'info');
+}
+window.clearCart = clearCart;
+
 function loadCart() {
     const stored = localStorage.getItem('favcafe_cart');
-    if (stored) {
-        try { cart = JSON.parse(stored); } catch (e) {}
-    }
-
-    if (!cart || cart.length === 0) {
-        cart = [
-            { id: 2, title: 'Chicken Strips and Chips', subtitle: 'Burgers & Chips', price: 9000, qty: 1, image: 'img/menu/dish_1790004782_1426.png' },
-            { id: 7, title: 'Chicken Pizza', subtitle: 'Freshly Baked Pizza', price: 6000, qty: 1, image: 'img/menu/dish_1786021943_7435.jpg' },
-            { id: 9, title: 'Espresso', subtitle: 'Black Coffee', price: 1500, qty: 1, image: 'img/menu/dish_1786021975_8115.jpg' }
-        ];
+    if (stored !== null && stored !== undefined) {
+        try { 
+            cart = JSON.parse(stored) || []; 
+        } catch (e) { 
+            cart = []; 
+        }
+    } else {
+        cart = [];
     }
 
     renderCartItems();
+    applyCartDrawerSettings();
 }
 
 function renderCartItems() {
     const container = document.getElementById('cartContainer');
     const summary = document.getElementById('cartSummary');
     const emptyState = document.getElementById('emptyCart');
+    const loginPrompt = document.getElementById('cartLoginPrompt');
+    const clearBtn = document.getElementById('cartClearBtn');
 
     if (!container) return;
     container.innerHTML = '';
@@ -1115,12 +1199,24 @@ function renderCartItems() {
 
     if (cart.length === 0) {
         if (summary) summary.style.display = 'none';
-        if (emptyState) emptyState.style.display = 'block';
+        if (clearBtn) clearBtn.style.display = 'none';
+
+        const loggedIn = isUserLoggedIn();
+        if (loggedIn) {
+            if (emptyState) emptyState.style.display = 'block';
+            if (loginPrompt) loginPrompt.style.display = 'none';
+        } else {
+            if (emptyState) emptyState.style.display = 'none';
+            if (loginPrompt) loginPrompt.style.display = 'block';
+        }
         return;
     }
 
     if (emptyState) emptyState.style.display = 'none';
+    if (loginPrompt) loginPrompt.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'inline-flex';
     if (summary) summary.style.display = 'block';
+    applyCartDrawerSettings();
 
     let subtotal = 0;
 
@@ -1510,6 +1606,14 @@ let selectedMobileMomoOperator = 'MTN';
 let currentMobilePinDigits = '';
 
 function checkout() {
+    if (!isUserLoggedIn()) {
+        showToast('⚠️ Please log in to place an order!', 'warning');
+        setTimeout(() => {
+            window.location.href = 'mobile_auth.html';
+        }, 800);
+        return;
+    }
+
     if (!cart || cart.length === 0) {
         showToast('⚠️ Your shopping cart is empty!', 'warning');
         return;
@@ -1689,7 +1793,7 @@ function confirmMobileMomoSuccess() {
     appliedLoyaltyPoints = 0;
     promoDiscountAmount = 0;
     appliedPromoCode = null;
-    localStorage.removeItem('favcafe_cart');
+    localStorage.setItem('favcafe_cart', JSON.stringify([]));
     loadCart();
 
     showToast(`🎉 MoMo Payment Approved! Order #${orderToSave.id} placed.`, 'success');
