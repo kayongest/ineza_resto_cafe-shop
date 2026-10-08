@@ -250,14 +250,17 @@
                 <button type="button" class="status-pill-btn active" onclick="filterOrderHistoryTab('all', this)">
                     All
                 </button>
+                <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('pending', this)">
+                    <span class="status-pill-dot" style="background:#ffa502;"></span> Pending
+                </button>
+                <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('preparing', this)">
+                    <span class="status-pill-dot" style="background:#00d2d3;"></span> Preparing
+                </button>
                 <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('delivery', this)">
                     <span class="status-pill-dot" style="background:#ff5e57;"></span> On Delivery
                 </button>
                 <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('completed', this)">
-                    Completed
-                </button>
-                <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('done', this)">
-                    <span class="status-pill-dot" style="background:#2ed573;"></span> Done
+                    <span class="status-pill-dot" style="background:#2ed573;"></span> Completed
                 </button>
             </div>
 
@@ -583,6 +586,129 @@
 
     <!-- Custom Toast Popup -->
     <div id="appToast" class="app-toast">Message</div>
+
+    <!-- ============================================================
+         1. ORDER ITEM THUMBNAIL MODAL (Matches orderItemThumbnailModal)
+         ============================================================ -->
+    <div id="dishItemDetailModal" class="custom-modal-overlay">
+        <div class="custom-modal-dialog item-detail-modal-card">
+            <!-- Modal Header with Category Badge and Close Button -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="item-modal-category-badge" id="modalDishCategory">WRAPS</span>
+                <button type="button" class="modal-circle-close-btn" onclick="closeDishModal()">&times;</button>
+            </div>
+
+            <!-- Dish Title -->
+            <h2 class="item-modal-dish-title" id="modalDishTitle">Loaded Fries</h2>
+
+            <!-- Star Rating & Review Count -->
+            <div class="item-modal-rating-row" id="modalDishRatingRow">
+                <div class="stars-gold" id="modalDishStars">
+                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                </div>
+                <span class="rating-text" id="modalDishRatingText">5 (12 reviews)</span>
+            </div>
+
+            <!-- Description -->
+            <p class="item-modal-desc" id="modalDishDesc">
+                Crispy golden fries tossed in garlic herb seasoning, topped with melted cheese and bacon bits.
+            </p>
+
+            <!-- Price -->
+            <div class="item-modal-price-val" id="modalDishPrice">5,500 RWF</div>
+
+            <!-- Metadata Cards Row: Calories, Prep Time, Rating -->
+            <div class="item-modal-meta-grid">
+                <div class="meta-card">
+                    <div class="meta-val" id="modalDishCalories">400 kcal</div>
+                    <div class="meta-lbl">Calories</div>
+                </div>
+                <div class="meta-card">
+                    <div class="meta-val" id="modalDishPrepTime">10 min</div>
+                    <div class="meta-lbl">Prep Time</div>
+                </div>
+                <div class="meta-card">
+                    <div class="meta-val" id="modalDishRating">5/5</div>
+                    <div class="meta-lbl">Rating</div>
+                </div>
+            </div>
+
+            <!-- Portion Quantity Incrementor: -  [qty]  +  portion -->
+            <div class="item-modal-qty-control">
+                <button type="button" class="qty-circle-btn" onclick="changeDishModalQty(-1)">-</button>
+                <span class="qty-display-num" id="modalDishQty">1</span>
+                <button type="button" class="qty-circle-btn" onclick="changeDishModalQty(1)">+</button>
+                <span class="portion-label">portion</span>
+            </div>
+
+            <!-- Item Badges & Tags (e.g. Bestseller, Cheesy, Spicy) -->
+            <div class="item-modal-tags-row" id="modalDishTags">
+                <span class="dish-tag-chip">Bestseller</span>
+                <span class="dish-tag-chip">Cheesy</span>
+            </div>
+
+            <!-- Confirm Add to Cart CTA Button -->
+            <button type="button" class="btn-cyan-confirm mt-4 w-100" id="modalAddToCartBtn" onclick="confirmModalAddToCart()">
+                <i class="fas fa-cart-plus me-2"></i> Add to Cart (<span id="modalAddTotalPrice">5,500 RWF</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         2. LIVE ORDER TRACKING MODAL (Full 7-Stage Status Tracker)
+         ============================================================ -->
+    <div id="mobileOrderTrackingModal" class="custom-modal-overlay">
+        <div class="custom-modal-dialog" style="max-width: 480px; padding: 1.5rem 1.25rem;">
+            <div class="custom-modal-header" style="border-bottom: none; padding-bottom: 0;">
+                <div>
+                    <h3 id="trackingOrderCodeText" style="font-size: 1.15rem; color:#fff; font-weight:700;">Order #FC-0000</h3>
+                    <span id="trackingStatusBadgePill" class="order-status-badge mt-1" style="font-size:0.75rem;">
+                        <span class="status-pill-dot" style="background:#ffa502;"></span> Order Received
+                    </span>
+                </div>
+                <button type="button" class="modal-circle-close-btn" onclick="closeOrderTrackingModal()">&times;</button>
+            </div>
+
+            <div class="custom-modal-body mt-2">
+                <!-- Order Summary Aligned Card (Matching orderModalTrack.png) -->
+                <div class="tracking-summary-card mb-3">
+                    <div class="tracking-summary-row">
+                        <span class="tracking-summary-label">
+                            <i class="fas fa-shopping-bag me-2"></i>Items Summary:
+                        </span>
+                        <span class="tracking-summary-value text-end" id="trackingItemsSummary">-</span>
+                    </div>
+                    <div class="tracking-summary-row">
+                        <span class="tracking-summary-label">
+                            <i class="fas fa-receipt me-2"></i>Total Amount:
+                        </span>
+                        <span class="tracking-summary-price text-end" id="trackingTotalAmount">0 RWF</span>
+                    </div>
+                    <div class="tracking-summary-row border-0 pb-0 mb-0">
+                        <span class="tracking-summary-label">
+                            <i class="fas fa-user-tag me-2"></i>Service &amp; Location:
+                        </span>
+                        <span class="tracking-location-badge text-end" id="trackingServiceOption">Delivery (Kimironko 108) • Cash</span>
+                    </div>
+                </div>
+
+                <div class="section-title-bar mb-2">
+                    <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fas fa-stream me-2 text-cyan"></i>Live Delivery Status
+                    </h3>
+                </div>
+
+                <!-- 7 Lifecycle Stages Timeline -->
+                <div class="timeline-stepper" id="trackingTimelineStepper">
+                    <!-- Dynamic from JS -->
+                </div>
+
+                <button type="button" class="btn-secondary-custom w-100 mt-4" onclick="closeOrderTrackingModal()">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Orders
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="js/mobile_app.js?v=6.3"></script>

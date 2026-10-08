@@ -733,7 +733,17 @@ function initStorageSyncListener() {
                 renderOffersPromos();
             });
         }
+        if (e.key === 'favcafe_orders' || e.key === 'favcafe_orders_signal') {
+            loadMobileOrderHistory();
+        }
     });
+
+    try {
+        const orderChan = new BroadcastChannel('favcafe_orders_channel');
+        orderChan.onmessage = (ev) => {
+            loadMobileOrderHistory();
+        };
+    } catch (e) {}
 }
 
 async function loadMenu() {
@@ -969,18 +979,18 @@ function createMenuCard(item) {
     }
 
     return `
-        <div class="food-card" data-dish-id="${item.id}">
-            <div class="food-card-img-wrapper" style="position:relative;">
+        <div class="food-card" data-dish-id="${item.id}" onclick="openDishModal(${itemJson})">
+            <div class="food-card-img-wrapper" style="position:relative; cursor:pointer;">
                 ${badgeHtml}
                 <img src="${img}" class="food-card-img" onerror="this.src='img/menu/1.jpg'" alt="${item.title}">
                 <button type="button" class="food-card-btn-fav ${favActiveClass}" onclick="toggleFavorite(event, ${item.id})" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
                     <i class="${favIconClass}"></i>
                 </button>
-                <button type="button" class="food-card-btn-add" onclick="addToCart(event, ${itemJson})" title="Add to cart">
+                <button type="button" class="food-card-btn-add" onclick="event.stopPropagation(); openDishModal(${itemJson})" title="View dish & add to cart">
                     <i class="fas fa-plus"></i>
                 </button>
             </div>
-            <div class="food-card-body">
+            <div class="food-card-body" style="cursor:pointer;">
                 <div class="food-card-title">${item.title}</div>
                 <div class="food-card-subtitle" title="${subStr}">${subStr}</div>
                 <div class="food-card-footer">
@@ -1355,12 +1365,256 @@ function applyPromoCode() {
 }
 window.applyPromoCode = applyPromoCode;
 
+// ============================================================
+// MODAL FOR DISH THUMBNAIL (Matches orderItemThumbnailModal)
+// ============================================================
+let activeModalDish = null;
+let activeModalQty = 1;
+
+function openDishModal(item) {
+    if (!item) return;
+    activeModalDish = item;
+    activeModalQty = 1;
+
+    const modal = document.getElementById('dishItemDetailModal');
+    if (!modal) return;
+
+    // Category
+    const catEl = document.getElementById('modalDishCategory');
+    if (catEl) catEl.textContent = (item.category || 'SPECIALTY').toUpperCase();
+
+    // Title
+    const titleEl = document.getElementById('modalDishTitle');
+    if (titleEl) titleEl.textContent = item.title || 'Delicious Dish';
+
+    // Rating & Reviews
+    const ratingVal = parseFloat(item.rating || 5.0);
+    const reviewsVal = item.reviews_count || 12;
+    const ratingRow = document.getElementById('modalDishRatingText');
+    if (ratingRow) ratingRow.textContent = `${ratingVal} (${reviewsVal} reviews)`;
+
+    const starsEl = document.getElementById('modalDishStars');
+    if (starsEl) {
+        const fullStars = Math.round(ratingVal);
+        let starHtml = '';
+        for (let i = 0; i < 5; i++) {
+            starHtml += i < fullStars ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+        }
+        starsEl.innerHTML = starHtml;
+    }
+
+    // Description
+    const descEl = document.getElementById('modalDishDesc');
+    if (descEl) descEl.textContent = item.description || 'Prepared fresh with premium ingredients, herbs, and our signature spices.';
+
+    // Price
+    const priceVal = parseFloat(item.price || 0);
+    const priceEl = document.getElementById('modalDishPrice');
+    if (priceEl) priceEl.textContent = formatRWF(priceVal);
+
+    // Metadata: Calories, Prep Time, Rating
+    const calEl = document.getElementById('modalDishCalories');
+    if (calEl) calEl.textContent = `${item.calories || 400} kcal`;
+
+    const prepEl = document.getElementById('modalDishPrepTime');
+    if (prepEl) prepEl.textContent = `${item.prep_time || 10} min`;
+
+    const rateMetaEl = document.getElementById('modalDishRating');
+    if (rateMetaEl) rateMetaEl.textContent = `${ratingVal}/5`;
+
+    // Quantity display
+    const qtyEl = document.getElementById('modalDishQty');
+    if (qtyEl) qtyEl.textContent = activeModalQty;
+
+    // Tags
+    const tagsContainer = document.getElementById('modalDishTags');
+    if (tagsContainer) {
+        tagsContainer.innerHTML = '';
+        let tagsArr = [];
+        if (Array.isArray(item.tags)) tagsArr = item.tags;
+        else if (typeof item.tags === 'string' && item.tags.trim()) tagsArr = item.tags.split(',');
+        else tagsArr = ['Bestseller', 'Cheesy'];
+
+        tagsArr.filter(Boolean).forEach(t => {
+            const span = document.createElement('span');
+            span.className = 'dish-tag-chip';
+            span.textContent = t.trim();
+            tagsContainer.appendChild(span);
+        });
+    }
+
+    updateDishModalAddButtonPrice();
+    modal.classList.add('active');
+}
+window.openDishModal = openDishModal;
+
+function closeDishModal() {
+    const modal = document.getElementById('dishItemDetailModal');
+    if (modal) modal.classList.remove('active');
+}
+window.closeDishModal = closeDishModal;
+
+function changeDishModalQty(delta) {
+    activeModalQty = Math.max(1, activeModalQty + delta);
+    const qtyEl = document.getElementById('modalDishQty');
+    if (qtyEl) qtyEl.textContent = activeModalQty;
+    updateDishModalAddButtonPrice();
+}
+window.changeDishModalQty = changeDishModalQty;
+
+function updateDishModalAddButtonPrice() {
+    if (!activeModalDish) return;
+    const unitPrice = parseFloat(activeModalDish.price || 0);
+    const totalPrice = unitPrice * activeModalQty;
+    const priceSpan = document.getElementById('modalAddTotalPrice');
+    if (priceSpan) priceSpan.textContent = formatRWF(totalPrice);
+}
+
+function confirmModalAddToCart() {
+    if (!activeModalDish) return;
+
+    const unitPrice = parseFloat(activeModalDish.price || 0);
+    const cartItem = {
+        id: activeModalDish.id,
+        title: activeModalDish.title || 'Food Item',
+        subtitle: activeModalDish.subtitle || activeModalDish.category || 'Specialty',
+        price: unitPrice,
+        image: activeModalDish.image || 'img/menu/1.jpg',
+        qty: activeModalQty,
+        quantity: activeModalQty
+    };
+
+    let found = false;
+    for (let i = 0; i < cart.length; i++) {
+        if (cart[i].id === cartItem.id) {
+            cart[i].qty = (parseInt(cart[i].qty) || 1) + activeModalQty;
+            cart[i].quantity = cart[i].qty;
+            found = true;
+            break;
+        }
+    }
+    if (!found) cart.push(cartItem);
+
+    localStorage.setItem('favcafe_cart', JSON.stringify(cart));
+    loadCart();
+    closeDishModal();
+    showToast(`🛒 Added ${activeModalQty}x ${cartItem.title} to cart!`);
+}
+window.confirmModalAddToCart = confirmModalAddToCart;
+
+// ============================================================
+// CHECKOUT FUNCTIONALITY (Creates real order synchronized across tabs)
+// ============================================================
 function checkout() {
-    showToast('💳 Order Confirmed! Thank you for ordering.', 'success');
+    if (!cart || cart.length === 0) {
+        showToast('⚠️ Your shopping cart is empty!', 'warning');
+        return;
+    }
+
+    const subtotal = cart.reduce((acc, i) => acc + (parseFloat(i.price) * (parseInt(i.qty) || 1)), 0);
+    const deliveryFee = 1000;
+    const finalTotal = Math.max(0, subtotal + deliveryFee - promoDiscountAmount - appliedLoyaltyPoints);
+    const itemsSummaryStr = cart.map(i => `${i.title} x${i.qty || 1}`).join(', ');
+    const orderCode = 'FC-' + Math.floor(1000 + Math.random() * 9000);
+
+    const activeUser = JSON.parse(localStorage.getItem('favcafe_active_user') || '{}');
+    const custName = activeUser.name || 'James';
+    const custPhone = activeUser.phone || '0788 123 456';
+    const custAddr = activeUser.address || 'Kimironko 108';
+
+    const newOrder = {
+        id: orderCode,
+        date: new Date().toISOString(),
+        customerName: custName,
+        phone: custPhone,
+        address: custAddr,
+        serviceType: 'delivery',
+        paymentMethod: 'Cash',
+        paymentStatus: 'Paid',
+        itemsSummary: itemsSummaryStr,
+        items: cart.map(i => ({
+            title: i.title,
+            qty: i.qty || 1,
+            price: i.price,
+            img: i.image || 'img/menu/1.jpg'
+        })),
+        total: finalTotal,
+        status: 'Order Received'
+    };
+
+    // Save to localStorage 'favcafe_orders'
+    let storedOrders = [];
+    try {
+        const stored = localStorage.getItem('favcafe_orders');
+        if (stored) storedOrders = JSON.parse(stored);
+    } catch (e) {}
+
+    storedOrders.unshift(newOrder);
+    try {
+        localStorage.setItem('favcafe_orders', JSON.stringify(storedOrders));
+        localStorage.setItem('favcafe_orders_signal', JSON.stringify({ type: 'order_created', order: newOrder, ts: Date.now() }));
+    } catch (e) {}
+
+    // Broadcast across windows
+    try {
+        const orderChan = new BroadcastChannel('favcafe_orders_channel');
+        orderChan.postMessage({ type: 'order_created', order: newOrder });
+    } catch (e) {}
+
+    // Send to backend API
+    try {
+        fetch('api/orders.php?action=create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newOrder)
+        }).catch(() => {});
+    } catch (e) {}
+
+    // Clear cart
+    cart = [];
+    appliedLoyaltyPoints = 0;
+    promoDiscountAmount = 0;
+    appliedPromoCode = null;
+    localStorage.removeItem('favcafe_cart');
+    loadCart();
+
+    showToast(`🎉 Order #${newOrder.id} confirmed! Sent to Kitchen.`, 'success');
+    
+    // Switch to Your Orders tab and open tracking
+    setTimeout(() => {
+        switchTab('history');
+        loadMobileOrderHistory();
+        openOrderTrackingModal(newOrder.id);
+    }, 600);
 }
 window.checkout = checkout;
 
+// ============================================================
 // YOUR ORDERS & STATUS FILTERING (SCREEN 1)
+// ============================================================
+function getOrderStatusDetails(statusStr) {
+    const s = (statusStr || 'Order Received').toLowerCase().trim();
+    if (s.includes('closed')) {
+        return { category: 'completed', label: 'CLOSED', dotColor: '#2ed573', stage: 7 };
+    }
+    if (s.includes('delivered') || s.includes('served') || s.includes('completed')) {
+        return { category: 'completed', label: 'DELIVERED', dotColor: '#2ed573', stage: 6 };
+    }
+    if (s.includes('on the way') || s.includes('out for delivery') || s.includes('delivery')) {
+        return { category: 'delivery', label: 'ON DELIVERY', dotColor: '#ff5e57', stage: 5 };
+    }
+    if (s.includes('ready')) {
+        return { category: 'preparing', label: 'READY', dotColor: '#00d2d3', stage: 4 };
+    }
+    if (s.includes('preparing') || s.includes('prep') || s.includes('kitchen')) {
+        return { category: 'preparing', label: 'PREPARING', dotColor: '#00d2d3', stage: 3 };
+    }
+    if (s.includes('confirmed') || s.includes('approved')) {
+        return { category: 'pending', label: 'CONFIRMED', dotColor: '#ffa502', stage: 2 };
+    }
+    return { category: 'pending', label: 'PENDING APPROVAL', dotColor: '#ffa502', stage: 1 };
+}
+
 function filterOrderHistoryTab(status, element) {
     currentOrderFilter = status;
     document.querySelectorAll('#orderStatusFilterPills .status-pill-btn').forEach(btn => {
@@ -1371,81 +1625,272 @@ function filterOrderHistoryTab(status, element) {
 }
 window.filterOrderHistoryTab = filterOrderHistoryTab;
 
+let userSearchOrdersQuery = '';
+
+function filterOrdersListByQuery(query) {
+    userSearchOrdersQuery = (query || '').toLowerCase().trim();
+    loadMobileOrderHistory();
+}
+window.filterOrdersListByQuery = filterOrdersListByQuery;
+
+function getAllUserOrders() {
+    let ordersList = [];
+    try {
+        const stored = localStorage.getItem('favcafe_orders');
+        if (stored) {
+            ordersList = JSON.parse(stored);
+        }
+    } catch (e) {}
+
+    // Fallback baseline mock orders if storage empty
+    if (!ordersList || ordersList.length === 0) {
+        ordersList = [
+            {
+                id: 'FC-3307',
+                date: new Date().toISOString(),
+                status: 'Order Received',
+                serviceType: 'delivery',
+                address: 'Kimironko 108',
+                total: 7500,
+                itemsSummary: 'Iced Espresso x1, Iced Americano x1, Iced Mocha x1',
+                items: [
+                    { title: 'Iced Espresso', price: 2500, qty: 1, img: 'img/menu/dish_1786021975_8115.jpg' },
+                    { title: 'Iced Americano', price: 2500, qty: 1, img: 'img/menu/dish_1786028631_2822.jpg' },
+                    { title: 'Iced Mocha', price: 2500, qty: 1, img: 'img/menu/dish_1790004782_1426.png' }
+                ]
+            },
+            {
+                id: 'FC-1234',
+                date: new Date(Date.now() - 3600000).toISOString(),
+                status: 'On the Way',
+                serviceType: 'delivery',
+                address: 'Kacyiru KG 9 Ave',
+                total: 7500,
+                itemsSummary: 'Espresso x1, Chicken Pizza x1',
+                items: [
+                    { title: 'Espresso', price: 1500, qty: 1, img: 'img/menu/dish_1786021975_8115.jpg' },
+                    { title: 'Chicken Pizza', price: 6000, qty: 1, img: 'img/menu/dish_1786021943_7435.jpg' }
+                ]
+            },
+            {
+                id: 'FC-2840',
+                date: new Date(Date.now() - 7200000).toISOString(),
+                status: 'Being Prepared',
+                serviceType: 'takeaway',
+                address: 'Counter Pickup',
+                total: 5500,
+                itemsSummary: 'Loaded Fries x1',
+                items: [
+                    { title: 'Loaded Fries', price: 5500, qty: 1, img: 'img/menu/Loaded_Fries.jpg' }
+                ]
+            },
+            {
+                id: 'FC-6129',
+                date: new Date(Date.now() - 86400000).toISOString(),
+                status: 'Delivered',
+                serviceType: 'delivery',
+                address: 'Nyarutarama Close 4',
+                total: 15000,
+                itemsSummary: 'Chicken Strips and Chips x1, Burger and chips x1',
+                items: [
+                    { title: 'Chicken Strips and Chips', price: 9000, qty: 1, img: 'img/menu/dish_1790004782_1426.png' },
+                    { title: 'Burger and chips', price: 6000, qty: 1, img: 'img/menu/dish_1786028631_2822.jpg' }
+                ]
+            }
+        ];
+    }
+    return ordersList;
+}
+
 function loadMobileOrderHistory() {
     const container = document.getElementById('mobileOrderHistoryList');
     if (!container) return;
 
-    const sampleOrders = [
-        {
-            id: 'FC-1234',
-            statusCategory: 'delivery',
-            statusLabel: 'ON DELIVERY',
-            statusDotColor: '#ff5e57',
-            actionText: 'Track Location',
-            items: [
-                { title: 'Espresso', price: 1500, qty: 1, img: 'img/menu/dish_1786021975_8115.jpg' },
-                { title: 'Chicken Pizza', price: 6000, qty: 1, img: 'img/menu/dish_1786021943_7435.jpg' }
-            ]
-        },
-        {
-            id: 'FC-6129',
-            statusCategory: 'done',
-            statusLabel: 'DONE',
-            statusDotColor: '#2ed573',
-            actionText: 'View Details',
-            items: [
-                { title: 'Chicken Strips and Chips', price: 9000, qty: 1, img: 'img/menu/dish_1790004782_1426.png' },
-                { title: 'Burger and chips', price: 6000, qty: 1, img: 'img/menu/dish_1786028631_2822.jpg' }
-            ]
-        }
-    ];
+    const ordersList = getAllUserOrders();
 
-    let filtered = sampleOrders;
+    let filtered = ordersList;
     if (currentOrderFilter !== 'all') {
-        filtered = sampleOrders.filter(o => o.statusCategory === currentOrderFilter);
+        filtered = filtered.filter(o => {
+            const meta = getOrderStatusDetails(o.status);
+            return meta.category === currentOrderFilter;
+        });
+    }
+
+    if (userSearchOrdersQuery) {
+        filtered = filtered.filter(o => {
+            const idMatch = (o.id || '').toLowerCase().includes(userSearchOrdersQuery);
+            const sumMatch = (o.itemsSummary || '').toLowerCase().includes(userSearchOrdersQuery);
+            const statusMatch = (o.status || '').toLowerCase().includes(userSearchOrdersQuery);
+            return idMatch || sumMatch || statusMatch;
+        });
     }
 
     container.innerHTML = '';
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5 text-muted-custom">
+                <i class="far fa-file-alt mb-3" style="font-size:2.5rem; opacity:0.3;"></i>
+                <div class="fw-bold text-white">No Orders Found</div>
+                <div class="text-xs text-light-blue mt-1">There are no orders matching "${currentOrderFilter}" filter.</div>
+            </div>
+        `;
+        return;
+    }
+
     filtered.forEach(o => {
+        const meta = getOrderStatusDetails(o.status);
+        let items = o.items || [];
+        if (!items || items.length === 0) {
+            // parse from itemsSummary fallback
+            const summary = o.itemsSummary || 'Special Order x1';
+            items = [{ title: summary, price: o.total || 0, qty: 1, img: 'img/menu/1.jpg' }];
+        }
+
         let itemsHtml = '';
-        o.items.forEach(item => {
+        items.forEach(item => {
+            const img = item.img || item.image || 'img/menu/1.jpg';
+            const itemTitle = item.title || 'Delicious Dish';
+            const itemPrice = parseFloat(item.price || 0);
+            const itemQty = item.qty || item.quantity || 1;
             itemsHtml += `
                 <div class="order-item-row">
-                    <img src="${item.img}" onerror="this.src='img/menu/1.jpg'" class="order-item-thumb" alt="${item.title}">
+                    <img src="${img}" onerror="this.src='img/menu/1.jpg'" class="order-item-thumb" alt="${itemTitle}">
                     <div class="order-item-detail">
-                        <div class="order-item-title">${item.title}</div>
-                        <div class="order-item-price">${formatRWF(item.price)}</div>
+                        <div class="order-item-title">${itemTitle}</div>
+                        <div class="order-item-price">${formatRWF(itemPrice)}</div>
                     </div>
-                    <div class="order-item-qty">${item.qty}x</div>
+                    <div class="order-item-qty">${itemQty}x</div>
                 </div>
             `;
         });
+
+        const actionText = meta.stage >= 6 ? 'View Details' : 'Track Status';
 
         container.innerHTML += `
             <div class="order-ticket-card">
                 <div class="order-ticket-header">
                     <div>
                         <span class="order-id-txt">Order ID #${o.id}</span>
-                        <div class="order-status-badge mt-1" style="color:${o.statusDotColor};">
-                            <span class="status-pill-dot" style="background:${o.statusDotColor};"></span>
-                            ${o.statusLabel}
+                        <div class="order-status-badge mt-1" style="color:${meta.dotColor};">
+                            <span class="status-pill-dot" style="background:${meta.dotColor};"></span>
+                            ${meta.label}
                         </div>
                     </div>
-                    <a href="javascript:void(0);" class="order-action-link" onclick="showToast('📍 Tracking ${o.id}')">${o.actionText}</a>
+                    <a href="javascript:void(0);" class="order-action-link" onclick="openOrderTrackingModal('${o.id}')">${actionText}</a>
                 </div>
                 <div>
                     ${itemsHtml}
                 </div>
+                <div class="d-flex justify-content-between align-items-center pt-2 mt-2" style="border-top:1px dashed rgba(255,255,255,0.08); font-size:0.85rem;">
+                    <span class="text-muted-custom">Total Amount:</span>
+                    <strong class="text-cyan fw-bold">${formatRWF(o.total || 0)}</strong>
+                </div>
             </div>
         `;
     });
+
+    // If tracking modal is currently open for an order, refresh it with updated status in real-time
+    if (currentTrackingOrderId) {
+        const trackingModal = document.getElementById('mobileOrderTrackingModal');
+        if (trackingModal && trackingModal.classList.contains('active')) {
+            openOrderTrackingModal(currentTrackingOrderId);
+        }
+    }
 }
 window.loadMobileOrderHistory = loadMobileOrderHistory;
 
-function filterOrdersListByQuery(query) {
-    showToast(`Searching orders: "${query}"`);
+// ============================================================
+// ORDER TRACKING MODAL CONTROLS (Matches orderModalTrack.png)
+// ============================================================
+let currentTrackingOrderId = null;
+
+function openOrderTrackingModal(orderId) {
+    const ordersList = getAllUserOrders();
+    const target = ordersList.find(o => String(o.id) === String(orderId)) || ordersList[0];
+    if (!target) return;
+
+    currentTrackingOrderId = target.id;
+    const modal = document.getElementById('mobileOrderTrackingModal');
+    if (!modal) return;
+
+    const meta = getOrderStatusDetails(target.status);
+
+    const codeEl = document.getElementById('trackingOrderCodeText');
+    if (codeEl) codeEl.textContent = `Order #${target.id}`;
+
+    const badgeEl = document.getElementById('trackingStatusBadgePill');
+    if (badgeEl) {
+        badgeEl.style.color = meta.dotColor;
+        badgeEl.innerHTML = `<span class="status-pill-dot" style="background:${meta.dotColor};"></span> ${meta.label}`;
+    }
+
+    const itemsEl = document.getElementById('trackingItemsSummary');
+    if (itemsEl) itemsEl.textContent = target.itemsSummary || 'Custom Order';
+
+    const totalEl = document.getElementById('trackingTotalAmount');
+    if (totalEl) totalEl.textContent = formatRWF(target.total || 0);
+
+    const serviceEl = document.getElementById('trackingServiceOption');
+    if (serviceEl) {
+        const sType = target.serviceType || 'Delivery';
+        const sAddr = target.address ? ` (${target.address})` : '';
+        const sPay = target.paymentMethod ? ` • ${target.paymentMethod}` : '';
+        serviceEl.textContent = `${sType}${sAddr}${sPay}`;
+    }
+
+    // Render 7-stage Timeline
+    const stepperEl = document.getElementById('trackingTimelineStepper');
+    if (stepperEl) {
+        const currentStageNum = meta.stage;
+        const isPickup = (target.serviceType || '').toLowerCase() === 'takeaway';
+        const isDinein = (target.serviceType || '').toLowerCase() === 'dinein';
+
+        const step5Label = isPickup ? '5. Ready for Pickup' : (isDinein ? '5. Ready on Table' : '5. Out for Delivery');
+        const step5Desc = isPickup ? 'Your order is hot & ready at counter' : (isDinein ? 'Food served to your table' : 'Rider is on the way — Driver (+250 788 123 456)');
+        const step5Icon = isPickup ? 'fa-store' : (isDinein ? 'fa-chair' : 'fa-truck');
+
+        const stagesDef = [
+            { num: 1, label: '1. Order Placed', statusShown: 'Order Received', desc: 'Order received & registered in system', icon: 'fa-receipt' },
+            { num: 2, label: '2. Order Confirmed', statusShown: 'Confirmed – Preparing Soon', desc: 'Confirmed by cashier / staff', icon: 'fa-check-circle' },
+            { num: 3, label: '3. Preparing', statusShown: 'Being Prepared', desc: 'Kitchen chef is preparing your meal', icon: 'fa-utensils' },
+            { num: 4, label: '4. Ready', statusShown: 'Ready', desc: 'Order prepared & packed hot', icon: 'fa-box' },
+            { num: 5, label: step5Label, statusShown: isPickup ? 'Ready for Pickup' : (isDinein ? 'Ready on Table' : 'On the Way'), desc: step5Desc, icon: step5Icon },
+            { num: 6, label: isDinein ? '6. Served' : '6. Delivered', statusShown: isDinein ? 'Served' : 'Delivered', desc: isDinein ? 'Bon appétit!' : 'Delivered to your address — enjoy your meal!', icon: 'fa-house-user' },
+            { num: 7, label: '7. Closed', statusShown: 'Closed', desc: 'Order closed — electronic tax invoice & feedback', icon: 'fa-star' }
+        ];
+
+        let html = '';
+        stagesDef.forEach(stg => {
+            let stepClass = 'pending';
+            if (stg.num < currentStageNum) stepClass = 'completed';
+            else if (stg.num === currentStageNum) stepClass = 'active';
+
+            const iconClass = stg.icon || (stepClass === 'completed' ? 'fa-check' : (stepClass === 'active' ? 'fa-utensils' : 'fa-circle'));
+
+            html += `
+                <div class="timeline-step ${stepClass}">
+                    <div class="timeline-icon"><i class="fas ${iconClass}"></i></div>
+                    <div class="timeline-content">
+                        <h6>${stg.label} <small class="text-muted-custom" style="font-weight:400;">(${stg.statusShown})</small></h6>
+                        <p>${stg.desc}</p>
+                    </div>
+                </div>
+            `;
+        });
+        stepperEl.innerHTML = html;
+    }
+
+    modal.classList.add('active');
 }
-window.filterOrdersListByQuery = filterOrdersListByQuery;
+window.openOrderTrackingModal = openOrderTrackingModal;
+
+function closeOrderTrackingModal() {
+    currentTrackingOrderId = null;
+    const modal = document.getElementById('mobileOrderTrackingModal');
+    if (modal) modal.classList.remove('active');
+}
+window.closeOrderTrackingModal = closeOrderTrackingModal;
 
 // FAVORITES / OFFERS
 function loadFavorites() {

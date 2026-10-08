@@ -186,6 +186,12 @@ function loadAdminOrders() {
 function saveAdminOrders() {
     try {
         localStorage.setItem('favcafe_orders', JSON.stringify(adminOrders));
+        localStorage.setItem('favcafe_orders_signal', JSON.stringify({ type: 'orders_updated', orders: adminOrders, ts: Date.now() }));
+    } catch (e) {}
+
+    try {
+        var chan = new BroadcastChannel('favcafe_orders_channel');
+        chan.postMessage({ type: 'orders_updated', orders: adminOrders, ts: Date.now() });
     } catch (e) {}
 }
 
