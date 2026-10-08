@@ -79,5 +79,23 @@
         "is_active": 1,
         "sort_order": 9,
         "created_at": "2026-10-05 20:51:14"
+    },
+    {
+        "id": 12,
+        "name": "Drinks",
+        "slug": "drinks",
+        "icon": "fas fa-glass-martini-alt",
+        "is_active": 1,
+        "sort_order": 10,
+        "created_at": "2026-10-05 20:51:14"
+    },
+    {
+        "id": 13,
+        "name": "Dessert",
+        "slug": "dessert",
+        "icon": "fas fa-ice-cream",
+        "is_active": 1,
+        "sort_order": 11,
+        "created_at": "2026-10-05 20:51:14"
     }
 ]

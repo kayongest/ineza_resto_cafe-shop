@@ -577,27 +577,66 @@ function getCategoryIconConfig(categoryName) {
     return { icon: 'fas fa-utensils', bg: '#2b5cff', label: categoryName || 'Foods' };
 }
 
+const DEFAULT_FALLBACK_CATEGORIES = [
+    { id: 8, name: "Breakfast", slug: "breakfast", icon: "fas fa-egg", is_active: 1, sort_order: 1 },
+    { id: 2, name: "Burgers", slug: "burgers", icon: "fas fa-hamburger", is_active: 1, sort_order: 2 },
+    { id: 1, name: "Pizza", slug: "pizza", icon: "fas fa-pizza-slice", is_active: 1, sort_order: 3 },
+    { id: 11, name: "Grill", slug: "grill", icon: "fas fa-fire", is_active: 1, sort_order: 4 },
+    { id: 5, name: "Plates", slug: "plates", icon: "fas fa-concierge-bell", is_active: 1, sort_order: 5 },
+    { id: 3, name: "Salads", slug: "salads", icon: "fas fa-leaf", is_active: 1, sort_order: 6 },
+    { id: 4, name: "Sides", slug: "sides", icon: "fas fa-utensils", is_active: 1, sort_order: 7 },
+    { id: 9, name: "Coffee", slug: "coffee", icon: "fas fa-coffee", is_active: 1, sort_order: 8 },
+    { id: 10, name: "Tea", slug: "tea", icon: "fas fa-mug-hot", is_active: 1, sort_order: 9 },
+    { id: 12, name: "Drinks", slug: "drinks", icon: "fas fa-glass-martini-alt", is_active: 1, sort_order: 10 },
+    { id: 13, name: "Dessert", slug: "dessert", icon: "fas fa-ice-cream", is_active: 1, sort_order: 11 }
+];
+
 // MENU & DATA FETCHING
 async function loadCategories() {
+    // 1. Try PHP API (when running in dynamic environment like XAMPP)
     try {
         const res = await fetch('api/categories.php?action=get&active_only=1');
         if (res.ok) {
             const data = await res.json();
-            if (data && data.status === 'success' && Array.isArray(data.categories)) {
-                appCategories = data.categories;
-                localStorage.setItem('favcafe_categories', JSON.stringify(appCategories));
-                return;
+            if (data && data.status === 'success' && Array.isArray(data.categories) && data.categories.length > 0) {
+                appCategories = data.categories.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true);
+                if (appCategories.length > 0) {
+                    try { localStorage.setItem('favcafe_categories', JSON.stringify(appCategories)); } catch (e) {}
+                    return;
+                }
             }
         }
     } catch (e) {}
 
+    // 2. Static JSON fallback (critical for GitHub Pages & static web hosting)
+    try {
+        const resJson = await fetch('api/categories.json?t=' + Date.now());
+        if (resJson.ok) {
+            const jsonCats = await resJson.json();
+            if (Array.isArray(jsonCats) && jsonCats.length > 0) {
+                appCategories = jsonCats.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true);
+                if (appCategories.length > 0) {
+                    try { localStorage.setItem('favcafe_categories', JSON.stringify(appCategories)); } catch (e) {}
+                    return;
+                }
+            }
+        }
+    } catch (e) {}
+
+    // 3. LocalStorage cache fallback
     const cached = localStorage.getItem('favcafe_categories') || localStorage.getItem('favcafe_mobile_categories');
     if (cached) {
         try {
             const parsed = JSON.parse(cached);
-            appCategories = parsed.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                appCategories = parsed.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true);
+                if (appCategories.length > 0) return;
+            }
         } catch (e) {}
     }
+
+    // 4. Guaranteed fallback defaults so categories and items are NEVER empty
+    appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
 }
 
 async function loadPromos() {
@@ -866,8 +905,7 @@ function renderHomeCategories() {
     if (!container) return;
 
     if (!appCategories || appCategories.length === 0) {
-        container.innerHTML = '<div class="w-100 text-center py-4" style="color:#8a99ad; font-size:0.9rem; padding: 1.5rem;">No categories displayed</div>';
-        return;
+        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
     }
 
     container.innerHTML = '';
@@ -897,12 +935,15 @@ function renderHomeRecommended() {
     container.innerHTML = '';
 
     if (!appCategories || appCategories.length === 0) {
-        container.innerHTML = '<div class="text-center w-100 py-4 text-muted-custom" style="color:#8a99ad; font-size:0.85rem;">No categories displayed</div>';
-        return;
+        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
     }
 
     const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
-    const validItems = menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()));
+    let validItems = menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()));
+
+    if (validItems.length === 0 && menuItems.length > 0) {
+        validItems = menuItems;
+    }
 
     if (validItems.length === 0) {
         container.innerHTML = '<div class="text-center w-100 py-4 text-muted-custom" style="color:#8a99ad; font-size:0.85rem;">No items available</div>';
@@ -935,8 +976,7 @@ function renderMenuCategories() {
     container.innerHTML = '';
 
     if (!appCategories || appCategories.length === 0) {
-        container.innerHTML = '<div class="text-center w-100 py-2" style="color:#8a99ad; font-size:0.85rem;">No categories displayed</div>';
-        return;
+        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
     }
 
     const list = [{ name: 'All', slug: 'All' }, ...(appCategories || [])];
@@ -980,18 +1020,22 @@ function renderMenuGrid(itemsToRender = null) {
     container.innerHTML = '';
 
     if (!appCategories || appCategories.length === 0) {
-        container.innerHTML = `<div class="text-center w-100 py-5 text-muted-custom" style="color:#8a99ad; font-size:0.95rem;">No categories displayed</div>`;
-        return;
+        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
     }
 
-    const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
-    const items = itemsToRender !== null ? itemsToRender : (
-        activeCategory.toLowerCase() === 'all'
-            ? menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()))
-            : menuItems.filter(item => (item.category || '').toLowerCase().trim() === activeCategory.toLowerCase())
-    );
+    let items;
+    if (itemsToRender !== null) {
+        items = itemsToRender;
+    } else if (activeCategory.toLowerCase() === 'all') {
+        items = menuItems;
+    } else {
+        items = menuItems.filter(item => {
+            const itemCat = (item.category || '').toLowerCase().trim();
+            return itemCat === activeCategory.toLowerCase();
+        });
+    }
 
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
         container.innerHTML = `<div class="text-center w-100 py-5 text-muted-custom">No items found for this selection.</div>`;
         return;
     }
@@ -1056,8 +1100,7 @@ function executeSearch() {
     const query = input ? input.value.toLowerCase().trim() : '';
 
     if (!appCategories || appCategories.length === 0) {
-        renderMenuGrid([]);
-        return;
+        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
     }
 
     const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
@@ -1072,8 +1115,8 @@ function executeSearch() {
         const itemCat = (item.category || '').toLowerCase().trim();
         const itemMenuType = (item.menu_type || (itemCat.includes('breakfast') ? 'breakfast' : 'lunch')).toLowerCase().trim();
 
-        // Must belong to an active category
-        if (!activeSlugs.includes(itemCat)) {
+        // Must belong to an active category if a specific category is chosen
+        if (activeCategory.toLowerCase() !== 'all' && activeSlugs.length > 0 && !activeSlugs.includes(itemCat)) {
             return false;
         }
 
@@ -2180,10 +2223,16 @@ function renderFavoriteGrid() {
     if (!container) return;
 
     container.innerHTML = '';
+    if (!appCategories || appCategories.length === 0) {
+        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
+    }
     const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
-    const validItems = (appCategories && appCategories.length > 0)
+    let validItems = (appCategories && appCategories.length > 0)
         ? menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()))
         : [];
+    if (validItems.length === 0 && menuItems.length > 0) {
+        validItems = menuItems;
+    }
 
     if (validItems.length === 0) {
         container.innerHTML = '<div class="text-center w-100 py-4 text-muted-custom" style="color:#8a99ad; font-size:0.85rem;">No favorite items available</div>';
