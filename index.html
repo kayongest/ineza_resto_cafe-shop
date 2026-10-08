@@ -1700,51 +1700,40 @@
             </button>
          </div>
 
-         <div class="mb-2">
-            <h5 class="font-weight-bold mb-1 text-dark" id="momoProviderTitle">MTN Mobile Money</h5>
-            <div class="small text-muted">Push Request Sent to <strong id="momoTargetPhone" class="text-dark">+250 788 700 870</strong></div>
-         </div>
-         
-         <!-- Realistic Dark Smartphone Terminal Box -->
-         <div class="p-3 mb-3 text-start rounded-3 shadow-sm" style="background:linear-gradient(135deg, #0f172a, #1e293b); color:#38bdf8; border:1px solid #334155;">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-               <span class="badge bg-warning text-dark font-monospace" style="font-size:0.65rem;"><i class="fas fa-terminal me-1"></i>USSD PROMPT *182#</span>
-               <span class="small text-muted font-monospace" style="font-size:0.7rem;">Favorite Cafe POS</span>
-            </div>
-            <div class="small text-light mb-3" style="line-height:1.4;">
-               "Pay <strong id="momoPaymentAmount" class="text-warning fs-6">0 RWF</strong> to Favorite Cafe &amp; Restaurant? Enter 4-digit PIN:"
+         <!-- Main Payment Demo Content (matching paymentDemo.png) -->
+         <div class="py-2 text-center">
+            <!-- 1. MoMo Code Block -->
+            <div class="mb-4">
+               <h3 class="fw-bold text-dark mb-1" id="momoDesktopTitle1" style="font-size:1.6rem; letter-spacing:-0.5px;">MoMo Code</h3>
+               <div class="fw-bold text-dark" id="momoDesktopCode1" style="font-size:1.4rem; letter-spacing:0.5px;">*181*8*1*004587*Amount#</div>
             </div>
 
-            <!-- PIN Display Dots Container -->
-            <div class="py-2 px-3 rounded text-center" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); min-height:44px; display:flex; align-items:center; justify-content:center;">
-               <div id="momoPinDots" class="font-monospace fs-4 text-warning" style="letter-spacing:14px;">
-                  • • • •
+            <!-- 2. Restaurant Merchant Name Block -->
+            <div class="mb-4">
+               <h3 class="fw-bold text-dark mb-1" id="momoDesktopTitle2" style="font-size:1.55rem; letter-spacing:-0.5px;">INEZA Resto &amp; Cafe Shop</h3>
+               <div class="fw-bold text-dark" id="momoDesktopCode2" style="font-size:1.4rem; letter-spacing:0.5px;">*181*8*1*004587*Amount#</div>
+            </div>
+
+            <!-- Order Total Summary Box -->
+            <div class="p-3 mb-3 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+               <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="text-muted small fw-bold">Order Total:</span>
+                  <span class="fw-bold fs-6 text-dark" id="momoPaymentAmount">0 RWF</span>
+               </div>
+               <div class="text-muted text-xs" style="font-size:0.75rem;">
+                  Dial the MoMo code above on your phone or tap approve once sent:
                </div>
             </div>
-         </div>
 
-         <!-- Smartphone 3x4 Keypad Grid -->
-         <div style="display:grid !important; grid-template-columns:repeat(3, 1fr) !important; gap:10px !important; max-width:240px !important; margin:0 auto 16px auto !important; padding:12px !important; background:#f8fafc !important; border:1px solid #e2e8f0 !important; border-radius:20px !important;">
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('1')">1</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('2')">2</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('3')">3</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('4')">4</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('5')">5</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('6')">6</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('7')">7</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('8')">8</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('9')">9</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #fee2e2; background:#fef2f2; color:#dc2626; font-size:1.1rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="clearPinDigits()"><i class="fas fa-backspace"></i></button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #cbd5e1; background:#ffffff; color:#1e293b; font-size:1.2rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="pressPinDigit('0')">0</button>
-            <button type="button" style="width:52px; height:52px; border-radius:50%; border:1px solid #bbf7d0; background:#f0fdf4; color:#16a34a; font-size:1.1rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 2px 4px rgba(0,0,0,0.06);" onclick="confirmMomoUssdSuccess()"><i class="fas fa-check"></i></button>
-         </div>
-
-         <!-- Bottom Action Buttons -->
-         <div class="d-flex gap-2 mt-2 pt-1 mb-1">
-            <button type="button" class="btn btn-outline-secondary w-50 py-2 font-weight-bold rounded-pill" onclick="cancelMomoUssd()">Cancel</button>
-            <button type="button" class="btn btn-success w-50 py-2 font-weight-bold rounded-pill" style="background:#16a34a; border-color:#16a34a;" onclick="confirmMomoUssdSuccess()">
-               <i class="fas fa-check-circle me-1"></i> Approve Payment
-            </button>
+            <!-- Bottom Action Buttons -->
+            <div class="d-flex flex-column gap-2 mt-3">
+               <button type="button" class="btn btn-success w-100 py-3 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2" style="background:#16a34a; border:none; font-size:1rem;" onclick="confirmMomoUssdSuccess()">
+                  <i class="fas fa-check-circle"></i> I Have Paid / Confirm Order
+               </button>
+               <button type="button" class="btn btn-link text-muted mt-1 text-decoration-none" onclick="cancelMomoUssd()" style="font-size:0.85rem;">
+                  Cancel
+               </button>
+            </div>
          </div>
       </div>
    </div>

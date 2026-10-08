@@ -1656,92 +1656,80 @@ function checkout() {
 window.checkout = checkout;
 
 function triggerMobileMomoUssd(phone, amount) {
-    const titleEl = document.getElementById('mobileMomoProviderTitle');
-    const phoneEl = document.getElementById('mobileMomoTargetPhone');
+    const amountVal = Math.round(Number(amount) || 0);
+    const amountStr = `${amountVal.toLocaleString()} RWF`;
     const amountEl = document.getElementById('mobileMomoPaymentAmount');
+    if (amountEl) amountEl.textContent = amountStr;
 
-    if (titleEl) titleEl.textContent = selectedMobileMomoOperator === 'MTN' ? 'MTN Mobile Money' : 'Airtel Money';
-    if (phoneEl) phoneEl.textContent = phone ? `+250 ${phone.replace(/^\+?250/, '').trim()}` : '+250 788 123 456';
-    if (amountEl) amountEl.textContent = `${Number(amount).toLocaleString()} RWF`;
-
-    currentMobilePinDigits = '';
-    updateMobilePinDisplay();
+    updateMomoDisplayForOperator(selectedMobileMomoOperator, amountVal);
 
     const modal = document.getElementById('mobileMomoUssdModal');
     if (modal) modal.classList.add('active');
 
-    showToast(`📱 MoMo Push prompt sent to ${phone || 'your phone'}. Enter 4-digit PIN to approve.`, 'info');
+    showToast(`📱 Dial MoMo Code or tap Dial button to complete payment.`, 'info');
 }
 window.triggerMobileMomoUssd = triggerMobileMomoUssd;
+
+function updateMomoDisplayForOperator(op, amountVal) {
+    const title1 = document.getElementById('momoDemoTitle1');
+    const code1 = document.getElementById('momoDemoCode1');
+    const title2 = document.getElementById('momoDemoTitle2');
+    const code2 = document.getElementById('momoDemoCode2');
+    const dialLink = document.getElementById('momoDialNowLink');
+
+    const rawAmount = amountVal || (pendingMobileMomoOrder ? pendingMobileMomoOrder.total : 0);
+
+    if (op === 'MTN') {
+        if (title1) title1.textContent = 'MoMo Code';
+        if (code1) code1.textContent = '*181*8*1*004587*Amount#';
+        if (title2) title2.textContent = 'INEZA Resto & Cafe Shop';
+        if (code2) code2.textContent = '*181*8*1*004587*Amount#';
+        if (dialLink) {
+            const dialAmount = rawAmount > 0 ? rawAmount : '';
+            dialLink.href = dialAmount ? `tel:*181*8*1*004587*${dialAmount}%23` : `tel:*181*8*1*004587%23`;
+            dialLink.innerHTML = `<i class="fas fa-phone-alt"></i> Dial MTN MoMo Code Now`;
+            dialLink.className = `btn btn-warning w-100 py-3 rounded-pill fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2`;
+            dialLink.style.background = '#ffcc00';
+            dialLink.style.border = 'none';
+        }
+    } else {
+        if (title1) title1.textContent = 'Airtel Money Code';
+        if (code1) code1.textContent = '*182*8*1*004587*Amount#';
+        if (title2) title2.textContent = 'INEZA Resto & Cafe Shop';
+        if (code2) code2.textContent = '*182*8*1*004587*Amount#';
+        if (dialLink) {
+            const dialAmount = rawAmount > 0 ? rawAmount : '';
+            dialLink.href = dialAmount ? `tel:*182*8*1*004587*${dialAmount}%23` : `tel:*182*8*1*004587%23`;
+            dialLink.innerHTML = `<i class="fas fa-phone-alt"></i> Dial Airtel Money Code Now`;
+            dialLink.className = `btn btn-danger w-100 py-3 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2`;
+            dialLink.style.background = '#e50914';
+            dialLink.style.border = 'none';
+        }
+    }
+}
 
 function selectMobileMomoOperator(op) {
     selectedMobileMomoOperator = op;
     const mtnBtn = document.getElementById('momoOpMtnBtnMobile');
     const airtelBtn = document.getElementById('momoOpAirtelBtnMobile');
-    const titleEl = document.getElementById('mobileMomoProviderTitle');
 
     if (op === 'MTN') {
-        if (mtnBtn) {
-            mtnBtn.className = 'momo-op-switch-btn active-mtn';
-        }
-        if (airtelBtn) {
-            airtelBtn.className = 'momo-op-switch-btn inactive';
-        }
-        if (titleEl) titleEl.textContent = 'MTN Mobile Money';
+        if (mtnBtn) mtnBtn.className = 'momo-op-switch-btn active-mtn';
+        if (airtelBtn) airtelBtn.className = 'momo-op-switch-btn inactive';
     } else {
-        if (mtnBtn) {
-            mtnBtn.className = 'momo-op-switch-btn inactive';
-        }
-        if (airtelBtn) {
-            airtelBtn.className = 'momo-op-switch-btn active-airtel';
-        }
-        if (titleEl) titleEl.textContent = 'Airtel Money';
+        if (mtnBtn) mtnBtn.className = 'momo-op-switch-btn inactive';
+        if (airtelBtn) airtelBtn.className = 'momo-op-switch-btn active-airtel';
     }
+
+    const currentTotal = pendingMobileMomoOrder ? pendingMobileMomoOrder.total : 0;
+    updateMomoDisplayForOperator(op, currentTotal);
 }
 window.selectMobileMomoOperator = selectMobileMomoOperator;
-
-function pressMobilePinDigit(d) {
-    if (currentMobilePinDigits.length < 4) {
-        currentMobilePinDigits += d;
-        updateMobilePinDisplay();
-        if (currentMobilePinDigits.length === 4) {
-            setTimeout(() => {
-                confirmMobileMomoSuccess();
-            }, 350);
-        }
-    }
-}
-window.pressMobilePinDigit = pressMobilePinDigit;
-
-function clearMobilePinDigits() {
-    currentMobilePinDigits = '';
-    updateMobilePinDisplay();
-}
-window.clearMobilePinDigits = clearMobilePinDigits;
-
-function updateMobilePinDisplay() {
-    const dotsEl = document.getElementById('mobileMomoPinDots');
-    if (!dotsEl) return;
-    if (currentMobilePinDigits.length === 0) {
-        dotsEl.innerHTML = '<span style="color:#64748b; letter-spacing:14px;">• • • •</span>';
-    } else {
-        let dots = '';
-        for (let i = 0; i < currentMobilePinDigits.length; i++) {
-            dots += '● ';
-        }
-        for (let j = currentMobilePinDigits.length; j < 4; j++) {
-            dots += '• ';
-        }
-        dotsEl.innerHTML = `<span style="color:#ffcc00; font-weight:bold; letter-spacing:14px;">${dots.trim()}</span>`;
-    }
-}
 
 function cancelMobileMomoUssd() {
     const modal = document.getElementById('mobileMomoUssdModal');
     if (modal) modal.classList.remove('active');
     pendingMobileMomoOrder = null;
-    currentMobilePinDigits = '';
-    updateMobilePinDisplay();
     showToast('Payment cancelled', 'info');
 }
 window.cancelMobileMomoUssd = cancelMobileMomoUssd;

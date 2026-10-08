@@ -2255,6 +2255,33 @@ body:not(.light-theme) .mobile-momo-card {
     color: #1e293b !important;
 }
 
+/* Payment Demo Style (MoMo Code & Merchant display matching paymentDemo.png) */
+.momo-demo-display-box {
+    padding: 1.25rem 0.5rem 0.5rem 0.5rem;
+    text-align: center;
+}
+
+.momo-demo-block {
+    margin-bottom: 2.25rem;
+}
+
+.momo-demo-title {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.5px;
+}
+
+.momo-demo-code {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #334155;
+    letter-spacing: 0.5px;
+    user-select: all;
+    word-break: break-all;
+}
+
 .momo-operator-toggle-bar {
     display: flex;
     gap: 8px;

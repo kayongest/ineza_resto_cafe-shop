@@ -835,65 +835,49 @@
                 </button>
             </div>
 
-            <div class="mb-2">
-                <h4 class="font-weight-bold mb-1 text-dark" id="mobileMomoProviderTitle"
-                    style="font-size:1.15rem; font-weight:700;">MTN Mobile Money</h4>
-                <div class="small text-muted" style="font-size:0.8rem;">Push Request Sent to <strong
-                        id="mobileMomoTargetPhone" class="text-dark">+250 788 123 456</strong></div>
-            </div>
-
-            <!-- Realistic Smartphone Terminal Prompt -->
-            <div class="mobile-momo-terminal shadow-sm">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="badge bg-warning text-dark font-monospace" style="font-size:0.65rem;"><i
-                            class="fas fa-terminal me-1"></i>USSD PROMPT *182#</span>
-                    <span class="small text-muted font-monospace" style="font-size:0.7rem; color:#94a3b8;">Favorite Cafe
-                        POS</span>
-                </div>
-                <div class="small text-light mb-3" style="line-height:1.4; color:#f8fafc;">
-                    "Pay <strong id="mobileMomoPaymentAmount" class="text-warning fs-6"
-                        style="color:#ffcc00; font-size:1rem;">0 RWF</strong> to Favorite Cafe &amp; Restaurant? Enter
-                    4-digit PIN:"
+            <!-- Main Payment Demo Content (matching paymentDemo.png) -->
+            <div class="momo-demo-display-box">
+                <!-- 1. MoMo Code Block -->
+                <div class="momo-demo-block">
+                    <h3 class="momo-demo-title" id="momoDemoTitle1">MoMo Code</h3>
+                    <div class="momo-demo-code" id="momoDemoCode1">*181*8*1*004587*Amount#</div>
                 </div>
 
-                <!-- PIN Dots Display -->
-                <div class="py-2 px-3 rounded text-center"
-                    style="background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.12); min-height:44px; display:flex; align-items:center; justify-content:center;">
-                    <div id="mobileMomoPinDots" class="font-monospace text-warning"
-                        style="letter-spacing:14px; font-size:1.4rem; color:#ffcc00;">
-                        • • • •
+                <!-- 2. Restaurant Merchant Name Block -->
+                <div class="momo-demo-block">
+                    <h3 class="momo-demo-title" id="momoDemoTitle2">INEZA Resto &amp; Cafe Shop</h3>
+                    <div class="momo-demo-code" id="momoDemoCode2">*181*8*1*004587*Amount#</div>
+                </div>
+
+                <!-- Order Total Summary Box -->
+                <div class="p-3 mb-3 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted small fw-bold">Order Total:</span>
+                        <span class="fw-bold fs-6 text-dark" id="mobileMomoPaymentAmount">0 RWF</span>
+                    </div>
+                    <div class="text-muted text-xs" style="font-size:0.75rem;">
+                        Dial the MoMo code on your phone or tap the dial button below:
                     </div>
                 </div>
-            </div>
 
-            <!-- 3x4 Keypad Grid -->
-            <div class="mobile-momo-keypad-grid">
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('1')">1</button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('2')">2</button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('3')">3</button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('4')">4</button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('5')">5</button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('6')">6</button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('7')">7</button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('8')">8</button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('9')">9</button>
-                <button type="button" class="momo-key-btn momo-key-btn-clear" onclick="clearMobilePinDigits()"
-                    title="Backspace"><i class="fas fa-backspace"></i></button>
-                <button type="button" class="momo-key-btn" onclick="pressMobilePinDigit('0')">0</button>
-                <button type="button" class="momo-key-btn momo-key-btn-ok" onclick="confirmMobileMomoSuccess()"
-                    title="Approve"><i class="fas fa-check"></i></button>
-            </div>
-
-            <!-- Bottom Action Buttons -->
-            <div class="d-flex gap-2 mt-2 pt-1 mb-1">
-                <button type="button" class="btn btn-outline-secondary w-50 py-2 font-weight-bold rounded-pill"
-                    onclick="cancelMobileMomoUssd()"
-                    style="border-radius:999px; border:1px solid #cbd5e1; background:transparent; color:#64748b; font-weight:700;">Cancel</button>
-                <button type="button" class="btn btn-success w-50 py-2 font-weight-bold rounded-pill"
-                    onclick="confirmMobileMomoSuccess()"
-                    style="border-radius:999px; background:#16a34a; border:none; color:#fff; font-weight:700;">
-                    <i class="fas fa-check-circle me-1"></i> Approve
-                </button>
+                <!-- Action Buttons: Dial Now & Confirm Order -->
+                <div class="d-flex flex-column gap-2 mt-3">
+                    <a id="momoDialNowLink" href="tel:*181*8*1*004587%23"
+                        class="btn btn-warning w-100 py-3 rounded-pill fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2"
+                        style="background:#ffcc00; border:none; font-size:1rem; text-decoration:none;">
+                        <i class="fas fa-phone-alt"></i> Dial MoMo Code Now
+                    </a>
+                    <button type="button"
+                        class="btn btn-success w-100 py-3 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2"
+                        onclick="confirmMobileMomoSuccess()"
+                        style="background:#16a34a; border:none; font-size:1rem;">
+                        <i class="fas fa-check-circle"></i> I Have Paid / Confirm Order
+                    </button>
+                    <button type="button" class="btn btn-link text-muted mt-1 text-decoration-none"
+                        onclick="cancelMobileMomoUssd()" style="font-size:0.85rem;">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
     </div>
