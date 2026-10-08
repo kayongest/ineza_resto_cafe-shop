@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAdminCategories();
     loadAdminPromos();
     initSidebarTabs();
+    initResponsiveSidebar();
     initSearchAndFilter();
     initCartAdminSettings();
 
@@ -490,12 +491,98 @@ function advanceAdminOrder(orderId, newStatus) {
     }
 }
 
+// ============================================================
+// SIDEBAR TOGGLE & RESPONSIVE DEVICE SIZE CONTROLLER
+// ============================================================
+function toggleAdminSidebar() {
+    var isMobile = window.innerWidth <= 768;
+    var isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+    var overlay = document.getElementById('adminSidebarOverlay');
+
+    if (isMobile) {
+        var isOpen = document.body.classList.toggle('mobile-sidebar-open');
+        if (overlay) {
+            if (isOpen) overlay.classList.add('active');
+            else overlay.classList.remove('active');
+        }
+    } else if (isTablet) {
+        document.body.classList.toggle('tablet-sidebar-expanded');
+    } else {
+        var isMinimized = document.body.classList.toggle('sidebar-minimized');
+        localStorage.setItem('admin_sidebar_minimized', isMinimized ? 'true' : 'false');
+        updateSidebarToggleIcon(isMinimized);
+    }
+}
+window.toggleAdminSidebar = toggleAdminSidebar;
+
+function closeAdminSidebarMobile() {
+    document.body.classList.remove('mobile-sidebar-open');
+    var overlay = document.getElementById('adminSidebarOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+window.closeAdminSidebarMobile = closeAdminSidebarMobile;
+
+function updateSidebarToggleIcon(isMinimized) {
+    var icon = document.querySelector('#sidebarToggleBtn i');
+    if (icon) {
+        icon.className = isMinimized ? 'fas fa-bars-staggered' : 'fas fa-bars';
+    }
+}
+
+function initResponsiveSidebar() {
+    // Populate data-tooltip on each sidebar item for the minimized rail mode
+    document.querySelectorAll('.sidebar-item').forEach(function(item) {
+        var span = item.querySelector('span');
+        if (span && !item.getAttribute('data-tooltip')) {
+            item.setAttribute('data-tooltip', span.textContent.trim());
+        }
+    });
+
+    function handleDeviceResize() {
+        var width = window.innerWidth;
+        if (width <= 768) {
+            // Mobile: full off-canvas mode
+            document.body.classList.remove('sidebar-minimized');
+            document.body.classList.remove('tablet-sidebar-expanded');
+        } else if (width <= 1024) {
+            // Tablet: defaults to minimized rail
+            closeAdminSidebarMobile();
+            document.body.classList.remove('sidebar-minimized');
+        } else {
+            // Desktop: restore user preference
+            closeAdminSidebarMobile();
+            document.body.classList.remove('tablet-sidebar-expanded');
+            var savedMin = localStorage.getItem('admin_sidebar_minimized') === 'true';
+            if (savedMin) {
+                document.body.classList.add('sidebar-minimized');
+            } else {
+                document.body.classList.remove('sidebar-minimized');
+            }
+            updateSidebarToggleIcon(savedMin);
+        }
+    }
+
+    handleDeviceResize();
+
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(handleDeviceResize, 150);
+    });
+}
+window.initResponsiveSidebar = initResponsiveSidebar;
+
 // Sidebar Tab Switching
 function initSidebarTabs() {
     document.querySelectorAll('.sidebar-item[data-tab]').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             var tabId = this.getAttribute('data-tab');
+
+            // On mobile, auto-close the drawer when a tab is selected
+            if (window.innerWidth <= 768) {
+                closeAdminSidebarMobile();
+            }
 
             document.querySelectorAll('.sidebar-item').forEach(function(b) { b.classList.remove('active'); });
             this.classList.add('active');

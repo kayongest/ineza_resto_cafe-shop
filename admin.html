@@ -75,60 +75,63 @@
    <!-- ============================================================
          SIDEBAR NAVIGATION
          ============================================================ -->
-   <aside class="admin-sidebar">
+   <aside class="admin-sidebar" id="adminSidebar">
       <div class="sidebar-header">
          <div class="brand-logo-icon">
             <i class="fas fa-mug-hot"></i>
          </div>
-         <div>
+         <div class="brand-text-wrap">
             <div class="brand-title">INEZA RESTO <span>&amp; COFFEE SHOP</span></div>
             <div class="brand-subtitle">Admin Portal</div>
          </div>
+         <button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" onclick="toggleAdminSidebar()" title="Collapse / Minimize Sidebar">
+            <i class="fas fa-chevron-left"></i>
+         </button>
       </div>
 
       <nav class="sidebar-menu">
          <div class="sidebar-label">Management</div>
 
-         <a href="#" class="sidebar-item active" data-tab="overview">
+         <a href="#" class="sidebar-item active" data-tab="overview" data-tooltip="Overview">
             <i class="fas fa-chart-pie"></i>
             <span>Overview</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="orders">
+         <a href="#" class="sidebar-item" data-tab="orders" data-tooltip="Live Orders">
             <i class="fas fa-shopping-bag"></i>
             <span>Live Orders</span>
             <span class="badge-count" id="sidebarOrderBadge">0</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="menu">
+         <a href="#" class="sidebar-item" data-tab="menu" data-tooltip="Menu &amp; Stock">
             <i class="fas fa-hamburger"></i>
             <span>Menu &amp; Stock</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="promos">
+         <a href="#" class="sidebar-item" data-tab="promos" data-tooltip="Promos &amp; Banners">
             <i class="fas fa-bullhorn"></i>
-            <span>Promos & Banners</span>
+            <span>Promos &amp; Banners</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="categories">
+         <a href="#" class="sidebar-item" data-tab="categories" data-tooltip="Categories">
             <i class="fas fa-tags"></i>
             <span>Categories</span>
             <span class="badge-count" id="sidebarCatBadge" style="background:var(--primary);">8</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="reservations">
+         <a href="#" class="sidebar-item" data-tab="reservations" data-tooltip="Reservations">
             <i class="fas fa-calendar-check"></i>
             <span>Reservations</span>
             <span class="badge-count" id="sidebarResBadge" style="background:#e67e22;">0</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="tables">
+         <a href="#" class="sidebar-item" data-tab="tables" data-tooltip="Table Progress">
             <i class="fas fa-chair"></i>
             <span>Table Progress</span>
             <span class="badge-count" id="sidebarTablesBadge" style="background:#2563eb;">0</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="users">
+         <a href="#" class="sidebar-item" data-tab="users" data-tooltip="Staff &amp; Loyalty">
             <i class="fas fa-users-cog"></i>
             <span>Staff &amp; Loyalty</span>
             <span class="badge-count" id="sidebarUsersBadge" style="background:#7c3aed;">New</span>
@@ -136,12 +139,12 @@
 
          <div class="sidebar-label">Reports &amp; Config</div>
 
-         <a href="#" class="sidebar-item" data-tab="analytics">
+         <a href="#" class="sidebar-item" data-tab="analytics" data-tooltip="Analytics">
             <i class="fas fa-chart-line"></i>
             <span>Analytics</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="settings">
+         <a href="#" class="sidebar-item" data-tab="settings" data-tooltip="Settings">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
          </a>
@@ -161,6 +164,9 @@
       </div>
    </aside>
 
+   <!-- Mobile Sidebar Overlay Backdrop -->
+   <div id="adminSidebarOverlay" class="admin-sidebar-overlay" onclick="closeAdminSidebarMobile()"></div>
+
    <!-- ============================================================
          MAIN CONTENT AREA
          ============================================================ -->
@@ -168,10 +174,16 @@
 
       <!-- TOP HEADER BAR -->
       <header class="admin-topbar">
-         <div class="search-box-wrap">
-            <i class="fas fa-search"></i>
-            <input type="text" id="adminOrderSearch" placeholder="Search order ID, customer name, items..."
-               autocomplete="off" />
+         <div class="topbar-left-group">
+            <button type="button" class="topbar-icon-btn sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleAdminSidebar()" title="Toggle / Minimize Sidebar">
+               <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="search-box-wrap">
+               <i class="fas fa-search"></i>
+               <input type="text" id="adminOrderSearch" placeholder="Search order ID, customer name, items..."
+                  autocomplete="off" />
+            </div>
          </div>
 
          <div class="topbar-actions">
