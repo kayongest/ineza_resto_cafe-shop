@@ -593,50 +593,53 @@ const DEFAULT_FALLBACK_CATEGORIES = [
 
 // MENU & DATA FETCHING
 async function loadCategories() {
+    let rawCategories = null;
+
     // 1. Try PHP API (when running in dynamic environment like XAMPP)
     try {
         const res = await fetch('api/categories.php?action=get&active_only=1');
         if (res.ok) {
             const data = await res.json();
-            if (data && data.status === 'success' && Array.isArray(data.categories) && data.categories.length > 0) {
-                appCategories = data.categories.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true);
-                if (appCategories.length > 0) {
-                    try { localStorage.setItem('favcafe_categories', JSON.stringify(appCategories)); } catch (e) {}
-                    return;
-                }
+            if (data && data.status === 'success' && Array.isArray(data.categories)) {
+                rawCategories = data.categories;
             }
         }
     } catch (e) {}
 
     // 2. Static JSON fallback (critical for GitHub Pages & static web hosting)
-    try {
-        const resJson = await fetch('api/categories.json?t=' + Date.now());
-        if (resJson.ok) {
-            const jsonCats = await resJson.json();
-            if (Array.isArray(jsonCats) && jsonCats.length > 0) {
-                appCategories = jsonCats.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true);
-                if (appCategories.length > 0) {
-                    try { localStorage.setItem('favcafe_categories', JSON.stringify(appCategories)); } catch (e) {}
-                    return;
-                }
-            }
-        }
-    } catch (e) {}
-
-    // 3. LocalStorage cache fallback
-    const cached = localStorage.getItem('favcafe_categories') || localStorage.getItem('favcafe_mobile_categories');
-    if (cached) {
+    if (!rawCategories) {
         try {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                appCategories = parsed.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true);
-                if (appCategories.length > 0) return;
+            const resJson = await fetch('api/categories.json?t=' + Date.now());
+            if (resJson.ok) {
+                const jsonCats = await resJson.json();
+                if (Array.isArray(jsonCats)) {
+                    rawCategories = jsonCats;
+                }
             }
         } catch (e) {}
     }
 
-    // 4. Guaranteed fallback defaults so categories and items are NEVER empty
-    appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
+    // 3. LocalStorage cache fallback
+    if (!rawCategories) {
+        const cached = localStorage.getItem('favcafe_categories') || localStorage.getItem('favcafe_mobile_categories');
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed)) {
+                    rawCategories = parsed;
+                }
+            } catch (e) {}
+        }
+    }
+
+    // Process whatever configuration was found
+    if (rawCategories) {
+        appCategories = rawCategories.filter(c => !c.hasOwnProperty('is_active') || parseInt(c.is_active) === 1 || c.is_active === true || c.is_active === '1');
+        try { localStorage.setItem('favcafe_categories', JSON.stringify(appCategories)); } catch (e) {}
+    } else {
+        // Only if absolutely NO source had any data (e.g. first load on new browser)
+        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
+    }
 }
 
 async function loadPromos() {
@@ -904,10 +907,6 @@ function renderHomeCategories() {
     const container = document.getElementById('homeCategories');
     if (!container) return;
 
-    if (!appCategories || appCategories.length === 0) {
-        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
-    }
-
     container.innerHTML = '';
     
     appCategories.forEach((catObj) => {
@@ -933,10 +932,6 @@ function renderHomeRecommended() {
     if (!container) return;
 
     container.innerHTML = '';
-
-    if (!appCategories || appCategories.length === 0) {
-        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
-    }
 
     const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
     let validItems = menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()));
@@ -974,10 +969,6 @@ function renderMenuCategories() {
     const container = document.getElementById('menuCategoryChips');
     if (!container) return;
     container.innerHTML = '';
-
-    if (!appCategories || appCategories.length === 0) {
-        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
-    }
 
     const list = [{ name: 'All', slug: 'All' }, ...(appCategories || [])];
 
@@ -1018,10 +1009,6 @@ function renderMenuGrid(itemsToRender = null) {
     if (!container) return;
 
     container.innerHTML = '';
-
-    if (!appCategories || appCategories.length === 0) {
-        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
-    }
 
     let items;
     if (itemsToRender !== null) {
@@ -1098,10 +1085,6 @@ function createMenuCard(item) {
 function executeSearch() {
     const input = document.getElementById('menuViewSearchInput') || document.getElementById('menuSearchInput');
     const query = input ? input.value.toLowerCase().trim() : '';
-
-    if (!appCategories || appCategories.length === 0) {
-        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
-    }
 
     const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
 
@@ -2229,9 +2212,6 @@ function renderFavoriteGrid() {
     if (!container) return;
 
     container.innerHTML = '';
-    if (!appCategories || appCategories.length === 0) {
-        appCategories = [...DEFAULT_FALLBACK_CATEGORIES];
-    }
     const activeSlugs = (appCategories || []).map(c => (c.slug || c.name || '').toLowerCase().trim());
     let validItems = (appCategories && appCategories.length > 0)
         ? menuItems.filter(item => activeSlugs.includes((item.category || '').toLowerCase().trim()))
