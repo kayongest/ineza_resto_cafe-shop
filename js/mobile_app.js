@@ -1635,6 +1635,31 @@ window.confirmModalAddToCart = confirmModalAddToCart;
 let pendingMobileMomoOrder = null;
 let selectedMobileMomoOperator = 'MTN';
 let currentMobilePinDigits = '';
+let selectedPaymentMethod = 'MoMo';
+
+function setPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    const momoBtn = document.getElementById('payMethodMomo');
+    const codBtn = document.getElementById('payMethodCOD');
+    if (momoBtn && codBtn) {
+        if (method === 'MoMo') {
+            momoBtn.classList.add('active');
+            momoBtn.style.background = '#00d2d3';
+            momoBtn.style.color = '#1e293b';
+            codBtn.classList.remove('active');
+            codBtn.style.background = 'transparent';
+            codBtn.style.color = '#94a3b8';
+        } else {
+            codBtn.classList.add('active');
+            codBtn.style.background = '#00d2d3';
+            codBtn.style.color = '#1e293b';
+            momoBtn.classList.remove('active');
+            momoBtn.style.background = 'transparent';
+            momoBtn.style.color = '#94a3b8';
+        }
+    }
+}
+window.setPaymentMethod = setPaymentMethod;
 
 function checkout() {
     if (!isUserLoggedIn()) {
@@ -1668,8 +1693,8 @@ function checkout() {
         phone: custPhone,
         address: custAddr,
         serviceType: 'delivery',
-        paymentMethod: 'Momo Pay',
-        paymentStatus: 'Paid',
+        paymentMethod: selectedPaymentMethod === 'MoMo' ? 'Momo Pay' : 'Cash on Delivery',
+        paymentStatus: selectedPaymentMethod === 'MoMo' ? 'Paid' : 'Pending',
         itemsSummary: itemsSummaryStr,
         items: cart.map(i => ({
             title: i.title,
@@ -1734,7 +1759,7 @@ function updateMomoDisplayForOperator(op, amountVal) {
 
     if (op === 'MTN') {
         if (title1) title1.innerHTML = '<i class="fas fa-qrcode me-1 text-warning"></i> MoMo Code (004587)';
-        if (code1) code1.textContent = ussdString;
+        if (code1) code1.textContent = ussdStringMTN;
         if (title2) title2.innerHTML = '<i class="fas fa-store me-1 text-cyan"></i> Client Name';
         if (dialLink) {
             dialLink.href = amountValInt ? `tel:*182*8*1*004587*${amountValInt}%23` : `tel:*182*8*1*004587%23`;
@@ -1743,19 +1768,19 @@ function updateMomoDisplayForOperator(op, amountVal) {
             dialLink.style.boxShadow = '0 4px 14px rgba(255, 204, 0, 0.35)';
         }
         if (dialTitle) dialTitle.textContent = 'Dial MTN MoMo Code Now';
-        if (dialSub) dialSub.textContent = ussdString;
+        if (dialSub) dialSub.textContent = ussdStringMTN;
     } else {
         if (title1) title1.innerHTML = '<i class="fas fa-qrcode me-1 text-danger"></i> Airtel Money Code (004587)';
-        if (code1) code1.textContent = ussdString;
+        if (code1) code1.textContent = ussdStringAirtel;
         if (title2) title2.innerHTML = '<i class="fas fa-store me-1 text-cyan"></i> Client Name';
         if (dialLink) {
-            dialLink.href = amountValInt ? `tel:*182*8*1*004587*${amountValInt}%23` : `tel:*182*8*1*004587%23`;
+            dialLink.href = amountValInt ? `tel:*182*1*2*004587*${amountValInt}%23` : `tel:*182*1*2*004587%23`;
             dialLink.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
             dialLink.style.color = '#ffffff';
             dialLink.style.boxShadow = '0 4px 14px rgba(239, 68, 68, 0.35)';
         }
         if (dialTitle) dialTitle.textContent = 'Dial Airtel Money Code Now';
-        if (dialSub) dialSub.textContent = ussdString;
+        if (dialSub) dialSub.textContent = ussdStringAirtel;
     }
 }
 

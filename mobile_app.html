@@ -251,15 +251,14 @@
 
                     <!-- Pinned Footer Action Bar -->
                     <div class="cart-footer-action-bar mt-3 pt-3">
-                        <!-- Momo Pay Only Payment Indicator -->
-                        <div class="momo-pay-checkout-pill mb-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="momo-pay-badge-pill">MOMO PAY</span>
-                                <span class="momo-pay-checkout-title"><i
-                                        class="fas fa-mobile-alt me-1 text-warning"></i>MTN MoMo &amp; Airtel</span>
-                            </div>
-                            <span class="badge"
-                                style="background:#ffcc00; color:#000; font-weight:800; font-size:0.65rem;">ONLY</span>
+                        <!-- Payment Method Selector -->
+                        <div class="payment-method-selector mb-3" style="display: flex; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 4px;">
+                            <button id="payMethodMomo" type="button" class="btn flex-fill active" style="border-radius: 6px; font-weight: bold; font-size: 0.85rem; padding: 8px 0; background: #00d2d3; color: #1e293b; border: none; transition: 0.3s;" onclick="setPaymentMethod('MoMo')">
+                                <i class="fas fa-mobile-alt me-1"></i> MoMo Pay
+                            </button>
+                            <button id="payMethodCOD" type="button" class="btn flex-fill" style="border-radius: 6px; font-weight: bold; font-size: 0.85rem; padding: 8px 0; background: transparent; color: #94a3b8; border: none; transition: 0.3s;" onclick="setPaymentMethod('COD')">
+                                <i class="fas fa-hand-holding-usd me-1"></i> Cash on Delivery
+                            </button>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="text-light-blue fw-bold">Total Amount</span>
