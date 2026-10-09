@@ -1163,7 +1163,7 @@ let promoDiscountAmount = 0;
 let appliedPromoCode = '';
 
 function applyCartDrawerSettings() {
-    let settings = { showExtras: true, showSummaryDiscounts: true };
+    let settings = { showExtras: false, showSummaryDiscounts: false };
     try {
         const stored = localStorage.getItem('favcafe_cart_settings');
         if (stored) {
@@ -1525,6 +1525,10 @@ function openDishModal(item) {
     // Title
     const titleEl = document.getElementById('modalDishTitle');
     if (titleEl) titleEl.textContent = item.title || 'Delicious Dish';
+
+    // Image
+    const imgEl = document.getElementById('modalDishImage');
+    if (imgEl) imgEl.src = item.img || 'img/menuImage/thumbnail.png';
 
     // Rating & Reviews
     const ratingVal = parseFloat(item.rating || 5.0);
