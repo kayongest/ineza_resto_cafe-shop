@@ -1710,60 +1710,80 @@ function checkout() {
         pendingMobileMomoOrder = newOrder;
         triggerMobileMomoUssd(custPhone, finalTotal);
     } else {
-        // Cash On Delivery Flow with Admin Approval Prompt
-        if (!confirm('Your order will be placed via Cash on Delivery and is subject to admin approval. Proceed?')) {
-            return;
-        }
-
-        newOrder.status = 'Pending Approval';
-        
-        let storedOrders = [];
-        try {
-            const stored = localStorage.getItem('favcafe_orders');
-            if (stored) storedOrders = JSON.parse(stored);
-        } catch (e) {}
-
-        storedOrders.unshift(newOrder);
-        try {
-            localStorage.setItem('favcafe_orders', JSON.stringify(storedOrders));
-            localStorage.setItem('favcafe_orders_signal', JSON.stringify({ type: 'order_created', order: newOrder, ts: Date.now() }));
-        } catch (e) {}
-
-        try {
-            const orderChan = new BroadcastChannel('favcafe_orders_channel');
-            orderChan.postMessage({ type: 'order_created', order: newOrder });
-        } catch (e) {}
-
-        try {
-            fetch('api/orders.php?action=create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newOrder)
-            }).catch(() => {});
-        } catch (e) {}
-
-        // Clear cart
-        cart = [];
-        appliedLoyaltyPoints = 0;
-        promoDiscountAmount = 0;
-        appliedPromoCode = null;
-        localStorage.setItem('favcafe_cart', JSON.stringify([]));
-        if (typeof loadCart === 'function') loadCart();
-        
-        // Hide cart drawer if it's open (it uses standard active toggle)
-        const cartDrawer = document.getElementById('cartDrawer');
-        if (cartDrawer) cartDrawer.classList.remove('active');
-
-        showToast('✅ Order #' + newOrder.id + ' placed successfully (COD).', 'success');
-
-        setTimeout(() => {
-            if (typeof switchTab === 'function') switchTab('history');
-            if (typeof loadMobileOrderHistory === 'function') loadMobileOrderHistory();
-            if (typeof openOrderTrackingModal === 'function') openOrderTrackingModal(newOrder.id);
-        }, 600);
+        // Cash On Delivery Flow with styled Modal Confirmation
+        pendingCodOrder = newOrder;
+        const codModal = document.getElementById('codConfirmModal');
+        if (codModal) codModal.classList.add('active');
     }
 }
 window.checkout = checkout;
+
+let pendingCodOrder = null;
+
+function cancelCodOrder() {
+    const modal = document.getElementById('codConfirmModal');
+    if (modal) modal.classList.remove('active');
+    pendingCodOrder = null;
+    showToast('Order cancelled', 'info');
+}
+window.cancelCodOrder = cancelCodOrder;
+
+function confirmCodOrder() {
+    if (!pendingCodOrder) return;
+    
+    const newOrder = pendingCodOrder;
+    newOrder.status = 'Pending Approval';
+    
+    let storedOrders = [];
+    try {
+        const stored = localStorage.getItem('favcafe_orders');
+        if (stored) storedOrders = JSON.parse(stored);
+    } catch (e) {}
+
+    storedOrders.unshift(newOrder);
+    try {
+        localStorage.setItem('favcafe_orders', JSON.stringify(storedOrders));
+        localStorage.setItem('favcafe_orders_signal', JSON.stringify({ type: 'order_created', order: newOrder, ts: Date.now() }));
+    } catch (e) {}
+
+    try {
+        const orderChan = new BroadcastChannel('favcafe_orders_channel');
+        orderChan.postMessage({ type: 'order_created', order: newOrder });
+    } catch (e) {}
+
+    try {
+        fetch('api/orders.php?action=create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newOrder)
+        }).catch(() => {});
+    } catch (e) {}
+
+    // Clear cart
+    cart = [];
+    appliedLoyaltyPoints = 0;
+    promoDiscountAmount = 0;
+    appliedPromoCode = null;
+    localStorage.setItem('favcafe_cart', JSON.stringify([]));
+    if (typeof loadCart === 'function') loadCart();
+    
+    // Hide cart drawer if it's open
+    const cartDrawer = document.getElementById('cartDrawer');
+    if (cartDrawer) cartDrawer.classList.remove('active');
+
+    const modal = document.getElementById('codConfirmModal');
+    if (modal) modal.classList.remove('active');
+    pendingCodOrder = null;
+
+    showToast('✅ Order #' + newOrder.id + ' placed successfully (COD).', 'success');
+
+    setTimeout(() => {
+        if (typeof switchTab === 'function') switchTab('history');
+        if (typeof loadMobileOrderHistory === 'function') loadMobileOrderHistory();
+        if (typeof openOrderTrackingModal === 'function') openOrderTrackingModal(newOrder.id);
+    }, 600);
+}
+window.confirmCodOrder = confirmCodOrder;
 
 function triggerMobileMomoUssd(phone, amount) {
     const amountVal = Math.round(Number(amount) || 0);
@@ -2107,6 +2127,10 @@ function loadMobileOrderHistory() {
         });
 
         const actionText = meta.stage >= 6 ? 'View Details' : 'Track Status';
+        const payMethod = o.paymentMethod || 'MoMo Pay';
+        const payStatus = o.paymentStatus || 'Paid';
+        const payColor = payStatus === 'Paid' ? '#10b981' : '#ef4444';
+        const payIcon = payStatus === 'Paid' ? 'fa-check-circle' : 'fa-clock';
 
         container.innerHTML += `
             <div class="order-ticket-card">
@@ -2124,8 +2148,14 @@ function loadMobileOrderHistory() {
                     ${itemsHtml}
                 </div>
                 <div class="d-flex justify-content-between align-items-center pt-2 mt-2" style="border-top:1px dashed rgba(255,255,255,0.08); font-size:0.85rem;">
-                    <span class="text-muted-custom">Total Amount:</span>
-                    <strong class="text-cyan fw-bold">${formatRWF(o.total || 0)}</strong>
+                    <div>
+                        <span class="text-muted-custom d-block" style="font-size:0.75rem;"><i class="fas fa-wallet"></i> ${payMethod}</span>
+                        <span style="font-size:0.7rem; color:${payColor}; font-weight:600;"><i class="fas ${payIcon}"></i> ${payStatus.toUpperCase()}</span>
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted-custom d-block" style="font-size:0.75rem;">Total Amount:</span>
+                        <strong class="text-cyan fw-bold">${formatRWF(o.total || 0)}</strong>
+                    </div>
                 </div>
             </div>
         `;
@@ -2165,6 +2195,17 @@ function openOrderTrackingModal(orderId) {
     if (badgeEl) {
         badgeEl.style.color = meta.dotColor;
         badgeEl.innerHTML = `<span class="status-pill-dot" style="background:${meta.dotColor};"></span> ${meta.label}`;
+    }
+
+    const payBadgeEl = document.getElementById('trackingPaymentStatusBadge');
+    if (payBadgeEl) {
+        if (target.paymentStatus === 'Paid') {
+            payBadgeEl.style.color = '#10b981';
+            payBadgeEl.innerHTML = `<i class="fas fa-check-circle" style="color:#10b981;"></i> PAID`;
+        } else {
+            payBadgeEl.style.color = '#ef4444';
+            payBadgeEl.innerHTML = `<i class="fas fa-clock" style="color:#ef4444;"></i> PENDING PAYMENT`;
+        }
     }
 
     const itemsEl = document.getElementById('trackingItemsSummary');
