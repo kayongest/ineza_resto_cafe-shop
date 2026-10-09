@@ -731,8 +731,8 @@
         }
     </style>
     <div id="dishItemDetailModal" class="custom-modal-overlay">
-        <div class="custom-modal-dialog p-0" style="max-width: 700px; overflow: hidden; border-radius: 16px; background: #fff;">
-            <button type="button" class="modal-circle-close-btn position-absolute bg-light text-dark shadow-sm" style="top: 15px; right: 15px; z-index: 10; border-radius: 50%; width: 32px; height: 32px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="closeDishModal()">&times;</button>
+        <div class="custom-modal-dialog p-0" style="max-width: 700px; max-height: 90vh; overflow-y: auto; overflow-x: hidden; border-radius: 16px; background: #fff;">
+            <button type="button" class="modal-circle-close-btn position-absolute bg-light text-dark shadow-sm" style="top: 15px; right: 15px; z-index: 10; border-radius: 50%; width: 32px; height: 32px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; position: sticky; float: right; margin: 15px 15px -47px 0;" onclick="closeDishModal()">&times;</button>
             <div class="modal-split-layout">
                 <!-- Left Side Image -->
                 <div class="modal-split-left" style="background: #f8f9fa;">

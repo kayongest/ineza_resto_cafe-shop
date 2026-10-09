@@ -1786,6 +1786,9 @@ function cancelMobileMomoUssd() {
 window.cancelMobileMomoUssd = cancelMobileMomoUssd;
 
 function confirmMobileMomoSuccess() {
+    if (!confirm('Please confirm payment!!')) {
+        return;
+    }
     const modal = document.getElementById('mobileMomoUssdModal');
     if (modal) modal.classList.remove('active');
     currentMobilePinDigits = '';
@@ -2070,6 +2073,7 @@ function openOrderTrackingModal(orderId) {
     currentTrackingOrderId = target.id;
     const modal = document.getElementById('mobileOrderTrackingModal');
     if (!modal) return;
+    modal.classList.add('active');
 
     const meta = getOrderStatusDetails(target.status);
 
