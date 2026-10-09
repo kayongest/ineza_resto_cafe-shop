@@ -1706,8 +1706,62 @@ function checkout() {
         status: 'Order Received'
     };
 
-    pendingMobileMomoOrder = newOrder;
-    triggerMobileMomoUssd(custPhone, finalTotal);
+    if (selectedPaymentMethod === 'MoMo') {
+        pendingMobileMomoOrder = newOrder;
+        triggerMobileMomoUssd(custPhone, finalTotal);
+    } else {
+        // Cash On Delivery Flow with Admin Approval Prompt
+        if (!confirm('Your order will be placed via Cash on Delivery and is subject to admin approval. Proceed?')) {
+            return;
+        }
+
+        newOrder.status = 'Pending Approval';
+        
+        let storedOrders = [];
+        try {
+            const stored = localStorage.getItem('favcafe_orders');
+            if (stored) storedOrders = JSON.parse(stored);
+        } catch (e) {}
+
+        storedOrders.unshift(newOrder);
+        try {
+            localStorage.setItem('favcafe_orders', JSON.stringify(storedOrders));
+            localStorage.setItem('favcafe_orders_signal', JSON.stringify({ type: 'order_created', order: newOrder, ts: Date.now() }));
+        } catch (e) {}
+
+        try {
+            const orderChan = new BroadcastChannel('favcafe_orders_channel');
+            orderChan.postMessage({ type: 'order_created', order: newOrder });
+        } catch (e) {}
+
+        try {
+            fetch('api/orders.php?action=create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newOrder)
+            }).catch(() => {});
+        } catch (e) {}
+
+        // Clear cart
+        cart = [];
+        appliedLoyaltyPoints = 0;
+        promoDiscountAmount = 0;
+        appliedPromoCode = null;
+        localStorage.setItem('favcafe_cart', JSON.stringify([]));
+        if (typeof loadCart === 'function') loadCart();
+        
+        // Hide cart drawer if it's open (it uses standard active toggle)
+        const cartDrawer = document.getElementById('cartDrawer');
+        if (cartDrawer) cartDrawer.classList.remove('active');
+
+        showToast('✅ Order #' + newOrder.id + ' placed successfully (COD).', 'success');
+
+        setTimeout(() => {
+            if (typeof switchTab === 'function') switchTab('history');
+            if (typeof loadMobileOrderHistory === 'function') loadMobileOrderHistory();
+            if (typeof openOrderTrackingModal === 'function') openOrderTrackingModal(newOrder.id);
+        }, 600);
+    }
 }
 window.checkout = checkout;
 
