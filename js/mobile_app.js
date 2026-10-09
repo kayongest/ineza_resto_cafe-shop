@@ -2126,7 +2126,8 @@ function loadMobileOrderHistory() {
             `;
         });
 
-        const actionText = meta.stage >= 6 ? 'View Details' : 'Track Status';
+        const actionFunc = meta.stage >= 7 ? `openReceiptModal('${o.id}')` : `openOrderTrackingModal('${o.id}')`;
+        const actionText = meta.stage >= 7 ? '<i class="fas fa-receipt"></i> E-Receipt' : (meta.stage >= 6 ? 'View Details' : 'Track Status');
         const payMethod = o.paymentMethod || 'MoMo Pay';
         const payStatus = o.paymentStatus || 'Paid';
         const payColor = payStatus === 'Paid' ? '#10b981' : '#ef4444';
@@ -2142,7 +2143,7 @@ function loadMobileOrderHistory() {
                             ${meta.label}
                         </div>
                     </div>
-                    <a href="javascript:void(0);" class="order-action-link" onclick="openOrderTrackingModal('${o.id}')">${actionText}</a>
+                    <a href="javascript:void(0);" class="order-action-link" onclick="${actionFunc}">${actionText}</a>
                 </div>
                 <div>
                     ${itemsHtml}
@@ -2426,3 +2427,96 @@ function showToast(message, type = 'info') {
     }, 2500);
 }
 window.showToast = showToast;
+
+
+/* =========================================
+   RECEIPT MODAL LOGIC
+========================================= */
+function openReceiptModal(orderId) {
+    let orders = [];
+    try {
+        const stored = localStorage.getItem('favcafe_orders');
+        if (stored) orders = JSON.parse(stored);
+    } catch (e) {}
+    
+    const target = orders.find(o => String(o.id) === String(orderId));
+    if (!target) {
+        showToast('Order not found', 'error');
+        return;
+    }
+
+    document.getElementById('receiptOrderCodeText').textContent = `Order #${target.id}`;
+    
+    const d = target.timestamp ? new Date(target.timestamp) : new Date();
+    document.getElementById('receiptDateText').textContent = d.toLocaleString();
+
+    let items = target.items || [];
+    if (!items || items.length === 0) {
+        const summary = target.itemsSummary || 'Special Order x1';
+        items = [{ title: summary, price: target.total || 0, qty: 1 }];
+    }
+
+    const container = document.getElementById('receiptItemsContainer');
+    container.innerHTML = '';
+    
+    items.forEach(item => {
+        const title = item.title || 'Item';
+        const qty = item.qty || item.quantity || 1;
+        const price = parseFloat(item.price || 0);
+        const total = qty * price;
+        
+        container.innerHTML += `
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <span style="flex:1;">${qty}x ${title}</span>
+                <span>${formatRWF(total)}</span>
+            </div>
+        `;
+    });
+
+    const subtotal = target.total || 0;
+    const discount = target.discount || 0;
+    const finalTotal = target.total || 0; // If discount applies, update calculation
+
+    document.getElementById('receiptSubtotal').textContent = formatRWF(subtotal);
+    
+    const discRow = document.getElementById('receiptDiscountRow');
+    if (discount > 0) {
+        discRow.classList.remove('d-none');
+        document.getElementById('receiptDiscount').textContent = '-' + formatRWF(discount);
+    } else {
+        discRow.classList.add('d-none');
+    }
+
+    document.getElementById('receiptDeliveryFee').textContent = formatRWF(0); // Assuming 0 delivery fee for now
+    document.getElementById('receiptTotalAmount').textContent = formatRWF(finalTotal);
+
+    const pMethod = target.paymentMethod || 'MoMo Pay';
+    const pStatus = target.paymentStatus || 'Paid';
+    
+    document.getElementById('receiptPaymentMethod').textContent = pMethod.toUpperCase();
+    
+    const statusEl = document.getElementById('receiptPaymentStatus');
+    statusEl.textContent = pStatus.toUpperCase();
+    if (pStatus === 'Paid') {
+        statusEl.style.backgroundColor = '#10b981';
+        statusEl.style.color = '#fff';
+    } else {
+        statusEl.style.backgroundColor = '#ef4444';
+        statusEl.style.color = '#fff';
+    }
+
+    const modal = document.getElementById('mobileReceiptModal');
+    if (modal) modal.classList.add('active');
+}
+window.openReceiptModal = openReceiptModal;
+
+function closeReceiptModal() {
+    const modal = document.getElementById('mobileReceiptModal');
+    if (modal) modal.classList.remove('active');
+}
+window.closeReceiptModal = closeReceiptModal;
+
+function downloadReceipt() {
+    showToast('Receipt downloaded successfully!', 'success');
+}
+window.downloadReceipt = downloadReceipt;
