@@ -1753,7 +1753,9 @@ function updateMomoDisplayForOperator(op, amountVal) {
     const rawAmount = amountVal || (pendingMobileMomoOrder ? pendingMobileMomoOrder.total : 0);
     const amountValInt = rawAmount > 0 ? Math.round(rawAmount) : '';
     const formattedAmount = amountValInt ? amountValInt.toLocaleString() : 'Amount';
-    const ussdString = amountValInt ? `*182*8*1*004587*${amountValInt}#` : '*182*8*1*004587*Amount#';
+    
+    const ussdStringMTN = amountValInt ? `*182*8*1*004587*${amountValInt}#` : '*182*8*1*004587*Amount#';
+    const ussdStringAirtel = amountValInt ? `*182*1*2*004587*${amountValInt}#` : '*182*1*2*004587*Amount#';
 
     if (clientName) clientName.textContent = 'INEZA Resto & Cafe Shop';
 
