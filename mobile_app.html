@@ -685,83 +685,77 @@
          1. ORDER ITEM THUMBNAIL MODAL (Matches orderItemThumbnailModal)
          ============================================================ -->
     <div id="dishItemDetailModal" class="custom-modal-overlay">
-        <div class="custom-modal-dialog item-detail-modal-card">
-            <!-- Modal Header with Category Badge and Close Button -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="item-modal-category-badge" id="modalDishCategory">WRAPS</span>
-                <button type="button" class="modal-circle-close-btn" onclick="closeDishModal()">&times;</button>
-            </div>
-
-            <!-- Dish Image -->
-            <div class="item-modal-image-container text-center mb-3">
-                <img id="modalDishImage" src="" alt="Dish Image" style="width:100%; height:180px; object-fit:cover; border-radius:12px;">
-            </div>
-
-            <!-- Dish Title -->
-            <h2 class="item-modal-dish-title" id="modalDishTitle">Loaded Fries</h2>
-
-            <!-- Star Rating & Review Count -->
-            <div class="item-modal-rating-row" id="modalDishRatingRow">
-                <div class="stars-gold" id="modalDishStars">
-                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
-                        class="fas fa-star"></i><i class="fas fa-star"></i>
+        <div class="custom-modal-dialog p-0" style="max-width: 700px; overflow: hidden; border-radius: 16px; background: #fff;">
+            <button type="button" class="modal-circle-close-btn position-absolute bg-light text-dark shadow-sm" style="top: 15px; right: 15px; z-index: 10; border-radius: 50%; width: 32px; height: 32px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="closeDishModal()">&times;</button>
+            <div class="row g-0">
+                <!-- Left Side Image -->
+                <div class="col-md-5 d-none d-md-block" style="background: #f8f9fa;">
+                    <img id="modalDishImage" src="" alt="Dish Image" style="width: 100%; height: 100%; object-fit: cover; border-top-left-radius: 16px; border-bottom-left-radius: 16px;">
                 </div>
-                <span class="rating-text" id="modalDishRatingText">5 (12 reviews)</span>
-            </div>
-
-            <!-- Description -->
-            <p class="item-modal-desc" id="modalDishDesc">
-                Crispy golden fries tossed in garlic herb seasoning, topped with melted cheese and bacon bits.
-            </p>
-
-            <!-- Price -->
-            <div class="item-modal-price-val" id="modalDishPrice">5,500 RWF</div>
-
-            <!-- Metadata Cards Row: Calories, Prep Time, Rating -->
-            <div class="item-modal-meta-grid">
-                <div class="meta-card">
-                    <div class="meta-val" id="modalDishCalories">400 kcal</div>
-                    <div class="meta-lbl">Calories</div>
+                <div class="col-12 d-md-none" style="height: 250px;">
+                    <img id="modalDishImageMobile" src="" alt="Dish Image" style="width: 100%; height: 100%; object-fit: cover; border-top-left-radius: 16px; border-top-right-radius: 16px;">
                 </div>
-                <div class="meta-card">
-                    <div class="meta-val" id="modalDishPrepTime">10 min</div>
-                    <div class="meta-lbl">Prep Time</div>
+                
+                <!-- Right Side Content -->
+                <div class="col-12 col-md-7 p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-uppercase fw-bold" id="modalDishCategory" style="font-size: 0.75rem; letter-spacing: 1px; color: #436e8e;">LUNCH</span>
+                    </div>
+                    
+                    <h2 class="fw-bolder text-dark mb-2" id="modalDishTitle" style="font-size: 1.6rem; color: #2d4a60 !important;">Chicken and Rice</h2>
+                    
+                    <div class="mb-3 d-flex align-items-center gap-2" id="modalDishRatingRow">
+                        <div class="text-secondary" id="modalDishStars" style="color: #436e8e !important;">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <span class="rating-text text-muted small" id="modalDishRatingText">5 (12 reviews)</span>
+                    </div>
+                    
+                    <p class="item-modal-desc d-none" id="modalDishDesc"></p>
+
+                    <!-- Price -->
+                    <div class="fw-bolder mb-3" id="modalDishPrice" style="color: #c0392b; font-size: 1.8rem;">9,000 RWF</div>
+                    
+                    <!-- Metadata Cards Row -->
+                    <div class="d-flex gap-2 mb-4">
+                        <div class="rounded-3 text-center p-2 flex-fill" style="background-color: #f8f6f2;">
+                            <div class="fw-bold text-dark" id="modalDishCalories" style="font-size: 0.9rem; color: #2d4a60 !important;">350 kcal</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Calories</div>
+                        </div>
+                        <div class="rounded-3 text-center p-2 flex-fill" style="background-color: #f8f6f2;">
+                            <div class="fw-bold text-dark" id="modalDishPrepTime" style="font-size: 0.9rem; color: #2d4a60 !important;">15 min</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Prep Time</div>
+                        </div>
+                        <div class="rounded-3 text-center p-2 flex-fill" style="background-color: #f8f6f2;">
+                            <div class="fw-bold text-dark" id="modalDishRating" style="font-size: 0.9rem; color: #2d4a60 !important;">5/5</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">Rating</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quantity Control -->
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <button type="button" class="btn btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; border-width: 2px; font-weight: bold; border-color: #c0392b; color: #c0392b;" onclick="changeDishModalQty(-1)">-</button>
+                        <span class="fw-bold fs-5" id="modalDishQty" style="color: #2d4a60;">1</span>
+                        <button type="button" class="btn btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; border-width: 2px; font-weight: bold; border-color: #c0392b; color: #c0392b;" onclick="changeDishModalQty(1)">+</button>
+                        <span class="text-muted small">portion</span>
+                    </div>
+                    
+                    <!-- Tags -->
+                    <div class="mb-4" id="modalDishTags">
+                        <span class="badge" style="background-color: #f8f6f2; color: #2d4a60;">Popular</span>
+                    </div>
+                    
+                    <!-- Momo Pay Indicator -->
+                    <div class="momo-pay-indicator-box mb-3 d-none">
+                        <span id="modalAddTotalPrice"></span>
+                    </div>
+
+                    <!-- Add to Cart Button -->
+                    <button type="button" class="btn w-100 py-3 rounded-3 fw-bold shadow-sm text-white" id="modalAddToCartBtn" onclick="confirmModalAddToCart()" style="background-color: #c0392b; border: none; font-size: 1.1rem;">
+                        <i class="fas fa-shopping-cart me-2"></i> Add to Cart (<span id="modalAddTotalPrice">9,000 RWF</span>)
+                    </button>
                 </div>
-                <div class="meta-card">
-                    <div class="meta-val" id="modalDishRating">5/5</div>
-                    <div class="meta-lbl">Rating</div>
-                </div>
             </div>
-
-            <!-- Portion Quantity Incrementor: -  [qty]  +  portion -->
-            <div class="item-modal-qty-control">
-                <button type="button" class="qty-circle-btn" onclick="changeDishModalQty(-1)">-</button>
-                <span class="qty-display-num" id="modalDishQty">1</span>
-                <button type="button" class="qty-circle-btn" onclick="changeDishModalQty(1)">+</button>
-                <span class="portion-label">portion</span>
-            </div>
-
-            <!-- Item Badges & Tags (e.g. Bestseller, Cheesy, Spicy) -->
-            <div class="item-modal-tags-row" id="modalDishTags">
-                <span class="dish-tag-chip">Bestseller</span>
-                <span class="dish-tag-chip">Cheesy</span>
-            </div>
-
-            <!-- Momo Pay Accepted Badge before Adding to Cart -->
-            <div class="momo-pay-indicator-box mt-3">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="momo-pay-badge-pill">MOMO PAY</span>
-                    <span class="momo-pay-text"><i class="fas fa-check-circle text-success me-1"></i>MTN MoMo &amp;
-                        Airtel Money</span>
-                </div>
-                <i class="fas fa-mobile-alt text-warning fs-5"></i>
-            </div>
-
-            <!-- Confirm Add to Cart CTA Button -->
-            <button type="button" class="btn-cyan-confirm mt-3 w-100" id="modalAddToCartBtn"
-                onclick="confirmModalAddToCart()">
-                <i class="fas fa-cart-plus me-2"></i> Add to Cart (<span id="modalAddTotalPrice">5,500 RWF</span>)
-            </button>
         </div>
     </div>
 

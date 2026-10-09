@@ -1528,7 +1528,9 @@ function openDishModal(item) {
 
     // Image
     const imgEl = document.getElementById('modalDishImage');
-    if (imgEl) imgEl.src = item.img || 'img/menuImage/thumbnail.png';
+    if (imgEl) imgEl.src = item.image || item.img || 'img/menuImage/thumbnail.png';
+    const imgMobileEl = document.getElementById('modalDishImageMobile');
+    if (imgMobileEl) imgMobileEl.src = item.image || item.img || 'img/menuImage/thumbnail.png';
 
     // Rating & Reviews
     const ratingVal = parseFloat(item.rating || 5.0);
