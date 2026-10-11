@@ -3192,7 +3192,7 @@ function printTableQrStand() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Favorite Cafe - Table QR Stand</title>
+            <title>INEZA RESTO &amp; COFFEE SHOP - Table QR Stand</title>
             <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
                 body { font-family: 'Titillium Web', sans-serif; text-align: center; padding: 40px; margin: 0; }

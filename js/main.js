@@ -1694,7 +1694,7 @@ function renderTimelineModalContent(target) {
             htmlSteps += `
                 <div class="mt-4 p-3 rounded-3 text-center shadow-sm" style="background:#e8f5e9; border:1px solid #a5d6a7;">
                     <h6 class="fw-bold text-success mb-1"><i class="fas fa-heart me-1"></i>Order Closed &amp; Completed!</h6>
-                    <p class="small text-muted mb-2">Thank you for ordering with Favorite Cafe! Please rate your experience:</p>
+                    <p class="small text-muted mb-2">Thank you for ordering with INEZA RESTO &amp; COFFEE SHOP! Please rate your experience:</p>
                     <div class="d-flex justify-content-center gap-2 text-warning fs-5">
                         <i class="fas fa-star" onclick="if(typeof showToast==='function') showToast('Thank you for your 5-star feedback!', 'success', 'Feedback Saved')" style="cursor:pointer;" title="5 Stars"></i>
                         <i class="fas fa-star" onclick="if(typeof showToast==='function') showToast('Thank you for your 5-star feedback!', 'success', 'Feedback Saved')" style="cursor:pointer;" title="5 Stars"></i>
@@ -2280,7 +2280,7 @@ document.addEventListener('DOMContentLoaded', function () {
         sessionStorage.setItem('favcafe_active_table', tableNum);
         setTimeout(function () {
             if (typeof showToast === 'function') {
-                showToast('Welcome to Favorite Cafe! Seated at Table ' + tableNum + '.', 'info', 'Table ' + tableNum + ' Detected');
+                showToast('Welcome to INEZA RESTO & COFFEE SHOP! Seated at Table ' + tableNum + '.', 'info', 'Table ' + tableNum + ' Detected');
             }
         }, 800);
     }
