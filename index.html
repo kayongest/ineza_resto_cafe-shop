@@ -414,7 +414,11 @@
                   loginBtn.style.color = '#ffffff';
                }
                if (loginForm) loginForm.style.display = 'block';
-               if (subtitle) subtitle.textContent = 'Customer Sign In & Account Access';
+               if (typeof window.checkUserSessionStatus === 'function') {
+                  window.checkUserSessionStatus();
+               } else if (subtitle) {
+                  subtitle.textContent = 'Customer Sign In & Account Access';
+               }
             }
          };
 
@@ -458,7 +462,7 @@
          window.demoAdminLogin = function () {
             var user = document.getElementById('mAdminUser');
             var pass = document.getElementById('mAdminPass');
-            if (user) user.value = 'admin_Favorite Cafe';
+            if (user) user.value = 'admin@ineza.rw';
             if (pass) pass.value = 'admin2026';
             if (typeof window.showToast === 'function') {
                window.showToast('Demo admin credentials loaded!', 'info', 'Admin Access');
@@ -496,20 +500,58 @@
          };
 
          // ---- Handle Admin Login ----
-         window.handleAdminLogin = function () {
+         window.handleAdminLogin = async function () {
             var user = document.getElementById('mAdminUser');
             var pass = document.getElementById('mAdminPass');
-            if (user && pass && user.value.trim() && pass.value.trim()) {
+            var ident = user ? user.value.trim() : '';
+            var password = pass ? pass.value.trim() : '';
+            if (!ident || !password) {
                if (typeof window.showToast === 'function') {
-                  window.showToast('Admin staff access granted! Opening Dashboard in new tab...', 'success', 'Admin Portal');
+                  window.showToast('Please enter Admin Staff Email/ID and Password.', 'warning', 'Admin Login');
+               }
+               return;
+            }
+
+            try {
+               var res = await fetch('api/auth.php', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'login', email: ident, password: password })
+               });
+               if (res.ok) {
+                  var data = await res.json();
+                  if (data.status === 'success' && (data.user.role === 'admin' || data.user.role === 'staff' || ident.includes('admin'))) {
+                     var adminObj = data.user;
+                     localStorage.setItem('favcafe_active_user', JSON.stringify(adminObj));
+                     localStorage.setItem('favcafe_admin_user', JSON.stringify(adminObj));
+                     if (typeof window.showToast === 'function') {
+                        window.showToast('Admin staff access granted! Opening Management Portal...', 'success', 'Admin Portal');
+                     }
+                     window.closeAuthModal();
+                     setTimeout(function () {
+                        window.open('admin.html', '_blank');
+                     }, 400);
+                     return;
+                  }
+               }
+            } catch (err) {
+               console.warn('[Admin Auth] API unavailable, using local check', err);
+            }
+
+            if ((ident === 'admin@ineza.rw' || ident === 'admin' || ident === 'admin_Favorite Cafe') && password === 'admin2026') {
+               var demoAdmin = { name: 'INEZA Admin Staff', full_name: 'INEZA Admin Staff', email: 'admin@ineza.rw', role: 'admin' };
+               localStorage.setItem('favcafe_active_user', JSON.stringify(demoAdmin));
+               localStorage.setItem('favcafe_admin_user', JSON.stringify(demoAdmin));
+               if (typeof window.showToast === 'function') {
+                  window.showToast('Admin staff access granted! Opening Management Portal...', 'success', 'Admin Portal');
                }
                window.closeAuthModal();
                setTimeout(function () {
                   window.open('admin.html', '_blank');
-               }, 300);
+               }, 400);
             } else {
                if (typeof window.showToast === 'function') {
-                  window.showToast('Please enter Admin Staff ID and Password.', 'warning', 'Admin Login');
+                  window.showToast('Invalid staff credentials. Please check details.', 'error', 'Access Denied');
                }
             }
          };
@@ -1009,7 +1051,7 @@
                </div>
                <div class="badge bg-success bg-opacity-10 text-success px-3 py-1 mb-2 font-monospace" style="font-size:0.75rem;"><i class="fas fa-circle me-1" style="font-size:0.5rem;"></i>ACCOUNT ACTIVE</div>
                <h5 class="font-weight-bold text-dark mb-1" id="mLoggedInName">Customer Account</h5>
-               <div class="small text-muted mb-3" id="mLoggedInEmail">user@favorite.com</div>
+               <div class="small text-muted mb-3" id="mLoggedInEmail">user@ineza.rw</div>
                
                <div class="d-flex flex-column gap-2">
                   <button type="button" class="btn btn-dark btn-sm py-2 rounded-pill font-weight-bold" onclick="openMyOrdersModal()"><i class="fas fa-receipt me-1"></i> View My Orders &amp; Track</button>
@@ -1021,8 +1063,8 @@
             <div id="mLoginInputs">
                <form onsubmit="event.preventDefault(); handleClientLogin();">
                   <div class="auth-input-group">
-                     <label><i class="fas fa-envelope me-1" style="color:var(--primary);"></i>Email or Phone</label>
-                     <input type="text" id="mClientEmail" placeholder="kayonga70@gmail.com" required />
+                     <label><i class="fas fa-envelope me-1" style="color:var(--primary);"></i>Email or Phone Number</label>
+                     <input type="text" id="mClientEmail" placeholder="078... or name@gmail.com" required />
                   </div>
                   <div class="auth-input-group">
                      <label><i class="fas fa-lock me-1" style="color:var(--primary);"></i>Password</label>
@@ -1087,7 +1129,7 @@
             <form onsubmit="event.preventDefault(); handleAdminLogin();">
                <div class="auth-input-group">
                   <label><i class="fas fa-id-badge me-1" style="color:var(--primary);"></i>Admin Staff ID</label>
-                  <input type="text" id="mAdminUser" placeholder="admin_Favorite Cafe" required />
+                  <input type="text" id="mAdminUser" placeholder="admin@ineza.rw" required />
                </div>
                <div class="auth-input-group">
                   <label><i class="fas fa-key me-1" style="color:var(--primary);"></i>Password</label>

@@ -55,17 +55,44 @@ document.addEventListener('DOMContentLoaded', function() {
     renderKitchenGrid();
     renderStaffAndLoyaltyTables();
     loadAdminCategories();
-    loadAdminPromos();
+    initAdminAuthSession();
     initSidebarTabs();
     initResponsiveSidebar();
     initSearchAndFilter();
     initCartAdminSettings();
 
-    console.log('%c[Favorite Cafe Engine] Live Orders Management System Active', 'color: #27ae60; font-weight: bold; font-size: 14px;');
-    console.log('%c[Functions Available] viewOrder(id), editOrder(id), disableOrder(id), refreshAdminOrders()', 'color: #2980b9; font-weight: bold;');
-    console.log('%c[Audit Attribution] Accepted By | Prepared By (Chef) | Served By Enabled', 'color: #8e44ad; font-weight: bold;');
-    console.log('%c[Overview Widget] Active Kitchen Live Tickets with badge-success sm Status Badges Ready', 'color: #d35400; font-weight: bold;');
+    console.log('%c[INEZA RESTO Platform] Live Admin Management System Active', 'color: #27ae60; font-weight: bold; font-size: 14px;');
 });
+
+function initAdminAuthSession() {
+    var adminUser = null;
+    try {
+        adminUser = JSON.parse(localStorage.getItem('favcafe_admin_user') || localStorage.getItem('favcafe_active_user'));
+    } catch (e) { }
+
+    var nameEl = document.getElementById('adminSidebarName');
+    var roleEl = document.getElementById('adminSidebarRole');
+    var avatarEl = document.getElementById('adminSidebarAvatar');
+
+    if (adminUser && (adminUser.role === 'admin' || adminUser.role === 'staff' || (adminUser.email && adminUser.email.includes('admin')))) {
+        var displayName = adminUser.full_name || adminUser.name || 'Admin Staff';
+        if (nameEl) nameEl.textContent = displayName;
+        if (roleEl) roleEl.textContent = adminUser.role === 'staff' ? 'Kitchen & Floor Staff' : 'General Manager';
+        if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+    } else {
+        // Fallback default
+        if (nameEl) nameEl.textContent = 'Admin Staff';
+        if (roleEl) roleEl.textContent = 'Manager & Controller';
+        if (avatarEl) avatarEl.textContent = 'A';
+    }
+}
+
+function adminSignOut() {
+    localStorage.removeItem('favcafe_admin_user');
+    window.location.href = 'index.html';
+}
+window.adminSignOut = adminSignOut;
+window.initAdminAuthSession = initAdminAuthSession;
 
 var _notifiedOrderIds = {};
 

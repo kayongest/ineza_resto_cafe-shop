@@ -471,10 +471,16 @@ function saveRegisteredUsers() {
 
 function updateNavUserButton(name) {
     var navAuthBtn = document.getElementById('navAuthBtn');
-    if (navAuthBtn && name) {
+    if (!navAuthBtn) return;
+    if (name) {
         var firstName = name.split(' ')[0];
-        navAuthBtn.innerHTML = '<i class="fas fa-user-check me-1" style="color:var(--secondary);"></i>' + firstName;
+        navAuthBtn.innerHTML = '<i class="fas fa-user-circle me-1" style="color:var(--secondary);"></i>' + firstName;
         navAuthBtn.style.borderColor = 'var(--secondary)';
+        navAuthBtn.title = 'Account Profile (' + name + ')';
+    } else {
+        navAuthBtn.innerHTML = '<i class="fas fa-user-circle me-1"></i>Login / Account';
+        navAuthBtn.style.borderColor = '';
+        navAuthBtn.title = 'Sign In or Create Account';
     }
 }
 
@@ -517,17 +523,26 @@ async function processClientRegister() {
 
     // Try PHP MySQL API first
     try {
-        var res = await fetch('api/auth.php?action=register', {
+        var res = await fetch('api/auth.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ full_name: name, email: email, phone: phone, password: pass })
+            body: JSON.stringify({ action: 'register', full_name: name, email: email, phone: phone, password: pass })
         });
         if (res.ok) {
             var contentType = res.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
                 var data = await res.json();
                 if (data.status === 'success') {
-                    var newUser = { name: data.user.full_name || name, email: email, phone: phone, pass: pass, id: data.user.id };
+                    var newUser = {
+                        name: data.user.full_name || name,
+                        full_name: data.user.full_name || name,
+                        email: email,
+                        phone: phone,
+                        address: data.user.address || '',
+                        role: data.user.role || 'customer',
+                        pass: pass,
+                        id: data.user.id
+                    };
                     currentActiveUser = newUser;
                     localStorage.setItem('favcafe_active_user', JSON.stringify(newUser));
                     updateNavUserButton(newUser.name);
@@ -540,9 +555,12 @@ async function processClientRegister() {
 
                     var orderCustName = document.getElementById('orderCustName');
                     var orderCustPhone = document.getElementById('orderCustPhone');
+                    var orderCustAddr = document.getElementById('orderCustAddress');
                     if (orderCustName) orderCustName.value = newUser.name;
                     if (orderCustPhone) orderCustPhone.value = phone;
+                    if (orderCustAddr && newUser.address) orderCustAddr.value = newUser.address;
 
+                    checkUserSessionStatus();
                     closeAuthModal();
                     showToast(data.message || ('Welcome to INEZA RESTO & COFFEE SHOP, ' + newUser.name + '! Your customer account has been created successfully.'), 'success', 'Account Created');
                     return;
@@ -553,19 +571,19 @@ async function processClientRegister() {
             }
         }
     } catch (e) {
-        console.log('[Auth API] Static host or offline mode detected');
+        console.log('[Auth API] Static host or offline mode detected', e);
     }
 
     // Fallback: LocalStorage DB Check (Static GitHub Pages & Offline)
     loadRegisteredUsers();
-    var existingUser = registeredUsers.find(function (u) { return u.email === email; });
+    var existingUser = registeredUsers.find(function (u) { return u.email === email || (u.phone && u.phone === phone); });
     if (existingUser) {
-        showToast('An account with this email (' + email + ') already exists! Please sign in.', 'error', 'Already Registered');
+        showToast('An account with this email/phone already exists! Please sign in.', 'error', 'Already Registered');
         switchMasharikiTab('login');
         return;
     }
 
-    var newUser = { name: name, email: email, phone: phone, pass: pass };
+    var newUser = { name: name, full_name: name, email: email, phone: phone, address: '', role: 'customer', pass: pass, id: Date.now() };
     registeredUsers.push(newUser);
     saveRegisteredUsers();
 
@@ -575,9 +593,12 @@ async function processClientRegister() {
 
     var orderCustName = document.getElementById('orderCustName');
     var orderCustPhone = document.getElementById('orderCustPhone');
+    var orderCustAddr = document.getElementById('orderCustAddress');
     if (orderCustName) orderCustName.value = name;
     if (orderCustPhone) orderCustPhone.value = phone;
+    if (orderCustAddr && newUser.address) orderCustAddr.value = newUser.address;
 
+    checkUserSessionStatus();
     closeAuthModal();
     showToast('Welcome to INEZA RESTO & COFFEE SHOP, ' + name + '! Your customer account has been created successfully.', 'success', 'Account Created');
 }
@@ -586,55 +607,78 @@ async function processClientLogin() {
     var emailInput = document.getElementById('mClientEmail');
     var passInput = document.getElementById('mClientPass');
 
-    var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    var ident = emailInput ? emailInput.value.trim() : '';
     var pass = passInput ? passInput.value.trim() : '';
 
-    if (!email || !pass) {
-        showToast('Please enter both email address and password.', 'warning', 'Missing Credentials');
+    if (!ident || !pass) {
+        showToast('Please enter both email/phone and password.', 'warning', 'Missing Credentials');
         return;
     }
 
     // Try PHP MySQL API first
     try {
-        var res = await fetch('api/auth.php?action=login', {
+        var res = await fetch('api/auth.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, password: pass })
+            body: JSON.stringify({ action: 'login', email: ident, password: pass })
         });
         if (res.ok) {
             var contentType = res.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
                 var data = await res.json();
                 if (data.status === 'success') {
-                    var userObj = { name: data.user.full_name || email.split('@')[0], email: data.user.email || email, phone: data.user.phone || '', pass: pass, id: data.user.id };
+                    var userObj = {
+                        name: data.user.full_name || data.user.name || ident.split('@')[0],
+                        full_name: data.user.full_name || data.user.name || ident.split('@')[0],
+                        email: data.user.email || (ident.includes('@') ? ident : ''),
+                        phone: data.user.phone || (!ident.includes('@') ? ident : ''),
+                        address: data.user.address || '',
+                        role: data.user.role || 'customer',
+                        pass: pass,
+                        id: data.user.id
+                    };
                     currentActiveUser = userObj;
                     localStorage.setItem('favcafe_active_user', JSON.stringify(userObj));
                     updateNavUserButton(userObj.name);
 
                     loadRegisteredUsers();
-                    if (!registeredUsers.find(function (u) { return u.email === email; })) {
+                    if (!registeredUsers.find(function (u) { return u.email === userObj.email || (u.phone && u.phone === userObj.phone); })) {
                         registeredUsers.push(userObj);
                         saveRegisteredUsers();
                     }
 
                     var orderCustName = document.getElementById('orderCustName');
                     var orderCustPhone = document.getElementById('orderCustPhone');
+                    var orderCustAddr = document.getElementById('orderCustAddress');
                     if (orderCustName) orderCustName.value = userObj.name;
                     if (orderCustPhone && userObj.phone) orderCustPhone.value = userObj.phone;
+                    if (orderCustAddr && userObj.address) orderCustAddr.value = userObj.address;
 
+                    checkUserSessionStatus();
                     closeAuthModal();
-                    showToast(data.message || ('Welcome back, ' + userObj.name + '! You are now logged in to place orders.'), 'success', 'Welcome Back');
+                    showToast(data.message || ('Welcome back, ' + userObj.name + '! You are now logged in.'), 'success', 'Welcome Back');
                     return;
                 } else if (data.status === 'error') {
                     // Check local storage fallback before failing
                     loadRegisteredUsers();
-                    var localUser = registeredUsers.find(function (u) { return u.email === email; });
+                    var localUser = registeredUsers.find(function (u) {
+                        return (u.email && u.email.toLowerCase() === ident.toLowerCase()) || (u.phone && (u.phone === ident || u.phone.replace(/[\s\-()]/g, '') === ident.replace(/[\s\-()]/g, '')));
+                    });
                     if (localUser && localUser.pass === pass) {
                         currentActiveUser = localUser;
                         localStorage.setItem('favcafe_active_user', JSON.stringify(localUser));
                         updateNavUserButton(localUser.name);
+                        
+                        var orderCustName = document.getElementById('orderCustName');
+                        var orderCustPhone = document.getElementById('orderCustPhone');
+                        var orderCustAddr = document.getElementById('orderCustAddress');
+                        if (orderCustName) orderCustName.value = localUser.name;
+                        if (orderCustPhone && localUser.phone) orderCustPhone.value = localUser.phone;
+                        if (orderCustAddr && localUser.address) orderCustAddr.value = localUser.address;
+
+                        checkUserSessionStatus();
                         closeAuthModal();
-                        showToast('Welcome back, ' + localUser.name + '! You are now logged in to place orders.', 'success', 'Welcome Back');
+                        showToast('Welcome back, ' + localUser.name + '! You are now logged in.', 'success', 'Welcome Back');
                         return;
                     }
                     showToast(data.message, 'error', 'Login Failed');
@@ -643,12 +687,14 @@ async function processClientLogin() {
             }
         }
     } catch (e) {
-        console.log('[Auth API] Static host or offline mode detected');
+        console.log('[Auth API] Static host or offline mode detected', e);
     }
 
     // Fallback: LocalStorage DB Check (Static GitHub Pages & Offline)
     loadRegisteredUsers();
-    var userInDb = registeredUsers.find(function (u) { return u.email === email; });
+    var userInDb = registeredUsers.find(function (u) {
+        return (u.email && u.email.toLowerCase() === ident.toLowerCase()) || (u.phone && (u.phone === ident || u.phone.replace(/[\s\-()]/g, '') === ident.replace(/[\s\-()]/g, '')));
+    });
 
     if (!userInDb) {
         showToast('User not found in our database! Please register an account first.', 'error', 'Account Not Found');
@@ -666,9 +712,12 @@ async function processClientLogin() {
 
     var orderCustName = document.getElementById('orderCustName');
     var orderCustPhone = document.getElementById('orderCustPhone');
+    var orderCustAddr = document.getElementById('orderCustAddress');
     if (orderCustName) orderCustName.value = userInDb.name;
     if (orderCustPhone && userInDb.phone) orderCustPhone.value = userInDb.phone;
+    if (orderCustAddr && userInDb.address) orderCustAddr.value = userInDb.address;
 
+    checkUserSessionStatus();
     closeAuthModal();
     showToast('Welcome back, ' + userInDb.name + '! You are now logged in to place orders.', 'success', 'Welcome Back');
 }
@@ -1542,7 +1591,29 @@ function renderMyOrders() {
     var container = document.getElementById('myOrdersList');
     if (!container) return;
 
-    if (orders.length === 0) {
+    var activeUser = null;
+    try {
+        activeUser = currentActiveUser || JSON.parse(localStorage.getItem('favcafe_active_user'));
+    } catch (e) { }
+
+    var displayOrders = orders;
+    if (activeUser && (activeUser.phone || activeUser.name || activeUser.full_name)) {
+        var userPhoneClean = activeUser.phone ? activeUser.phone.replace(/[\s\-()]/g, '') : '';
+        var userName = (activeUser.name || activeUser.full_name || '').toLowerCase();
+
+        var matched = orders.filter(function (o) {
+            var orderPhoneClean = o.phone ? o.phone.replace(/[\s\-()]/g, '') : '';
+            var orderCust = (o.customerName || '').toLowerCase();
+            return (userPhoneClean && orderPhoneClean && (orderPhoneClean === userPhoneClean || orderPhoneClean.endsWith(userPhoneClean.slice(-8)))) ||
+                   (userName && orderCust && (orderCust.includes(userName) || userName.includes(orderCust)));
+        });
+
+        if (matched.length > 0) {
+            displayOrders = matched;
+        }
+    }
+
+    if (displayOrders.length === 0) {
         container.innerHTML = `
             <div class="text-center py-4">
                 <i class="fas fa-receipt fa-3x text-muted mb-3" style="opacity:0.4;"></i>
@@ -1554,7 +1625,7 @@ function renderMyOrders() {
     }
 
     var html = '';
-    orders.forEach(function (o) {
+    displayOrders.forEach(function (o) {
         var dateFormatted = new Date(o.date).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         var statusBadgeClass = 'bg-info text-dark';
         if (o.status === 'Completed' || o.status === 'Delivered') statusBadgeClass = 'bg-success';

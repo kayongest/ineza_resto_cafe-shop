@@ -320,10 +320,10 @@
             }
 
             try {
-                var res = await fetch('api/auth.php?action=login', {
+                var res = await fetch('api/auth.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: emailOrPhone, password: pass })
+                    body: JSON.stringify({ action: 'login', email: emailOrPhone, password: pass })
                 });
 
                 if (res.ok) {
@@ -419,10 +419,10 @@
             }
 
             try {
-                var res = await fetch('api/auth.php?action=register', {
+                var res = await fetch('api/auth.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ full_name: name, email: email, phone: phone, password: pass })
+                    body: JSON.stringify({ action: 'register', full_name: name, email: email, phone: phone, password: pass })
                 });
 
                 if (res.ok) {
