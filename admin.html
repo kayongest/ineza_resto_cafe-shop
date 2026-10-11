@@ -64,7 +64,11 @@
    <link rel="stylesheet" href="css/all.min.css" />
    <link rel="stylesheet" href="css/style.css" />
    <link rel="stylesheet" href="css/admin.css" />
+   <link rel="stylesheet" href="css/theme.css?v=1.0" />
    <link rel="manifest" href="manifest.json">
+
+   <!-- Synchronous Theme Initializer (prevents FOUC) -->
+   <script src="js/theme.js"></script>
 </head>
 
 <body class="admin-body">
@@ -194,6 +198,12 @@
 
             <button type="button" class="topbar-icon-btn" onclick="refreshKitchenData()" title="Refresh Kitchen Data">
                <i class="fas fa-sync-alt"></i>
+            </button>
+
+            <!-- Dark / Light Theme Toggle -->
+            <button type="button" class="topbar-icon-btn btn-theme-toggle" id="adminThemeToggleBtn" data-theme-toggle
+               title="Toggle Dark / Light Mode" aria-label="Toggle Dark / Light Mode">
+               <i class="fas fa-moon"></i>
             </button>
 
             <button type="button" class="topbar-icon-btn" onclick="openNotificationLogModal()"

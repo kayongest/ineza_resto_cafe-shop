@@ -47,6 +47,9 @@
    <link rel="stylesheet" href="css/all.min.css" />
    <link rel="stylesheet" href="css/magnific-popup.css" />
    <link rel="stylesheet" href="css/style.css?v=19.0" />
+   <link rel="stylesheet" href="css/theme.css?v=1.0" />
+   <!-- Synchronous Theme Initializer (prevents FOUC) -->
+   <script src="js/theme.js"></script>
 
    <!-- ============================================================
          FIXED AUTH MODAL STYLES  (clean, reliable)
@@ -673,6 +676,11 @@
             </ul>
             <div class="d-flex align-items-center gap-2">
                <button type="button" id="navSearchBtn" title="Search"><i class="fas fa-search"></i></button>
+
+               <!-- Dark / Light Theme Toggle -->
+               <button type="button" class="btn-theme-toggle" id="themeToggleBtn" data-theme-toggle title="Toggle Dark / Light Mode" aria-label="Toggle Dark / Light Mode">
+                  <i class="fas fa-moon"></i>
+               </button>
 
                <!-- Cart Button with Live Badge -->
                <button type="button" id="navCartBtn" class="btn-nav-cart" onclick="openCartDrawer()" title="View Cart">
