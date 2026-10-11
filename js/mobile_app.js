@@ -1642,21 +1642,11 @@ function setPaymentMethod(method) {
     const momoBtn = document.getElementById('payMethodMomo');
     const codBtn = document.getElementById('payMethodCOD');
     if (momoBtn && codBtn) {
-        if (method === 'MoMo') {
-            momoBtn.classList.add('active');
-            momoBtn.style.background = '#00d2d3';
-            momoBtn.style.color = '#1e293b';
-            codBtn.classList.remove('active');
-            codBtn.style.background = 'transparent';
-            codBtn.style.color = '#94a3b8';
-        } else {
-            codBtn.classList.add('active');
-            codBtn.style.background = '#00d2d3';
-            codBtn.style.color = '#1e293b';
-            momoBtn.classList.remove('active');
-            momoBtn.style.background = 'transparent';
-            momoBtn.style.color = '#94a3b8';
-        }
+        const isMomo = method === 'MoMo';
+        momoBtn.classList.toggle('active', isMomo);
+        codBtn.classList.toggle('active', !isMomo);
+        momoBtn.setAttribute('aria-checked', String(isMomo));
+        codBtn.setAttribute('aria-checked', String(!isMomo));
     }
 }
 window.setPaymentMethod = setPaymentMethod;
@@ -1956,24 +1946,24 @@ window.confirmMobileMomoSuccess = confirmMobileMomoSuccess;
 function getOrderStatusDetails(statusStr) {
     const s = (statusStr || 'Order Received').toLowerCase().trim();
     if (s.includes('closed')) {
-        return { category: 'completed', label: 'CLOSED', dotColor: '#2ed573', stage: 7 };
+        return { category: 'completed', label: 'CLOSED', dotColor: 'var(--status-completed)', stage: 7 };
     }
     if (s.includes('delivered') || s.includes('served') || s.includes('completed')) {
-        return { category: 'completed', label: 'DELIVERED', dotColor: '#2ed573', stage: 6 };
+        return { category: 'completed', label: 'DELIVERED', dotColor: 'var(--status-completed)', stage: 6 };
     }
     if (s.includes('on the way') || s.includes('out for delivery') || s.includes('delivery')) {
-        return { category: 'delivery', label: 'ON DELIVERY', dotColor: '#ff5e57', stage: 5 };
+        return { category: 'delivery', label: 'ON DELIVERY', dotColor: 'var(--status-delivery)', stage: 5 };
     }
     if (s.includes('ready')) {
-        return { category: 'preparing', label: 'READY', dotColor: '#00d2d3', stage: 4 };
+        return { category: 'preparing', label: 'READY', dotColor: 'var(--status-preparing)', stage: 4 };
     }
     if (s.includes('preparing') || s.includes('prep') || s.includes('kitchen')) {
-        return { category: 'preparing', label: 'PREPARING', dotColor: '#00d2d3', stage: 3 };
+        return { category: 'preparing', label: 'PREPARING', dotColor: 'var(--status-preparing)', stage: 3 };
     }
     if (s.includes('confirmed') || s.includes('approved')) {
-        return { category: 'pending', label: 'CONFIRMED', dotColor: '#ffa502', stage: 2 };
+        return { category: 'pending', label: 'CONFIRMED', dotColor: 'var(--status-pending)', stage: 2 };
     }
-    return { category: 'pending', label: 'PENDING APPROVAL', dotColor: '#ffa502', stage: 1 };
+    return { category: 'pending', label: 'PENDING APPROVAL', dotColor: 'var(--status-pending)', stage: 1 };
 }
 
 function filterOrderHistoryTab(status, element) {
@@ -2126,24 +2116,31 @@ function loadMobileOrderHistory() {
             `;
         });
 
-        const actionFunc = meta.stage >= 7 ? `openReceiptModal('${o.id}')` : `openOrderTrackingModal('${o.id}')`;
-        const actionText = meta.stage >= 7 ? '<i class="fas fa-receipt"></i> E-Receipt' : (meta.stage >= 6 ? 'View Details' : 'Track Status');
+        const actionText = meta.stage >= 6 ? 'View Details' : 'Track Status';
+        const receiptLinkHtml = meta.stage >= 7 ? `<a href="javascript:void(0);" class="order-action-link" style="color: #10b981;" onclick="openReceiptModal('${o.id}')"><i class="fas fa-receipt"></i> E-Receipt</a>` : '';
         const payMethod = o.paymentMethod || 'MoMo Pay';
         const payStatus = o.paymentStatus || 'Paid';
         const payColor = payStatus === 'Paid' ? '#10b981' : '#ef4444';
         const payIcon = payStatus === 'Paid' ? 'fa-check-circle' : 'fa-clock';
+        const displayId = String(o.id || '—');
 
         container.innerHTML += `
             <div class="order-ticket-card">
                 <div class="order-ticket-header">
-                    <div>
-                        <span class="order-id-txt">Order ID #${o.id}</span>
-                        <div class="order-status-badge mt-1" style="color:${meta.dotColor};">
+                    <div class="order-ticket-meta">
+                        <div class="order-id-row">
+                            <span class="order-id-label">Order</span>
+                            <span class="order-id-chip"><i class="fas fa-hashtag"></i>${displayId}</span>
+                        </div>
+                        <div class="order-status-badge" style="color:${meta.dotColor};">
                             <span class="status-pill-dot" style="background:${meta.dotColor};"></span>
                             ${meta.label}
                         </div>
                     </div>
-                    <a href="javascript:void(0);" class="order-action-link" onclick="${actionFunc}">${actionText}</a>
+                    <div class="order-ticket-actions">
+                        ${receiptLinkHtml}
+                        <a href="javascript:void(0);" class="order-action-link" onclick="openOrderTrackingModal('${o.id}')">${actionText}</a>
+                    </div>
                 </div>
                 <div>
                     ${itemsHtml}
@@ -2520,3 +2517,4 @@ function downloadReceipt() {
     showToast('Receipt downloaded successfully!', 'success');
 }
 window.downloadReceipt = downloadReceipt;
+

@@ -31,6 +31,12 @@
     --reward-blue-bg: rgba(52, 152, 219, 0.22);
     --reward-blue-border: #3498db;
     --gold-member: #f39c12;
+
+    /* Order Status Colors */
+    --status-pending: #ffd32a;   /* yellow  */
+    --status-preparing: #00d2d3; /* teal    */
+    --status-delivery: #ff9f43;  /* orange  */
+    --status-completed: #2ed573; /* green   */
 }
 
 * {
@@ -2573,4 +2579,259 @@ body:not(.light-theme) .mobile-momo-card {
 
 .momo-key-btn-ok:active {
     background: #dcfce7;
+}
+
+
+/* =========================================
+   Order Ticket — ID chip & header layout
+   ========================================= */
+.order-ticket-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.order-id-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.order-id-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.order-id-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(56, 182, 255, 0.12);
+    border: 1px solid rgba(56, 182, 255, 0.3);
+    color: var(--text-white);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.order-id-chip i {
+    font-size: 0.65rem;
+    color: var(--accent-cyan);
+}
+
+.order-ticket-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+body.light-theme .order-id-chip {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #161d31;
+}
+
+body.light-theme .order-id-label {
+    color: #64748b;
+}
+
+/* =========================================
+   Cart — Clear Cart button
+   ========================================= */
+.cart-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px 5px 5px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 94, 87, 0.28);
+    background: rgba(255, 94, 87, 0.08);
+    color: var(--accent-coral);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.cart-clear-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255, 94, 87, 0.16);
+    font-size: 0.72rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.cart-clear-btn:hover {
+    background: rgba(255, 94, 87, 0.16);
+    border-color: rgba(255, 94, 87, 0.5);
+}
+
+.cart-clear-btn:hover .cart-clear-icon {
+    background: var(--accent-coral);
+    color: #fff;
+}
+
+.cart-clear-btn:active {
+    transform: scale(0.96);
+}
+
+.cart-clear-btn:focus-visible {
+    outline: 2px solid var(--accent-coral);
+    outline-offset: 2px;
+}
+
+body.light-theme .cart-clear-btn {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+body.light-theme .cart-clear-icon {
+    background: #fee2e2;
+}
+
+/* =========================================
+   Cart — Payment method option cards
+   ========================================= */
+.payment-method-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.payment-method-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.1rem;
+}
+
+.pay-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border-dark);
+    background: rgba(0, 0, 0, 0.18);
+    color: var(--text-light-blue);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.pay-option:hover {
+    border-color: rgba(0, 210, 211, 0.35);
+}
+
+.pay-option:active {
+    transform: scale(0.98);
+}
+
+.pay-option:focus-visible {
+    outline: 2px solid #00d2d3;
+    outline-offset: 2px;
+}
+
+.pay-option-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 0.95rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.pay-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.pay-option-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-white);
+    white-space: nowrap;
+}
+
+.pay-option-hint {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.pay-option-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.8rem;
+    color: #00d2d3;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pay-option.active {
+    border-color: #00d2d3;
+    background: rgba(0, 210, 211, 0.1);
+}
+
+.pay-option.active .pay-option-icon {
+    background: #00d2d3;
+    color: #1e293b;
+}
+
+.pay-option.active .pay-option-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+body.light-theme .pay-option {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+
+body.light-theme .pay-option-title {
+    color: #161d31;
+}
+
+body.light-theme .pay-option-icon {
+    background: #e2e8f0;
+}
+
+body.light-theme .pay-option.active {
+    background: #ecfeff;
+    border-color: #00b8b9;
+}
+
+body.light-theme .pay-option.active .pay-option-icon {
+    background: #00d2d3;
+    color: #1e293b;
 }

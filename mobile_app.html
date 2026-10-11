@@ -129,9 +129,10 @@
                         <div class="greeting-subtitle">Review Items</div>
                         <h2 class="greeting-headline">My Shopping Cart</h2>
                     </div>
-                    <button type="button" class="btn btn-sm" id="cartClearBtn" onclick="clearCart()"
-                        style="display:none; background:rgba(255, 94, 87, 0.12); border:1px solid rgba(255, 94, 87, 0.35); color:#ff5e57; font-weight:700; border-radius:12px; font-size:0.75rem; padding:6px 12px;">
-                        <i class="fas fa-trash-alt me-1"></i> Clear Cart
+                    <button type="button" class="cart-clear-btn" id="cartClearBtn" onclick="clearCart()"
+                        style="display:none;" aria-label="Clear all items from cart">
+                        <span class="cart-clear-icon"><i class="fas fa-trash-alt"></i></span>
+                        <span>Clear Cart</span>
                     </button>
                 </div>
             </div>
@@ -252,12 +253,23 @@
                     <!-- Pinned Footer Action Bar -->
                     <div class="cart-footer-action-bar mt-3 pt-3">
                         <!-- Payment Method Selector -->
-                        <div class="payment-method-selector mb-3" style="display: flex; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 4px;">
-                            <button id="payMethodMomo" type="button" class="btn flex-fill active" style="border-radius: 6px; font-weight: bold; font-size: 0.85rem; padding: 8px 0; background: #00d2d3; color: #1e293b; border: none; transition: 0.3s;" onclick="setPaymentMethod('MoMo')">
-                                <i class="fas fa-mobile-alt me-1"></i> MoMo Pay
+                        <div class="payment-method-label">Payment Method</div>
+                        <div class="payment-method-selector" role="radiogroup" aria-label="Payment method">
+                            <button id="payMethodMomo" type="button" class="pay-option active" role="radio" aria-checked="true" onclick="setPaymentMethod('MoMo')">
+                                <span class="pay-option-icon"><i class="fas fa-mobile-alt"></i></span>
+                                <span class="pay-option-text">
+                                    <span class="pay-option-title">MoMo Pay</span>
+                                    <span class="pay-option-hint">Pay now</span>
+                                </span>
+                                <i class="fas fa-check-circle pay-option-check"></i>
                             </button>
-                            <button id="payMethodCOD" type="button" class="btn flex-fill" style="border-radius: 6px; font-weight: bold; font-size: 0.85rem; padding: 8px 0; background: transparent; color: #94a3b8; border: none; transition: 0.3s;" onclick="setPaymentMethod('COD')">
-                                <i class="fas fa-hand-holding-usd me-1"></i> Cash on Delivery
+                            <button id="payMethodCOD" type="button" class="pay-option" role="radio" aria-checked="false" onclick="setPaymentMethod('COD')">
+                                <span class="pay-option-icon"><i class="fas fa-hand-holding-usd"></i></span>
+                                <span class="pay-option-text">
+                                    <span class="pay-option-title">Cash</span>
+                                    <span class="pay-option-hint">On delivery</span>
+                                </span>
+                                <i class="fas fa-check-circle pay-option-check"></i>
                             </button>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -315,16 +327,16 @@
                     All
                 </button>
                 <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('pending', this)">
-                    <span class="status-pill-dot" style="background:#ffa502;"></span> Pending
+                    <span class="status-pill-dot" style="background:var(--status-pending);"></span> Pending
                 </button>
                 <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('preparing', this)">
-                    <span class="status-pill-dot" style="background:#00d2d3;"></span> Preparing
+                    <span class="status-pill-dot" style="background:var(--status-preparing);"></span> Preparing
                 </button>
                 <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('delivery', this)">
-                    <span class="status-pill-dot" style="background:#ff5e57;"></span> On Delivery
+                    <span class="status-pill-dot" style="background:var(--status-delivery);"></span> On Delivery
                 </button>
                 <button type="button" class="status-pill-btn" onclick="filterOrderHistoryTab('completed', this)">
-                    <span class="status-pill-dot" style="background:#2ed573;"></span> Completed
+                    <span class="status-pill-dot" style="background:var(--status-completed);"></span> Completed
                 </button>
             </div>
 
@@ -787,9 +799,6 @@
                         <span class="badge" style="background-color: #f8f6f2; color: #2d4a60; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">Popular</span>
                     </div>
                     
-                    <!-- Momo Pay Indicator -->
-                    <div class="momo-pay-indicator-box mb-3 d-none">
-                    </div>
 
                     <!-- Add to Cart Button -->
                     <button type="button" class="btn w-100 py-3 rounded-3 fw-bold shadow-sm text-white" id="modalAddToCartBtn" onclick="confirmModalAddToCart()" style="background-color: #c0392b; border: none; font-size: 1.1rem; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
@@ -810,7 +819,7 @@
                     <h3 id="trackingOrderCodeText" style="font-size: 1.15rem; color:#fff; font-weight:700;">Order
                         #FC-0000</h3>
                     <span id="trackingStatusBadgePill" class="order-status-badge mt-1" style="font-size:0.75rem;">
-                        <span class="status-pill-dot" style="background:#ffa502;"></span> Order Received
+                        <span class="status-pill-dot" style="background:var(--status-pending);"></span> Order Received
                     </span>
                     <span id="trackingPaymentStatusBadge" class="order-status-badge mt-1" style="font-size:0.75rem; margin-left: 5px;">
                     </span>
@@ -907,8 +916,8 @@
                 </div>
             </div>
             
-            <div style="padding:15px; background:#f1f5f9;">
-                <button type="button" class="btn btn-dark w-100 py-3" style="font-weight:700; border-radius:10px;" onclick="downloadReceipt()">
+            <div style="padding:15px; background:#f1f5f9; text-align: center;">
+                <button type="button" onclick="downloadReceipt()" style="font-size: 0.95rem; padding: 12px 20px; border-radius: 12px; display: inline-block; background-color: rgb(16, 185, 129); color: rgb(255, 255, 255); border: none; font-weight: 700; width: 100%; cursor: pointer;">
                     <i class="fas fa-download"></i> Download E-Receipt
                 </button>
             </div>
