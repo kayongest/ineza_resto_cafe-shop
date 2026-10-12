@@ -2794,7 +2794,8 @@ function filterUsersTable() {
                         <td><span class="badge bg-dark font-monospace">${s.email || ('STAFF-' + s.id)}</span></td>
                         <td>
                             <div class="fw-bold text-dark">${s.full_name || s.name}</div>
-                            <div class="small text-muted">${s.phone || 'N/A'}</div>
+                            <div class="small text-muted"><i class="fas fa-phone-alt me-1 text-success"></i>${s.phone || 'N/A'}</div>
+                            ${s.address ? `<div class="small text-muted"><i class="fas fa-map-marker-alt me-1 text-danger"></i>${s.address}</div>` : ''}
                         </td>
                         <td><span class="badge ${roleBadgeClass} px-2 py-1 font-monospace">${roleName}</span></td>
                         <td><span class="small text-muted fw-bold">${permissionsDesc}</span></td>
@@ -2958,6 +2959,25 @@ function openAddStaffModal() {
     }
 }
 
+function openAddStaffModal() {
+    var form = document.getElementById('staffForm');
+    if (form) form.reset();
+    var idInput = document.getElementById('staffId');
+    if (idInput) idInput.value = '';
+    var addrInput = document.getElementById('staffAddress');
+    if (addrInput) addrInput.value = '';
+
+    var title = document.getElementById('staffModalTitle');
+    if (title) title.innerHTML = '<i class="fas fa-user-shield me-2" style="color:var(--primary);"></i>Add Staff Member';
+
+    var modal = document.getElementById('staffModal');
+    if (modal) {
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+}
+window.openAddStaffModal = openAddStaffModal;
+
 function openEditStaffModal(id) {
     var s = adminStaffList.find(function(staff) { return staff.id === id; });
     if (!s) return;
@@ -2966,6 +2986,8 @@ function openEditStaffModal(id) {
     document.getElementById('staffName').value = s.full_name || s.name || '';
     document.getElementById('staffCode').value = s.email || s.code || '';
     document.getElementById('staffPhone').value = s.phone || '';
+    var addrEl = document.getElementById('staffAddress');
+    if (addrEl) addrEl.value = s.address || '';
     document.getElementById('staffRole').value = s.role || 'staff';
     document.getElementById('staffPass').value = '••••••••';
 
@@ -2992,6 +3014,7 @@ async function confirmSaveStaff(e) {
     var name = document.getElementById('staffName').value.trim();
     var email = document.getElementById('staffCode').value.trim();
     var phone = document.getElementById('staffPhone').value.trim();
+    var address = (document.getElementById('staffAddress') ? document.getElementById('staffAddress').value : '').trim();
     var role = document.getElementById('staffRole').value;
     var pass = document.getElementById('staffPass').value.trim();
 
@@ -3006,11 +3029,21 @@ async function confirmSaveStaff(e) {
 
     try {
         if (id) {
-            // Update role/perms via API
+            // Update role/perms/profile via API
             var res = await fetch('api/users.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'update_role', id: parseInt(id), role: role, permissions: perms })
+                body: JSON.stringify({
+                    action: 'update_staff',
+                    id: parseInt(id),
+                    full_name: name,
+                    email: email,
+                    phone: phone,
+                    address: address,
+                    role: role,
+                    permissions: perms,
+                    password: pass !== '••••••••' ? pass : ''
+                })
             });
             if (res.ok) {
                 var data = await res.json();
@@ -3026,7 +3059,16 @@ async function confirmSaveStaff(e) {
             var res = await fetch('api/users.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'create_staff', full_name: name, email: email, phone: phone, role: role, permissions: perms, password: pass })
+                body: JSON.stringify({
+                    action: 'create_staff',
+                    full_name: name,
+                    email: email,
+                    phone: phone,
+                    address: address,
+                    role: role,
+                    permissions: perms,
+                    password: pass
+                })
             });
             if (res.ok) {
                 var data = await res.json();
@@ -3049,6 +3091,7 @@ async function confirmSaveStaff(e) {
             s.full_name = name;
             s.email = email;
             s.phone = phone;
+            s.address = address;
             s.role = role;
             s.permissions = perms;
         }
@@ -3058,6 +3101,7 @@ async function confirmSaveStaff(e) {
             full_name: name,
             email: email,
             phone: phone,
+            address: address,
             role: role,
             permissions: perms,
             is_active: 1

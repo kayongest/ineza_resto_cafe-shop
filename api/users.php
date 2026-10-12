@@ -100,11 +100,12 @@ if ($action === 'list') {
         exit;
     }
 
+    $address = trim($data['address'] ?? '');
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
     try {
-        $stmt = $pdo->prepare("INSERT INTO users (full_name, email, phone, role, permissions, password_hash, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)");
-        $stmt->execute([$fullName, $email, $phone, $role, $permissions, $passwordHash]);
+        $stmt = $pdo->prepare("INSERT INTO users (full_name, email, phone, address, role, permissions, password_hash, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)");
+        $stmt->execute([$fullName, $email, $phone, $address, $role, $permissions, $passwordHash]);
         $newId = (int)$pdo->lastInsertId();
 
         echo json_encode([
@@ -115,6 +116,7 @@ if ($action === 'list') {
                 'full_name' => $fullName,
                 'email' => $email,
                 'phone' => $phone,
+                'address' => $address,
                 'role' => $role,
                 'permissions' => $permissions,
                 'is_active' => 1
@@ -258,28 +260,55 @@ if ($action === 'list') {
     }
     exit;
 
-} elseif ($action === 'update_role') {
+} elseif ($action === 'update_role' || $action === 'update_staff') {
     $userId = (int)($data['id'] ?? $data['user_id'] ?? 0);
     $newRole = trim($data['role'] ?? '');
     $permissions = isset($data['permissions']) ? trim($data['permissions']) : null;
+    $fullName = isset($data['full_name']) ? trim($data['full_name']) : (isset($data['name']) ? trim($data['name']) : null);
+    $email = isset($data['email']) ? strtolower(trim($data['email'])) : null;
+    $phone = isset($data['phone']) ? trim($data['phone']) : null;
+    $address = isset($data['address']) ? trim($data['address']) : null;
+    $password = isset($data['password']) ? trim($data['password']) : '';
 
-    if ($userId <= 0 || empty($newRole)) {
-        echo json_encode(['status' => 'error', 'message' => 'User ID and Role are required.']);
+    if ($userId <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Valid Staff User ID is required.']);
         exit;
     }
 
+    // Check duplicate email or phone if provided
+    if (!empty($email) || !empty($phone)) {
+        $chk = $pdo->prepare("SELECT id FROM users WHERE (email = ? OR (phone IS NOT NULL AND phone != '' AND phone = ?)) AND id != ? LIMIT 1");
+        $chk->execute([$email ?? '', $phone ?? '', $userId]);
+        if ($chk->fetch()) {
+            echo json_encode(['status' => 'error', 'message' => 'Another account is already using this email or phone number.']);
+            exit;
+        }
+    }
+
     try {
-        if ($permissions !== null) {
-            $stmt = $pdo->prepare("UPDATE users SET role = ?, permissions = ? WHERE id = ?");
-            $stmt->execute([$newRole, $permissions, $userId]);
-        } else {
-            $stmt = $pdo->prepare("UPDATE users SET role = ? WHERE id = ?");
-            $stmt->execute([$newRole, $userId]);
+        $fields = [];
+        $params = [];
+
+        if (!empty($newRole)) { $fields[] = "role = ?"; $params[] = $newRole; }
+        if ($permissions !== null) { $fields[] = "permissions = ?"; $params[] = $permissions; }
+        if ($fullName !== null) { $fields[] = "full_name = ?"; $params[] = $fullName; }
+        if ($email !== null) { $fields[] = "email = ?"; $params[] = $email; }
+        if ($phone !== null) { $fields[] = "phone = ?"; $params[] = $phone; }
+        if ($address !== null) { $fields[] = "address = ?"; $params[] = $address; }
+        if (!empty($password) && $password !== '••••••••') {
+            $fields[] = "password_hash = ?";
+            $params[] = password_hash($password, PASSWORD_BCRYPT);
+        }
+
+        if (!empty($fields)) {
+            $params[] = $userId;
+            $stmt = $pdo->prepare("UPDATE users SET " . implode(", ", $fields) . " WHERE id = ?");
+            $stmt->execute($params);
         }
 
         echo json_encode([
             'status' => 'success',
-            'message' => "User role updated to '$newRole' successfully!"
+            'message' => "Staff profile updated successfully!"
         ]);
     } catch (PDOException $e) {
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
