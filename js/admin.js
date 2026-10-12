@@ -4725,10 +4725,16 @@ function renderAnalyticsDashboard() {
     // 3. Render Fulfilment Breakdown (Dine-in vs Delivery)
     renderAnalyticsFulfilmentBreakdown(orders);
 
-    // 4. Render Top Dishes Leaderboard
+    // 4. Render Registered Loyalty vs Guest Customers Donut Chart
+    renderCustomerTypeDonut(orders);
+
+    // 5. Render Interactive Kigali Customer Location Map & Neighborhoods
+    renderAnalyticsCustomerMap(orders);
+
+    // 6. Render Top Dishes Leaderboard
     renderAnalyticsTopDishes(orders);
 
-    // 5. Render Audit Trail Table
+    // 7. Render Audit Trail Table
     renderAnalyticsAuditTable();
 }
 window.renderAnalyticsDashboard = renderAnalyticsDashboard;
@@ -4830,6 +4836,281 @@ function renderAnalyticsFulfilmentBreakdown(orders) {
 
     listEl.innerHTML = html;
 }
+
+// ============================================================
+// 1. REGISTERED VS GUEST CUSTOMERS DONUT CHART
+// ============================================================
+function renderCustomerTypeDonut(orders) {
+    var container = document.getElementById('analyticsCustomerDonutChart');
+    if (!container) return;
+
+    var registeredList = adminCustomerLoyaltyList || [];
+    var regPhones = new Set();
+    var regEmails = new Set();
+    var regNames = new Set();
+
+    registeredList.forEach(function(c) {
+        if (c.phone) regPhones.add(c.phone.replace(/[^0-9]/g, ''));
+        if (c.email) regEmails.add(c.email.trim().toLowerCase());
+        if (c.name || c.full_name) regNames.add((c.name || c.full_name).trim().toLowerCase());
+    });
+
+    var regCount = 0;
+    var regRevenue = 0;
+    var guestCount = 0;
+    var guestRevenue = 0;
+
+    orders.forEach(function(o) {
+        var tot = parseFloat(o.total) || 0;
+        var pClean = (o.phone || '').replace(/[^0-9]/g, '');
+        var nClean = (o.customerName || '').trim().toLowerCase();
+
+        var isReg = false;
+        if (pClean && regPhones.has(pClean)) isReg = true;
+        else if (nClean && regNames.has(nClean) && nClean !== 'guest' && nClean !== 'guest customer') isReg = true;
+        else if (o.customerId || o.customer_id || o.userId || o.user_id) isReg = true;
+
+        if (isReg) {
+            regCount++;
+            regRevenue += tot;
+        } else {
+            guestCount++;
+            guestRevenue += tot;
+        }
+    });
+
+    var totalCount = regCount + guestCount;
+    var totalRev = regRevenue + guestRevenue;
+
+    var regPct = totalCount > 0 ? Math.round((regCount / totalCount) * 100) : 0;
+    var guestPct = totalCount > 0 ? (100 - regPct) : 0;
+
+    var regAov = regCount > 0 ? Math.round(regRevenue / regCount) : 0;
+    var guestAov = guestCount > 0 ? Math.round(guestRevenue / guestCount) : 0;
+
+    // Update ratio badge & counters
+    var ratioBadge = document.getElementById('analyticsCustomerTotalRatioBadge');
+    if (ratioBadge) ratioBadge.textContent = totalCount + ' Orders';
+
+    var elRegCount = document.getElementById('donutRegCount');
+    if (elRegCount) elRegCount.textContent = regCount;
+
+    var elRegPct = document.getElementById('donutRegPercent');
+    if (elRegPct) elRegPct.textContent = regPct + '% (' + formatRWF(regRevenue) + ')';
+
+    var elGuestCount = document.getElementById('donutGuestCount');
+    if (elGuestCount) elGuestCount.textContent = guestCount;
+
+    var elGuestPct = document.getElementById('donutGuestPercent');
+    if (elGuestPct) elGuestPct.textContent = guestPct + '% (' + formatRWF(guestRevenue) + ')';
+
+    var elAov = document.getElementById('donutAovComparison');
+    if (elAov) elAov.innerHTML = `Avg Ticket: <strong>${formatRWF(regAov)}</strong> (Registered) vs <strong>${formatRWF(guestAov)}</strong> (Guest)`;
+
+    // SVG Donut Rendering
+    // Circumference = 2 * PI * r = 2 * 3.14159 * 54 = ~339.292
+    var radius = 54;
+    var circ = 2 * Math.PI * radius;
+    var regDash = (regPct / 100) * circ;
+    var guestDash = circ - regDash;
+    var regColor = '#7c3aed'; // Purple
+    var guestColor = '#0ea5e9'; // Sky Blue
+
+    var svgHtml = `
+        <svg width="170" height="170" viewBox="0 0 140 140" style="transform: rotate(-90deg);">
+            <!-- Background base circle -->
+            <circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="#f1f5f9" stroke-width="18" />
+            <!-- Guest segment -->
+            <circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="${guestColor}" stroke-width="18"
+                stroke-dasharray="${circ}" stroke-dashoffset="0" />
+            <!-- Registered segment -->
+            <circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="${regColor}" stroke-width="18"
+                stroke-dasharray="${regDash} ${circ}" stroke-dashoffset="0" stroke-linecap="round" />
+        </svg>
+        <!-- Center Hole Metric -->
+        <div class="position-absolute d-flex flex-column align-items-center justify-content-center text-center" style="pointer-events:none;">
+            <span class="fw-bold fs-4 text-dark mb-0 lh-1">${regPct}%</span>
+            <small class="text-muted fw-bold text-uppercase" style="font-size:0.65rem; letter-spacing:0.5px;">Registered</small>
+        </div>
+    `;
+
+    container.innerHTML = svgHtml;
+}
+window.renderCustomerTypeDonut = renderCustomerTypeDonut;
+
+// ============================================================
+// 2. INTERACTIVE KIGALI CUSTOMER LOCATION MAP (LEAFLET.JS)
+// ============================================================
+var analyticsLeafletMap = null;
+var analyticsMapMarkersGroup = null;
+
+// Kigali Neighborhood Coordinates & Fallbacks
+var KIGALI_NEIGHBORHOODS = {
+    'kimironko': { name: 'Kimironko', lat: -1.9365, lng: 30.1302 },
+    'remera': { name: 'Remera', lat: -1.9567, lng: 30.1133 },
+    'kacyiru': { name: 'Kacyiru', lat: -1.9351, lng: 30.0821 },
+    'nyarutarama': { name: 'Nyarutarama', lat: -1.9388, lng: 30.0995 },
+    'kiyovu': { name: 'Kiyovu', lat: -1.9536, lng: 30.0605 },
+    'gisozi': { name: 'Gisozi', lat: -1.9217, lng: 30.0712 },
+    'kicukiro': { name: 'Kicukiro', lat: -1.9774, lng: 30.1017 },
+    'kanombe': { name: 'Kanombe', lat: -1.9688, lng: 30.1472 },
+    'gikondo': { name: 'Gikondo', lat: -1.9723, lng: 30.0768 },
+    'nyamirambo': { name: 'Nyamirambo', lat: -1.9765, lng: 30.0489 },
+    'kagugu': { name: 'Kagugu', lat: -1.9054, lng: 30.0792 },
+    'kibagabaga': { name: 'Kibagabaga', lat: -1.9287, lng: 30.1165 },
+    'muhima': { name: 'Muhima', lat: -1.9442, lng: 30.0542 }
+};
+
+function resolveOrderCoordinates(address) {
+    var text = (address || '').toLowerCase();
+    for (var key in KIGALI_NEIGHBORHOODS) {
+        if (text.includes(key)) {
+            var base = KIGALI_NEIGHBORHOODS[key];
+            // Add a small jitter so multiple orders in the same sector don't overlap directly
+            var jitterLat = (Math.random() - 0.5) * 0.007;
+            var jitterLng = (Math.random() - 0.5) * 0.007;
+            return {
+                zone: base.name,
+                lat: base.lat + jitterLat,
+                lng: base.lng + jitterLng
+            };
+        }
+    }
+
+    // Default to Kimironko HQ area with spread
+    var jitterLat = (Math.random() - 0.5) * 0.012;
+    var jitterLng = (Math.random() - 0.5) * 0.012;
+    return {
+        zone: 'Kimironko / Urban Kigali',
+        lat: -1.9365 + jitterLat,
+        lng: 30.1302 + jitterLng
+    };
+}
+
+function renderAnalyticsCustomerMap(orders) {
+    var mapContainer = document.getElementById('analyticsCustomerMap');
+    if (!mapContainer || typeof L === 'undefined') return;
+
+    // Initialize Map Instance once
+    if (!analyticsLeafletMap) {
+        analyticsLeafletMap = L.map('analyticsCustomerMap', {
+            center: [-1.9365, 30.1302], // Kimironko HQ
+            zoom: 13,
+            scrollWheelZoom: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors | INEZA RESTO',
+            maxZoom: 18
+        }).addTo(analyticsLeafletMap);
+
+        analyticsMapMarkersGroup = L.layerGroup().addTo(analyticsLeafletMap);
+
+        // Invalidate size on tab activation
+        setTimeout(function() {
+            if (analyticsLeafletMap) analyticsLeafletMap.invalidateSize();
+        }, 300);
+    } else {
+        analyticsMapMarkersGroup.clearLayers();
+        setTimeout(function() {
+            if (analyticsLeafletMap) analyticsLeafletMap.invalidateSize();
+        }, 100);
+    }
+
+    // Filter to delivery orders with address
+    var deliveryOrders = orders.filter(function(o) {
+        return (o.serviceType || o.service_type || '').toLowerCase().includes('deliv') || (o.address && o.address.trim().length > 3);
+    });
+
+    var zoneStats = {};
+    var bounds = [];
+
+    // Add Ineza Resto & Cafe Shop HQ marker
+    var hqIcon = L.divIcon({
+        className: 'custom-hq-pin',
+        html: `<div style="background:#27ae60; color:#fff; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,0.35); border:2px solid #fff;"><i class="fas fa-mug-hot" style="font-size:16px;"></i></div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+    });
+
+    var hqMarker = L.marker([-1.9365, 30.1302], { icon: hqIcon }).addTo(analyticsMapMarkersGroup);
+    hqMarker.bindPopup(`
+        <div style="font-size:12px; font-family:sans-serif; text-align:center; padding:2px;">
+            <strong style="color:#27ae60; font-size:13px;">INEZA RESTO &amp; COFFEE SHOP</strong><br/>
+            <span>Central Kitchen &amp; Store HQ</span><br/>
+            <small class="text-muted">108 Kimironko St, Kigali</small>
+        </div>
+    `);
+    bounds.push([-1.9365, 30.1302]);
+
+    deliveryOrders.forEach(function(o) {
+        var geo = resolveOrderCoordinates(o.address);
+        bounds.push([geo.lat, geo.lng]);
+
+        zoneStats[geo.zone] = (zoneStats[geo.zone] || 0) + 1;
+
+        var isDelivered = (o.status || '').toLowerCase().includes('deliv') || (o.status || '').toLowerCase().includes('clos');
+        var pinColor = isDelivered ? '#2563eb' : '#f59e0b';
+
+        var orderIcon = L.divIcon({
+            className: 'custom-order-pin',
+            html: `<div style="background:${pinColor}; color:#fff; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.25); border:2px solid #fff;"><i class="fas fa-motorcycle" style="font-size:11px;"></i></div>`,
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        });
+
+        var marker = L.marker([geo.lat, geo.lng], { icon: orderIcon }).addTo(analyticsMapMarkersGroup);
+        marker.bindPopup(`
+            <div style="font-size:12px; font-family:sans-serif; min-width:180px; padding:2px;">
+                <div style="font-weight:bold; color:#1e293b; font-size:13px; border-bottom:1px solid #e2e8f0; padding-bottom:4px; margin-bottom:4px;">
+                    Order #${o.id}
+                </div>
+                <div><strong>Customer:</strong> ${o.customerName || 'Guest'}</div>
+                <div><strong>Phone:</strong> ${o.phone || 'N/A'}</div>
+                <div><strong>Address:</strong> ${o.address || 'Kigali'}</div>
+                <div><strong>Total:</strong> <span style="color:#2563eb; font-weight:bold;">${formatRWF(o.total)}</span></div>
+                <div><strong>Status:</strong> <span class="badge bg-dark" style="font-size:10px;">${o.status}</span></div>
+            </div>
+        `);
+    });
+
+    // Update pins badge
+    var pinBadge = document.getElementById('mapOrderPinsCount');
+    if (pinBadge) pinBadge.textContent = deliveryOrders.length + ' Delivery Orders';
+
+    // Populate Top Neighborhood Pills
+    var pillsContainer = document.getElementById('mapNeighborhoodPills');
+    var summaryText = document.getElementById('mapTopNeighborhoodSummary');
+
+    if (pillsContainer) {
+        var sortedZones = Object.keys(zoneStats).sort(function(a, b) { return zoneStats[b] - zoneStats[a]; });
+        if (sortedZones.length === 0) {
+            pillsContainer.innerHTML = '<span class="small text-muted">No delivery address records found in this range.</span>';
+            if (summaryText) summaryText.textContent = '0 delivery zones';
+        } else {
+            var pillsHtml = sortedZones.slice(0, 6).map(function(z) {
+                var count = zoneStats[z];
+                return `<span class="badge bg-light text-dark border px-2 py-1"><i class="fas fa-map-marker-alt text-danger me-1"></i>${z} <strong class="text-primary ms-1">(${count})</strong></span>`;
+            }).join(' ');
+
+            pillsContainer.innerHTML = pillsHtml;
+            if (summaryText) summaryText.textContent = `${sortedZones.length} active delivery zones across Kigali`;
+        }
+    }
+
+    // Fit map bounds if points exist
+    if (bounds.length > 1 && analyticsLeafletMap) {
+        analyticsLeafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+    }
+}
+window.renderAnalyticsCustomerMap = renderAnalyticsCustomerMap;
+
+function recenterAnalyticsMap() {
+    if (analyticsLeafletMap) {
+        analyticsLeafletMap.setView([-1.9365, 30.1302], 13);
+    }
+}
+window.recenterAnalyticsMap = recenterAnalyticsMap;
 
 function renderAnalyticsTopDishes(orders) {
     var tbody = document.getElementById('analyticsTopDishesTbody');

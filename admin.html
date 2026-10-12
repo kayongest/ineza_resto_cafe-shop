@@ -76,6 +76,7 @@
    <link rel="stylesheet" href="css/style.css" />
    <link rel="stylesheet" href="css/admin.css" />
    <link rel="stylesheet" href="css/theme.css?v=1.0" />
+   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
    <link rel="manifest" href="manifest.json">
 
    <!-- Synchronous Theme Initializer (prevents FOUC) -->
@@ -1159,6 +1160,91 @@
                </div>
             </div>
 
+            <!-- CUSTOMER SEGMENTATION DONUT & LIVE LOCATION MAP ROW -->
+            <div class="row g-4 mb-4">
+               <!-- 1. Registered Loyalty vs Guest Customers Donut Chart Card -->
+               <div class="col-lg-5">
+                  <div class="admin-card h-100 shadow-sm d-flex flex-column">
+                     <div class="admin-card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-users me-2" style="color:var(--primary);"></i>Registered vs. Guest Customers</h5>
+                        <span class="badge bg-light text-dark border" id="analyticsCustomerTotalRatioBadge">0 Total</span>
+                     </div>
+                     <div class="p-3 flex-grow-1 d-flex flex-column justify-content-between">
+                        <!-- Donut SVG & Central Metric -->
+                        <div class="d-flex align-items-center justify-content-center my-2 position-relative" style="min-height:190px;">
+                           <div id="analyticsCustomerDonutChart" class="position-relative d-flex align-items-center justify-content-center">
+                              <!-- Dynamic SVG Donut Rendered Here -->
+                           </div>
+                        </div>
+
+                        <!-- Segment Details Breakdown -->
+                        <div class="border-top pt-3 mt-2">
+                           <div class="row g-2 text-center">
+                              <div class="col-6">
+                                 <div class="p-2 rounded bg-light border">
+                                    <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+                                       <span class="badge rounded-circle p-1" style="background:#7c3aed;"> </span>
+                                       <span class="small fw-bold text-dark">Registered</span>
+                                    </div>
+                                    <h5 class="fw-bold mb-0 text-dark" id="donutRegCount">0</h5>
+                                    <small class="text-muted d-block" id="donutRegPercent">0% (0 RWF)</small>
+                                    <span class="badge text-white px-2 py-0 mt-1" style="font-size:0.68rem; background:#7c3aed;">Loyalty VIPs</span>
+                                 </div>
+                              </div>
+                              <div class="col-6">
+                                 <div class="p-2 rounded bg-light border">
+                                    <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+                                       <span class="badge rounded-circle p-1" style="background:#0ea5e9;"> </span>
+                                       <span class="small fw-bold text-dark">Guest Checkouts</span>
+                                    </div>
+                                    <h5 class="fw-bold mb-0 text-dark" id="donutGuestCount">0</h5>
+                                    <small class="text-muted d-block" id="donutGuestPercent">0% (0 RWF)</small>
+                                    <span class="badge bg-info text-dark px-2 py-0 mt-1" style="font-size:0.68rem;">First-Time / Walk-in</span>
+                                 </div>
+                              </div>
+                           </div>
+                           <div class="mt-2 text-center small text-muted" id="donutAovComparison">
+                              Avg Spend: Registered 0 RWF vs Guest 0 RWF
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- 2. Live Kigali Customer Orders Geographic Dispatch Map -->
+               <div class="col-lg-7">
+                  <div class="admin-card h-100 shadow-sm d-flex flex-column">
+                     <div class="admin-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                           <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2 text-danger"></i>Customer Orders Location Map</h5>
+                           <span class="small text-muted">Geographic tracking of customer delivery orders across Kigali</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                           <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" id="mapOrderPinsCount">0 Active Pins</span>
+                           <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" onclick="recenterAnalyticsMap()" title="Recenter to Kimironko HQ">
+                              <i class="fas fa-crosshairs"></i> HQ
+                           </button>
+                        </div>
+                     </div>
+                     <div class="p-3 flex-grow-1 d-flex flex-column">
+                        <!-- Map Container with rounded corners -->
+                        <div id="analyticsCustomerMap" style="height: 280px; width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; z-index: 1;"></div>
+                        
+                        <!-- Kigali Neighborhood Distribution Bar -->
+                        <div class="mt-3 pt-2 border-top">
+                           <div class="d-flex justify-content-between align-items-center mb-1">
+                              <span class="small fw-bold text-dark"><i class="fas fa-chart-pie me-1 text-primary"></i>Top Kigali Delivery Neighborhoods:</span>
+                              <small class="text-muted" id="mapTopNeighborhoodSummary">Analyzing zones...</small>
+                           </div>
+                           <div class="d-flex flex-wrap gap-1" id="mapNeighborhoodPills">
+                              <!-- Neighborhood badges dynamically populated -->
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
             <!-- TOP DISHES LEADERBOARD ROW -->
             <div class="row g-4 mb-4">
                <div class="col-lg-12">
@@ -2227,7 +2313,8 @@
    <!-- Scripts -->
    <script src="js/jquery-3.7.1.min.js"></script>
    <script src="js/bootstrap.bundle.min.js"></script>
-   <script src="js/admin.js?v=7.1"></script>
+   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+   <script src="js/admin.js?v=7.2"></script>
 </body>
 
 </html>
