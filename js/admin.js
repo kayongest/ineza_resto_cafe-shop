@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initResponsiveSidebar();
     initSearchAndFilter();
     initCartAdminSettings();
+    initStoreSettings();
 
     console.log('%c[INEZA RESTO Platform] Live Admin Management System Active', 'color: #27ae60; font-weight: bold; font-size: 14px;');
 });
@@ -4242,3 +4243,168 @@ function saveCartAdminSettings() {
     }
 }
 window.saveCartAdminSettings = saveCartAdminSettings;
+
+/* ============================================================
+   SUPERADMIN STORE & BRAND CONFIGURATION ENGINE (FULL CRUD)
+   ============================================================ */
+var currentStoreSettings = {
+    store_name: 'INEZA RESTO & COFFEE SHOP',
+    store_location: '108 Kimironko St, Kigali - Rwanda',
+    store_phone: '+250 788 000 000',
+    store_tin: '102938475',
+    momo_code: '004587',
+    momo_name: 'INEZA Resto & Cafe Shop',
+    delivery_fee: '1000',
+    currency: 'RWF',
+    vat_percent: '18',
+    opening_hours: 'Mon - Sun: 07:00 AM - 11:00 PM'
+};
+
+async function initStoreSettings() {
+    // 1. Try loading cached settings first
+    try {
+        var cached = localStorage.getItem('ineza_store_settings');
+        if (cached) {
+            var parsed = JSON.parse(cached);
+            currentStoreSettings = Object.assign({}, currentStoreSettings, parsed);
+            populateStoreSettingsForm(currentStoreSettings);
+            applyStoreSettingsToUI(currentStoreSettings);
+        }
+    } catch (e) {}
+
+    // 2. Fetch fresh from MySQL API
+    try {
+        var res = await fetch('api/settings.php?action=get');
+        if (res.ok) {
+            var data = await res.json();
+            if (data && data.status === 'success' && data.settings) {
+                currentStoreSettings = Object.assign({}, currentStoreSettings, data.settings);
+                localStorage.setItem('ineza_store_settings', JSON.stringify(currentStoreSettings));
+                populateStoreSettingsForm(currentStoreSettings);
+                applyStoreSettingsToUI(currentStoreSettings);
+            }
+        }
+    } catch (err) {
+        console.warn('[Store Settings API] Network error, utilizing cached defaults', err);
+    }
+}
+window.initStoreSettings = initStoreSettings;
+
+function populateStoreSettingsForm(settings) {
+    if (!settings) return;
+    var nameEl = document.getElementById('settingStoreName');
+    var locEl = document.getElementById('settingStoreLocation');
+    var phoneEl = document.getElementById('settingStorePhone');
+    var tinEl = document.getElementById('settingStoreTin');
+    var hoursEl = document.getElementById('settingOpeningHours');
+    var momoCodeEl = document.getElementById('settingMomoCode');
+    var momoNameEl = document.getElementById('settingMomoName');
+    var feeEl = document.getElementById('settingDeliveryFee');
+    var vatEl = document.getElementById('settingVatPercent');
+    var currEl = document.getElementById('settingCurrency');
+
+    if (nameEl) nameEl.value = settings.store_name || 'INEZA RESTO & COFFEE SHOP';
+    if (locEl) locEl.value = settings.store_location || '108 Kimironko St, Kigali - Rwanda';
+    if (phoneEl) phoneEl.value = settings.store_phone || '+250 788 000 000';
+    if (tinEl) tinEl.value = settings.store_tin || '102938475';
+    if (hoursEl) hoursEl.value = settings.opening_hours || 'Mon - Sun: 07:00 AM - 11:00 PM';
+    if (momoCodeEl) momoCodeEl.value = settings.momo_code || '004587';
+    if (momoNameEl) momoNameEl.value = settings.momo_name || 'INEZA Resto & Cafe Shop';
+    if (feeEl) feeEl.value = settings.delivery_fee || '1000';
+    if (vatEl) vatEl.value = settings.vat_percent || '18';
+    if (currEl) currEl.value = settings.currency || 'RWF';
+}
+window.populateStoreSettingsForm = populateStoreSettingsForm;
+
+function applyStoreSettingsToUI(settings) {
+    if (!settings) return;
+
+    // 1. Update Thermal Receipt Header in Admin Receipt Modal
+    var receiptLocEl = document.querySelector('#printableReceiptArea .fa-map-marker-alt');
+    if (receiptLocEl && receiptLocEl.parentElement) {
+        receiptLocEl.parentElement.innerHTML = `<i class="fas fa-map-marker-alt me-1" style="color:#aa7262;"></i>${settings.store_location}`;
+    }
+
+    var receiptPhoneTinEl = document.querySelector('#printableReceiptArea .fa-phone');
+    if (receiptPhoneTinEl && receiptPhoneTinEl.parentElement) {
+        receiptPhoneTinEl.parentElement.innerHTML = `<i class="fas fa-phone me-1" style="color:#aa7262;"></i>TEL: ${settings.store_phone} | TIN: ${settings.store_tin}`;
+    }
+
+    var receiptVatEl = document.querySelector('#printableReceiptArea span:contains("VAT")') || document.querySelector('#printableReceiptArea');
+    // If VAT label exists, keep 18% or configured percent
+    var vatLine = document.getElementById('receiptVatLine');
+    if (vatLine) {
+        vatLine.textContent = `VAT (${settings.vat_percent}% Included):`;
+    }
+}
+window.applyStoreSettingsToUI = applyStoreSettingsToUI;
+
+function resetStoreSettingsForm() {
+    populateStoreSettingsForm(currentStoreSettings);
+    if (typeof showToast === 'function') {
+        showToast('Store settings form reset to current values.', 'info');
+    }
+}
+window.resetStoreSettingsForm = resetStoreSettingsForm;
+
+async function saveStoreSettingsForm() {
+    var nameEl = document.getElementById('settingStoreName');
+    var locEl = document.getElementById('settingStoreLocation');
+    var phoneEl = document.getElementById('settingStorePhone');
+    var tinEl = document.getElementById('settingStoreTin');
+    var hoursEl = document.getElementById('settingOpeningHours');
+    var momoCodeEl = document.getElementById('settingMomoCode');
+    var momoNameEl = document.getElementById('settingMomoName');
+    var feeEl = document.getElementById('settingDeliveryFee');
+    var vatEl = document.getElementById('settingVatPercent');
+    var currEl = document.getElementById('settingCurrency');
+
+    var updated = {
+        store_name: (nameEl ? nameEl.value : '').trim() || 'INEZA RESTO & COFFEE SHOP',
+        store_location: (locEl ? locEl.value : '').trim() || '108 Kimironko St, Kigali - Rwanda',
+        store_phone: (phoneEl ? phoneEl.value : '').trim() || '+250 788 000 000',
+        store_tin: (tinEl ? tinEl.value : '').trim() || '102938475',
+        opening_hours: (hoursEl ? hoursEl.value : '').trim() || 'Mon - Sun: 07:00 AM - 11:00 PM',
+        momo_code: (momoCodeEl ? momoCodeEl.value : '').trim() || '004587',
+        momo_name: (momoNameEl ? momoNameEl.value : '').trim() || 'INEZA Resto & Cafe Shop',
+        delivery_fee: (feeEl ? feeEl.value : '').trim() || '1000',
+        vat_percent: (vatEl ? vatEl.value : '').trim() || '18',
+        currency: (currEl ? currEl.value : '').trim() || 'RWF'
+    };
+
+    // Update in-memory and local storage immediately
+    currentStoreSettings = Object.assign({}, currentStoreSettings, updated);
+    localStorage.setItem('ineza_store_settings', JSON.stringify(currentStoreSettings));
+    applyStoreSettingsToUI(currentStoreSettings);
+
+    // Broadcast across windows (customer app, mobile PWA, kiosk)
+    try {
+        var chan = new BroadcastChannel('favcafe_settings_channel');
+        chan.postMessage({ type: 'store_settings_updated', settings: currentStoreSettings });
+    } catch (e) {}
+
+    // Persist to MySQL
+    try {
+        var res = await fetch('api/settings.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'update', settings: updated })
+        });
+        if (res.ok) {
+            var data = await res.json();
+            if (data && data.status === 'success') {
+                if (typeof showToast === 'function') {
+                    showToast('Store configuration saved to database & synchronized system-wide!', 'success', 'SuperAdmin Configuration');
+                }
+                return;
+            }
+        }
+    } catch (err) {
+        console.warn('[Store Settings Save] Network error, saved locally', err);
+    }
+
+    if (typeof showToast === 'function') {
+        showToast('Configuration updated in local cache.', 'info', 'Saved Locally');
+    }
+}
+window.saveStoreSettingsForm = saveStoreSettingsForm;

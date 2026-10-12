@@ -1112,28 +1112,112 @@
                </div>
             </div>
 
-            <!-- RESTAURANT STORE OPERATIONAL DEFAULTS -->
+            <!-- RESTAURANT STORE OPERATIONAL PROFILE (SUPERADMIN CRUD) -->
             <div class="admin-card shadow-sm">
-               <div class="mb-3 pb-2 border-bottom">
-                  <h5 class="fw-bold mb-1 text-dark">
-                     <i class="fas fa-store me-2 text-primary"></i>Store Operational Defaults
-                  </h5>
-                  <p class="text-muted small mb-0">Standard restaurant operational information and defaults.</p>
-               </div>
-               <div class="row g-3">
-                  <div class="col-md-4">
-                     <label class="form-label small fw-bold text-muted">Standard Delivery Fee</label>
-                     <input type="text" class="form-control" value="1,000 RWF" readonly>
+               <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
+                  <div>
+                     <h5 class="fw-bold mb-1 text-dark">
+                        <i class="fas fa-store-alt me-2 text-primary"></i>SuperAdmin Store &amp; Brand Configuration
+                     </h5>
+                     <p class="text-muted small mb-0">Manage business details, store location, official contact, RRA EBM TIN, MoMo merchant codes, and tax rates.</p>
                   </div>
-                  <div class="col-md-4">
-                     <label class="form-label small fw-bold text-muted">Default Currency</label>
-                     <input type="text" class="form-control" value="RWF (Rwandan Franc)" readonly>
-                  </div>
-                  <div class="col-md-4">
-                     <label class="form-label small fw-bold text-muted">Store Location</label>
-                     <input type="text" class="form-control" value="108 Kimironko St, Kigali" readonly>
+                  <div class="d-flex gap-2">
+                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="resetStoreSettingsForm()">
+                        <i class="fas fa-undo me-1"></i> Discard Changes
+                     </button>
+                     <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold" onclick="saveStoreSettingsForm()">
+                        <i class="fas fa-save me-1"></i> Save Store Configuration
+                     </button>
                   </div>
                </div>
+
+               <form id="storeSettingsForm" onsubmit="event.preventDefault(); saveStoreSettingsForm();">
+                  <div class="row g-3">
+                     <!-- Store Brand Name -->
+                     <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Brand / Store Name *</label>
+                        <div class="input-group">
+                           <span class="input-group-text bg-white"><i class="fas fa-utensils text-primary"></i></span>
+                           <input type="text" id="settingStoreName" class="form-control" placeholder="INEZA RESTO & COFFEE SHOP" required />
+                        </div>
+                     </div>
+
+                     <!-- Store Location / Physical Address -->
+                     <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">Physical Location &amp; Address *</label>
+                        <div class="input-group">
+                           <span class="input-group-text bg-white"><i class="fas fa-map-marker-alt text-danger"></i></span>
+                           <input type="text" id="settingStoreLocation" class="form-control" placeholder="108 Kimironko St, Kigali - Rwanda" required />
+                        </div>
+                     </div>
+
+                     <!-- Official Contact Phone -->
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">Official Store Phone *</label>
+                        <div class="input-group">
+                           <span class="input-group-text bg-white"><i class="fas fa-phone text-success"></i></span>
+                           <input type="tel" id="settingStorePhone" class="form-control" placeholder="+250 788 000 000" required />
+                        </div>
+                     </div>
+
+                     <!-- RRA EBM TIN Number -->
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">RRA EBM Fiscal TIN Number *</label>
+                        <div class="input-group">
+                           <span class="input-group-text bg-white"><i class="fas fa-file-invoice text-info"></i></span>
+                           <input type="text" id="settingStoreTin" class="form-control font-monospace" placeholder="102938475" required />
+                        </div>
+                     </div>
+
+                     <!-- Operating Hours -->
+                     <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">Operating Hours</label>
+                        <div class="input-group">
+                           <span class="input-group-text bg-white"><i class="fas fa-clock text-warning"></i></span>
+                           <input type="text" id="settingOpeningHours" class="form-control" placeholder="Mon - Sun: 07:00 AM - 11:00 PM" />
+                        </div>
+                     </div>
+
+                     <!-- MTN MoMo Code -->
+                     <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">MoMo Merchant Code *</label>
+                        <div class="input-group">
+                           <span class="input-group-text bg-white"><i class="fas fa-qrcode text-warning"></i></span>
+                           <input type="text" id="settingMomoCode" class="form-control font-monospace" placeholder="004587" required />
+                        </div>
+                     </div>
+
+                     <!-- MoMo Merchant Name -->
+                     <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">MoMo Account Name *</label>
+                        <input type="text" id="settingMomoName" class="form-control" placeholder="INEZA Resto & Cafe Shop" required />
+                     </div>
+
+                     <!-- Delivery Fee -->
+                     <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted">Delivery Fee (RWF) *</label>
+                        <div class="input-group">
+                           <input type="number" id="settingDeliveryFee" class="form-control font-monospace" min="0" step="100" placeholder="1000" required />
+                           <span class="input-group-text bg-light small">RWF</span>
+                        </div>
+                     </div>
+
+                     <!-- Tax VAT Percent -->
+                     <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted">VAT Tax Rate (%) *</label>
+                        <div class="input-group">
+                           <input type="number" id="settingVatPercent" class="form-control font-monospace" min="0" max="100" placeholder="18" required />
+                           <span class="input-group-text bg-light small">%</span>
+                        </div>
+                     </div>
+
+                     <!-- Currency -->
+                     <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted">Base Currency</label>
+                        <input type="text" id="settingCurrency" class="form-control font-monospace" value="RWF" readonly />
+                     </div>
+                  </div>
+               </form>
             </div>
          </section>
 

@@ -830,9 +830,47 @@ function initStorageSyncListener() {
         settingsChan.onmessage = (ev) => {
             if (ev.data && ev.data.type === 'cart_settings_updated') {
                 applyCartDrawerSettings();
+            } else if (ev.data && ev.data.type === 'store_settings_updated' && ev.data.settings) {
+                applyStoreSettingsToMobile(ev.data.settings);
             }
         };
     } catch (e) {}
+
+    // Initial check for cached or remote store settings
+    try {
+        const cached = localStorage.getItem('ineza_store_settings');
+        if (cached) {
+            applyStoreSettingsToMobile(JSON.parse(cached));
+        } else {
+            fetch('api/settings.php?action=get').then(r => r.json()).then(res => {
+                if (res && res.status === 'success' && res.settings) {
+                    localStorage.setItem('ineza_store_settings', JSON.stringify(res.settings));
+                    applyStoreSettingsToMobile(res.settings);
+                }
+            }).catch(() => {});
+        }
+    } catch (e) {}
+}
+
+function applyStoreSettingsToMobile(settings) {
+    if (!settings) return;
+
+    // 1. Update MoMo codes and labels
+    const momoValEl = document.getElementById('momoDemoCode1');
+    if (momoValEl) momoValEl.innerText = `*182*8*1*${settings.momo_code}*Amount#`;
+
+    const momoDialBtn = document.getElementById('momoDialNowLink');
+    if (momoDialBtn) momoDialBtn.href = `tel:*182*8*1*${settings.momo_code}%23`;
+
+    const momoSub = document.getElementById('momoDialBtnSubtitle');
+    if (momoSub) momoSub.innerText = `*182*8*1*${settings.momo_code}*Amount#`;
+
+    // 2. Delivery fee
+    if (settings.delivery_fee) {
+        const fee = parseInt(settings.delivery_fee) || 1000;
+        const feeEl = document.getElementById('cartDeliveryFee');
+        if (feeEl) feeEl.innerText = `${fee.toLocaleString()} RWF`;
+    }
 }
 
 async function loadMenu() {

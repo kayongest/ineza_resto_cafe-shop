@@ -77,6 +77,37 @@ if ($pdo) {
 
         // Expand enum for role if needed
         $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` enum('customer','staff','admin','chef','waiter','cashier') DEFAULT 'customer'");
+
+        // Auto-create store_settings table for SuperAdmin configurations
+        $settingsSql = "
+        CREATE TABLE IF NOT EXISTS `store_settings` (
+          `setting_key` varchar(64) NOT NULL PRIMARY KEY,
+          `setting_value` text NOT NULL,
+          `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ";
+        $pdo->exec($settingsSql);
+
+        // Seed defaults if empty
+        $cnt = $pdo->query("SELECT COUNT(*) FROM `store_settings`")->fetchColumn();
+        if ($cnt == 0) {
+            $defaultSettings = [
+                'store_name' => 'INEZA RESTO & COFFEE SHOP',
+                'store_location' => '108 Kimironko St, Kigali - Rwanda',
+                'store_phone' => '+250 788 000 000',
+                'store_tin' => '102938475',
+                'momo_code' => '004587',
+                'momo_name' => 'INEZA Resto & Cafe Shop',
+                'delivery_fee' => '1000',
+                'currency' => 'RWF',
+                'vat_percent' => '18',
+                'opening_hours' => 'Mon - Sun: 07:00 AM - 11:00 PM'
+            ];
+            $insStmt = $pdo->prepare("INSERT INTO `store_settings` (`setting_key`, `setting_value`) VALUES (?, ?)");
+            foreach ($defaultSettings as $k => $v) {
+                $insStmt->execute([$k, $v]);
+            }
+        }
     } catch (PDOException $eCol) {
         // Ignore schema check errors
     }

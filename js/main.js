@@ -2869,3 +2869,66 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+/* ============================================================
+   LIVE STORE SETTINGS SYNC (SUPERADMIN DRIVEN)
+   ============================================================ */
+function applyLiveStoreSettingsToCustomerUI(settings) {
+    if (!settings) return;
+
+    // 1. Top bar & footer address elements
+    document.querySelectorAll('.top-info span, .fciinfo').forEach(function(el) {
+        if (el.textContent.includes('Kimironko') || el.innerHTML.includes('map-marker-alt')) {
+            if (el.classList.contains('fciinfo')) {
+                el.innerHTML = '<strong>Address</strong>' + settings.store_location;
+            } else {
+                el.innerHTML = '<i class="fas fa-map-marker-alt"></i>' + settings.store_location;
+            }
+        }
+    });
+
+    // 2. Receipt and Footer TIN & Phone
+    document.querySelectorAll('.small.text-muted').forEach(function(el) {
+        if (el.textContent.includes('TIN:') || el.textContent.includes('102938475')) {
+            el.textContent = 'TEL: ' + settings.store_phone + ' | TIN: ' + settings.store_tin;
+        } else if (el.textContent.includes('Kimironko St, Kigali - Rwanda')) {
+            el.textContent = settings.store_location;
+        }
+    });
+
+    // 3. MoMo Codes
+    var momoCode1 = document.getElementById('momoDesktopCode1');
+    if (momoCode1) momoCode1.textContent = '*182*8*1*' + settings.momo_code + '*Amount#';
+
+    var momoTitle1 = document.getElementById('momoDesktopTitle1');
+    if (momoTitle1) momoTitle1.textContent = 'MoMo Code (' + settings.momo_code + ')';
+
+    var momoCode2 = document.getElementById('momoDesktopCode2');
+    if (momoCode2) momoCode2.textContent = settings.momo_name;
+}
+
+try {
+    var storeSettingsChan = new BroadcastChannel('favcafe_settings_channel');
+    storeSettingsChan.onmessage = function(e) {
+        if (e.data && e.data.type === 'store_settings_updated' && e.data.settings) {
+            applyLiveStoreSettingsToCustomerUI(e.data.settings);
+        }
+    };
+} catch (e) {}
+
+// Auto-check on load
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        var cached = localStorage.getItem('ineza_store_settings');
+        if (cached) {
+            applyLiveStoreSettingsToCustomerUI(JSON.parse(cached));
+        } else {
+            fetch('api/settings.php?action=get').then(function(r) { return r.json(); }).then(function(res) {
+                if (res && res.status === 'success' && res.settings) {
+                    localStorage.setItem('ineza_store_settings', JSON.stringify(res.settings));
+                    applyLiveStoreSettingsToCustomerUI(res.settings);
+                }
+            }).catch(function() {});
+        }
+    } catch (e) {}
+});
