@@ -213,6 +213,12 @@
                <i class="fas fa-sync-alt"></i>
             </button>
 
+            <!-- Kitchen Audio Chime / Bell Alerts Toggle -->
+            <button type="button" class="topbar-icon-btn" id="kitchenAudioToggleBtn" onclick="toggleKitchenAudio()"
+               title="Kitchen Audio Alerts: Enabled (Click to Mute)">
+               <i class="fas fa-volume-up text-success"></i>
+            </button>
+
             <!-- Dark / Light Theme Toggle -->
             <button type="button" class="topbar-icon-btn btn-theme-toggle" id="adminThemeToggleBtn" data-theme-toggle
                title="Toggle Dark / Light Mode" aria-label="Toggle Dark / Light Mode">
@@ -1409,7 +1415,7 @@
                </div>
 
                <!-- Module 4: Table Reservations & Dine-In Dining Lifecycle Tracker -->
-               <div class="d-flex justify-content-between align-items-center p-3 mb-0 rounded-3 border" style="background:#f8fafc;">
+               <div class="d-flex justify-content-between align-items-center p-3 mb-3 rounded-3 border" style="background:#f8fafc;">
                   <div class="pe-3">
                      <div class="d-flex align-items-center gap-2 mb-1">
                         <span class="fw-bold text-dark fs-6"><i class="fas fa-calendar-check text-success me-1"></i> "Table Reservations &amp; Floor Progress" Module</span>
@@ -1422,6 +1428,28 @@
                   <div class="text-end">
                      <label class="switch mb-0">
                         <input type="checkbox" id="settingToggleReservations" onchange="handleCartSettingChange()">
+                        <span class="slider"></span>
+                     </label>
+                  </div>
+               </div>
+
+               <!-- Module 5: Kitchen Audio Chime & Bell Alerts -->
+               <div class="d-flex justify-content-between align-items-center p-3 mb-0 rounded-3 border" style="background:#f8fafc;">
+                  <div class="pe-3">
+                     <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="fw-bold text-dark fs-6"><i class="fas fa-volume-up text-primary me-1"></i> "Kitchen Audio Chime &amp; Bell Alerts" Module</span>
+                        <span class="badge bg-primary rounded-pill px-2 py-1" id="badgeAudioStatus" style="font-size:0.7rem;">ENABLED</span>
+                     </div>
+                     <p class="text-muted small mb-0">
+                        Plays pleasant kitchen chime &amp; counter bell sounds on the Admin &amp; KDS screens when a new customer order or table assistance request is received.
+                     </p>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                     <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="testKitchenAudio()" title="Test Audio Chimes">
+                        <i class="fas fa-play me-1"></i> Test Chime
+                     </button>
+                     <label class="switch mb-0">
+                        <input type="checkbox" id="settingToggleAudio" checked onchange="handleKitchenAudioSettingChange()">
                         <span class="slider"></span>
                      </label>
                   </div>
@@ -2355,7 +2383,7 @@
    <script src="js/jquery-3.7.1.min.js"></script>
    <script src="js/bootstrap.bundle.min.js"></script>
    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-   <script src="js/admin.js?v=8.0"></script>
+   <script src="js/admin.js?v=9.0"></script>
 </body>
 
 </html>

@@ -62,6 +62,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initSearchAndFilter();
     initCartAdminSettings();
     initStoreSettings();
+    initKitchenAudioUnlock();
+    updateKitchenAudioUI();
 
     console.log('%c[INEZA RESTO Platform] Live Admin Management System Active', 'color: #27ae60; font-weight: bold; font-size: 14px;');
 });
@@ -96,12 +98,198 @@ function adminSignOut() {
 window.adminSignOut = adminSignOut;
 window.initAdminAuthSession = initAdminAuthSession;
 
+/* ============================================================
+   KITCHEN & FLOOR WEB AUDIO CHIME ENGINE (ZERO EXTERNAL ASSETS)
+   ============================================================ */
+var _kitchenAudioCtx = null;
+var _isKitchenAudioEnabled = true;
+
+function isKitchenAudioEnabled() {
+    try {
+        var raw = localStorage.getItem('favcafe_kitchen_audio_enabled');
+        if (raw !== null) {
+            return raw === 'true';
+        }
+    } catch(e) {}
+    return true; // Enabled by default
+}
+
+function setKitchenAudioEnabled(enabled) {
+    _isKitchenAudioEnabled = !!enabled;
+    try {
+        localStorage.setItem('favcafe_kitchen_audio_enabled', _isKitchenAudioEnabled ? 'true' : 'false');
+    } catch(e) {}
+    updateKitchenAudioUI();
+}
+
+function updateKitchenAudioUI() {
+    var isEnabled = isKitchenAudioEnabled();
+    _isKitchenAudioEnabled = isEnabled;
+
+    // 1. Topbar Quick Toggle button
+    var btn = document.getElementById('kitchenAudioToggleBtn');
+    if (btn) {
+        btn.innerHTML = isEnabled 
+            ? '<i class="fas fa-volume-up text-success"></i>' 
+            : '<i class="fas fa-volume-mute text-danger"></i>';
+        btn.title = isEnabled ? 'Kitchen Audio Alerts: Enabled (Click to Mute)' : 'Kitchen Audio Alerts: Muted (Click to Enable)';
+    }
+
+    // 2. Settings toggle checkbox & badge in Tab 8
+    var chk = document.getElementById('settingToggleAudio');
+    var badge = document.getElementById('badgeAudioStatus');
+    if (chk) chk.checked = isEnabled;
+    if (badge) {
+        badge.textContent = isEnabled ? 'ENABLED' : 'MUTED';
+        badge.className = isEnabled ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
+}
+window.updateKitchenAudioUI = updateKitchenAudioUI;
+
+function toggleKitchenAudio() {
+    var newState = !isKitchenAudioEnabled();
+    setKitchenAudioEnabled(newState);
+    if (newState) {
+        playKitchenChime('order');
+        if (typeof showToast === 'function') {
+            showToast('Kitchen Audio Chimes: Enabled 🔔', 'success', 'Audio Alerts');
+        }
+    } else {
+        if (typeof showToast === 'function') {
+            showToast('Kitchen Audio Chimes: Muted 🔇', 'info', 'Audio Alerts');
+        }
+    }
+}
+window.toggleKitchenAudio = toggleKitchenAudio;
+
+function handleKitchenAudioSettingChange() {
+    var chk = document.getElementById('settingToggleAudio');
+    if (chk) {
+        setKitchenAudioEnabled(chk.checked);
+        if (chk.checked) playKitchenChime('order');
+    }
+}
+window.handleKitchenAudioSettingChange = handleKitchenAudioSettingChange;
+
+function getKitchenAudioContext() {
+    if (!_kitchenAudioCtx) {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+            _kitchenAudioCtx = new AudioCtx();
+        }
+    }
+    if (_kitchenAudioCtx && _kitchenAudioCtx.state === 'suspended') {
+        _kitchenAudioCtx.resume().catch(function() {});
+    }
+    return _kitchenAudioCtx;
+}
+
+function initKitchenAudioUnlock() {
+    function unlock() {
+        var ctx = getKitchenAudioContext();
+        if (ctx && ctx.state === 'running') {
+            window.removeEventListener('click', unlock, true);
+            window.removeEventListener('keydown', unlock, true);
+            window.removeEventListener('touchstart', unlock, true);
+        }
+    }
+    window.addEventListener('click', unlock, true);
+    window.addEventListener('keydown', unlock, true);
+    window.addEventListener('touchstart', unlock, true);
+}
+window.initKitchenAudioUnlock = initKitchenAudioUnlock;
+
+function playKitchenChime(type) {
+    if (!isKitchenAudioEnabled()) return;
+
+    var ctx = getKitchenAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+        ctx.resume().catch(function() {});
+    }
+
+    var now = ctx.currentTime;
+
+    if (type === 'table') {
+        // High-pitched Silver Concierge Desk Bell (Ding-Ding)
+        playBellNote(ctx, 1760, now, 0.45, 0.35);
+        playBellNote(ctx, 2093, now + 0.16, 0.55, 0.45);
+    } else {
+        // 'order' / default: Warm Kitchen POS Arpeggio Chime (C5 -> E5 -> G5 -> C6)
+        playTone(ctx, 523.25, now, 0.25, 0.25, 'sine');
+        playTone(ctx, 659.25, now + 0.12, 0.28, 0.25, 'sine');
+        playTone(ctx, 783.99, now + 0.24, 0.30, 0.25, 'sine');
+        playTone(ctx, 1046.50, now + 0.36, 0.45, 0.70, 'triangle');
+    }
+}
+window.playKitchenChime = playKitchenChime;
+
+function playTone(ctx, freq, startTime, volume, duration, waveType) {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+
+    osc.type = waveType || 'sine';
+    osc.frequency.setValueAtTime(freq, startTime);
+
+    gain.gain.setValueAtTime(0.001, startTime);
+    gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.05);
+}
+
+function playBellNote(ctx, freq, startTime, volume, duration) {
+    var osc1 = ctx.createOscillator();
+    var osc2 = ctx.createOscillator();
+    var gain = ctx.createGain();
+
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(freq, startTime);
+
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(freq * 1.5, startTime);
+
+    gain.gain.setValueAtTime(0.001, startTime);
+    gain.gain.exponentialRampToValueAtTime(volume, startTime + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc1.start(startTime);
+    osc2.start(startTime);
+    osc1.stop(startTime + duration + 0.05);
+    osc2.stop(startTime + duration + 0.05);
+}
+
+function testKitchenAudio() {
+    var ctx = getKitchenAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+        ctx.resume();
+    }
+    playKitchenChime('order');
+    setTimeout(function() {
+        playKitchenChime('table');
+    }, 1100);
+    if (typeof showToast === 'function') {
+        showToast('Playing Kitchen Order Arpeggio ➔ Table Concierge Bell test sequence', 'info', 'Audio Test');
+    }
+}
+window.testKitchenAudio = testKitchenAudio;
+
 var _notifiedOrderIds = {};
 
 function notifyNewOrderOnce(order) {
     if (!order || !order.id) return;
     if (_notifiedOrderIds[order.id]) return;
     _notifiedOrderIds[order.id] = true;
+
+    playKitchenChime('order');
 
     if (typeof showToast === 'function') {
         var totalStr = typeof formatRWF === 'function' ? formatRWF(order.total) : (order.total + ' RWF');
@@ -181,6 +369,8 @@ function handleAdminTableServiceRequest(req) {
             localStorage.setItem('favcafe_table_requests', JSON.stringify(adminTableRequestsList.slice(0, 20)));
         } catch(e) {}
     }
+
+    playKitchenChime('table');
 
     renderAdminTableRequests();
 
@@ -4563,6 +4753,7 @@ function initCartAdminSettings() {
     }
 
     applyAdminReservationsVisibility(settings.showReservations);
+    updateKitchenAudioUI();
 }
 window.initCartAdminSettings = initCartAdminSettings;
 
