@@ -1,6 +1,6 @@
 <?php
 /* ============================================================
-   FAVORITE CAFE - BULK IMPORT CSV ENDPOINT
+   INEZA RESTO & COFFEE SHOP - BULK IMPORT CSV ENDPOINT
    ============================================================ */
 require_once __DIR__ . '/db.php';
 header('Content-Type: application/json');

@@ -1,5 +1,5 @@
 /* ============================================================
-   Favorite Cafe RESTAURANT - MAIN JS
+   INEZA RESTO & COFFEE SHOP RESTAURANT - MAIN JS
    ============================================================ */
 
 // 1. AOS Animation Initialization
@@ -1211,7 +1211,7 @@ function completeOrderPlacement(newOrder) {
         }, 5000);
     } catch (e) {}
 
-    logNotification('sms', newOrder.phone || 'Customer', 'Favorite Cafe Order #' + newOrder.id + ' placed successfully! Total: ' + formatRWF(newOrder.total), 'SMS Alert - Order Placed');
+    logNotification('sms', newOrder.phone || 'Customer', 'INEZA RESTO & COFFEE SHOP Order #' + newOrder.id + ' placed successfully! Total: ' + formatRWF(newOrder.total), 'SMS Alert - Order Placed');
     logNotification('email', 'customer@favoritecafe.com', 'Electronic Tax Invoice #' + newOrder.id + ' generated.', 'Email Ticket - Invoice');
 
     // Clear Cart
@@ -2149,7 +2149,7 @@ function handleAdminLogin() {
 function demoAdminLogin() {
     var userInput = document.getElementById('mAdminUser');
     var passInput = document.getElementById('mAdminPass');
-    if (userInput) userInput.value = 'admin_Favorite Cafe';
+    if (userInput) userInput.value = 'admin_INEZA RESTO & COFFEE SHOP';
     if (passInput) passInput.value = 'admin2026';
     showToast('Demo admin credentials loaded!', 'info', 'Admin Access');
     setTimeout(handleAdminLogin, 600);
@@ -2515,7 +2515,7 @@ async function loadDynamicCustomerMenu(isManualRefresh) {
             statusEl.innerHTML = `
                 <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm" style="background:#e3f2fd; border:1px solid #90caf9; font-size:0.83rem; color:#0d47a1;">
                     <i class="fas fa-check-circle text-primary me-1"></i>
-                    <span>Favorite Cafe Standard Menu Loaded (${availCount} items)</span>
+                    <span>INEZA RESTO & COFFEE SHOP Standard Menu Loaded (${availCount} items)</span>
                     <button type="button" class="btn btn-sm btn-light border py-0 px-2 ms-2" onclick="loadDynamicCustomerMenu(true)" title="Refresh Menu Now" style="font-size:0.75rem; border-radius:12px;">
                         <i class="fas fa-sync-alt text-primary me-1"></i>Refresh
                     </button>
@@ -2765,9 +2765,9 @@ function sendDemoTestNotification() {
     var ref = 'MSH-' + Math.floor(1000 + Math.random() * 9000);
 
     if (randomType === 'sms') {
-        logNotification('sms', phone, 'Favorite Cafe SMS: Order #' + ref + ' has been dispatched via express delivery rider!', 'SMS Dispatch Alert');
+        logNotification('sms', phone, 'INEZA RESTO & COFFEE SHOP SMS: Order #' + ref + ' has been dispatched via express delivery rider!', 'SMS Dispatch Alert');
     } else if (randomType === 'email') {
-        logNotification('email', 'customer@favoritecafe.com', 'Favorite Cafe E-Ticket: Table Reservation #' + ref + ' is confirmed for 08:00 PM.', 'Email Booking Ticket');
+        logNotification('email', 'customer@favoritecafe.com', 'INEZA RESTO & COFFEE SHOP E-Ticket: Table Reservation #' + ref + ' is confirmed for 08:00 PM.', 'Email Booking Ticket');
     } else {
         logNotification('alert', 'Kitchen Operations', 'Kitchen Dispatch Alert: Order #' + ref + ' priority marked as HIGH VIP!', 'Kitchen VIP Alert');
     }

@@ -1,6 +1,6 @@
 <?php
 /* ============================================================
-   FAVORITE CAFE - DATABASE CONNECTION & AUTO SETUP
+   INEZA RESTO & COFFEE SHOP - DATABASE CONNECTION & AUTO SETUP
    ============================================================ */
 header('Content-Type: application/json');
 

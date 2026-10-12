@@ -1,6 +1,6 @@
 <?php
 /* ============================================================
-   FAVORITE CAFE - MENU CRUD API ENDPOINT (MySQL + File DB Engine)
+   INEZA RESTO & COFFEE SHOP - MENU CRUD API ENDPOINT (MySQL + File DB Engine)
    ============================================================ */
 require_once __DIR__ . '/db.php';
 

@@ -88,7 +88,7 @@ if ($action === 'register') {
     }
 
     // Check hardcoded / demo staff credentials convenience
-    if (($loginIdentifier === 'admin@ineza.rw' || $loginIdentifier === 'admin_Favorite Cafe' || $loginIdentifier === 'admin') && $password === 'admin2026') {
+    if (($loginIdentifier === 'admin@ineza.rw' || $loginIdentifier === 'admin_INEZA RESTO & COFFEE SHOP' || $loginIdentifier === 'admin') && $password === 'admin2026') {
         echo json_encode([
             'status' => 'success',
             'message' => "Staff administrator access granted.",

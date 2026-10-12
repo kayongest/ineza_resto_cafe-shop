@@ -511,7 +511,7 @@ function advanceAdminOrder(orderId, newStatus) {
         renderFullOrdersDispatchBoard();
 
         if (typeof logNotification === 'function') {
-            logNotification('sms', target.phone || '+250 788 700 870', 'Favorite Cafe: Your Order #' + orderId + ' status has been updated to: ' + newStatus, 'SMS Alert - Order Status');
+            logNotification('sms', target.phone || '+250 788 700 870', 'INEZA RESTO & COFFEE SHOP: Your Order #' + orderId + ' status has been updated to: ' + newStatus, 'SMS Alert - Order Status');
         }
 
         if (typeof showToast === 'function') {
@@ -711,7 +711,7 @@ function updateAdminPaymentStatus(orderId, newPaymentStatus) {
         renderFullOrdersDispatchBoard();
 
         if (typeof logNotification === 'function') {
-            logNotification('sms', target.phone || '+250 788 700 870', 'Favorite Cafe: Your Order #' + orderId + ' payment status updated to: ' + newPaymentStatus, 'SMS Alert - Payment Status');
+            logNotification('sms', target.phone || '+250 788 700 870', 'INEZA RESTO & COFFEE SHOP: Your Order #' + orderId + ' payment status updated to: ' + newPaymentStatus, 'SMS Alert - Payment Status');
         }
 
         if (typeof showToast === 'function') {
@@ -2491,9 +2491,9 @@ function sendDemoTestNotification() {
     var ref = 'MSH-' + Math.floor(1000 + Math.random() * 9000);
 
     if (randomType === 'sms') {
-        logNotification('sms', phone, 'Favorite Cafe SMS: Order #' + ref + ' has been dispatched via express delivery rider!', 'SMS Dispatch Alert');
+        logNotification('sms', phone, 'INEZA RESTO & COFFEE SHOP SMS: Order #' + ref + ' has been dispatched via express delivery rider!', 'SMS Dispatch Alert');
     } else if (randomType === 'email') {
-        logNotification('email', 'customer@favoritecafe.com', 'Favorite Cafe E-Ticket: Table Reservation #' + ref + ' is confirmed for 08:00 PM.', 'Email Booking Ticket');
+        logNotification('email', 'customer@favoritecafe.com', 'INEZA RESTO & COFFEE SHOP E-Ticket: Table Reservation #' + ref + ' is confirmed for 08:00 PM.', 'Email Booking Ticket');
     } else {
         logNotification('alert', 'Kitchen Operations', 'Kitchen Dispatch Alert: Order #' + ref + ' priority marked as HIGH VIP!', 'Kitchen VIP Alert');
     }

@@ -1,6 +1,6 @@
 <?php
 /* ============================================================
-   FAVORITE CAFE - LIVE ORDERS CRUD & STAFF AUDIT API ENDPOINT
+   INEZA RESTO & COFFEE SHOP - LIVE ORDERS CRUD & STAFF AUDIT API ENDPOINT
    ============================================================ */
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');

@@ -538,7 +538,7 @@
                console.warn('[Admin Auth] API unavailable, using local check', err);
             }
 
-            if ((ident === 'admin@ineza.rw' || ident === 'admin' || ident === 'admin_Favorite Cafe') && password === 'admin2026') {
+            if ((ident === 'admin@ineza.rw' || ident === 'admin' || ident === 'admin_INEZA RESTO & COFFEE SHOP') && password === 'admin2026') {
                var demoAdmin = { name: 'INEZA Admin Staff', full_name: 'INEZA Admin Staff', email: 'admin@ineza.rw', role: 'admin' };
                localStorage.setItem('favcafe_active_user', JSON.stringify(demoAdmin));
                localStorage.setItem('favcafe_admin_user', JSON.stringify(demoAdmin));
@@ -1016,7 +1016,7 @@
    <button id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fas fa-chevron-up"></i></button>
 
    <!-- ============================================================
-   Favorite Cafe AUTH MODAL  —  clean, reliable
+   INEZA RESTO & COFFEE SHOP AUTH MODAL  —  clean, reliable
    ============================================================ -->
    <div id="MasharikiAuthModal">
       <div class="auth-modal-sm-box">
@@ -1942,7 +1942,7 @@
       if ('serviceWorker' in navigator) {
          window.addEventListener('load', function() {
             navigator.serviceWorker.register('./sw.js').then(function(reg) {
-               console.log('[PWA] Favorite Cafe ServiceWorker registered with scope: ', reg.scope);
+               console.log('[PWA] INEZA RESTO & COFFEE SHOP ServiceWorker registered with scope: ', reg.scope);
             }).catch(function(err) {
                console.log('[PWA] ServiceWorker registration failed: ', err);
             });

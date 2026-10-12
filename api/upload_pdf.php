@@ -1,6 +1,6 @@
 <?php
 /* ============================================================
-   FAVORITE CAFE - PDF MENU UPLOAD API ENDPOINT
+   INEZA RESTO & COFFEE SHOP - PDF MENU UPLOAD API ENDPOINT
    ============================================================ */
 header('Content-Type: application/json');
 
