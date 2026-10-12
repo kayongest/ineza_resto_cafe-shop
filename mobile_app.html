@@ -565,21 +565,13 @@
             <i class="fas fa-chevron-right sidebar-chevron"></i>
         </a>
 
-        <a href="javascript:void(0);" class="sidebar-nav-item"
-            onclick="showToast('💬 Chat Feature Clicked'); toggleSidebarDrawer();">
-            <i class="far fa-comment nav-icon"></i>
-            <span>Chat</span>
-            <span class="sidebar-badge bg-purple">5</span>
-            <i class="fas fa-chevron-right sidebar-chevron"></i>
-        </a>
-
         <a href="javascript:void(0);" class="sidebar-nav-item" onclick="logout(); toggleSidebarDrawer();">
             <i class="fas fa-sign-out-alt nav-icon" style="color:#ff5e57;"></i>
             <span style="color:#ff5e57;">Logout</span>
             <i class="fas fa-chevron-right sidebar-chevron"></i>
         </a>
 
-        <a href="index.html?view=desktop" class="sidebar-nav-item">
+        <a href="./?view=desktop" class="sidebar-nav-item">
             <i class="fas fa-desktop nav-icon" style="color:#00f2fe;"></i>
             <span>Desktop Web View</span>
             <i class="fas fa-chevron-right sidebar-chevron"></i>
@@ -642,14 +634,30 @@
     <div id="profileEditModal" class="custom-modal-overlay">
         <div class="custom-modal-dialog">
             <div class="custom-modal-header">
-                <h3><i class="fas fa-id-card me-2 text-cyan"></i>Edit Contacts</h3>
+                <h3><i class="fas fa-user-edit me-2 text-cyan"></i>Edit Profile</h3>
                 <button type="button" class="modal-close-btn"
                     onclick="closeMobileAuthModal('profile_edit')">&times;</button>
             </div>
             <div class="custom-modal-body">
                 <form id="editContactsForm" onsubmit="event.preventDefault(); saveMobileProfileContacts();">
+                    <!-- Profile Photo Uploader Block -->
+                    <div class="text-center mb-3 pb-2 border-bottom-dark">
+                        <div class="position-relative d-inline-block" style="cursor:pointer;" onclick="triggerModalAvatarUpload()" title="Click to upload profile photo">
+                            <img src="img/chefs/1.jpg" id="modalProfileAvatarPreview" class="rounded-circle shadow" style="width: 82px; height: 82px; object-fit: cover; border: 3px solid var(--primary, #e67e22);" alt="Profile Avatar" onerror="this.src='img/menu/1.jpg'">
+                            <span class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 26px; height: 26px; font-size: 0.72rem; border: 2px solid #1e293b;">
+                                <i class="fas fa-camera"></i>
+                            </span>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1" onclick="triggerModalAvatarUpload()" style="font-size:0.78rem;">
+                                <i class="fas fa-upload me-1"></i> Change Photo
+                            </button>
+                        </div>
+                        <input type="file" id="modalAvatarFileInput" accept="image/*" style="display:none;" onchange="handleModalAvatarChange(this)">
+                    </div>
+
                     <div class="mb-3">
-                        <label class="form-label-custom">Full Name</label>
+                        <label class="form-label-custom"><i class="fas fa-user me-1 text-cyan"></i> Full Name</label>
                         <input type="text" id="editProfileName" class="form-control-custom" placeholder="John Doe">
                     </div>
                     <div class="mb-3">
@@ -682,7 +690,7 @@
                     <div class="d-flex gap-2 mt-4" style="display: flex; gap: 10px; margin-top: 1.5rem;">
                         <button type="button" class="btn-secondary-custom flex-1"
                             onclick="closeMobileAuthModal('profile_edit')">Cancel</button>
-                        <button type="submit" class="btn-cyan-confirm flex-1">Save Contacts</button>
+                        <button type="submit" class="btn-cyan-confirm flex-1"><i class="fas fa-check-circle me-1"></i> Save Profile</button>
                     </div>
                 </form>
             </div>
@@ -1045,7 +1053,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/mobile_app.js?v=7.0"></script>
+    <script src="js/mobile_app.js?v=7.1"></script>
 </body>
 
 </html>

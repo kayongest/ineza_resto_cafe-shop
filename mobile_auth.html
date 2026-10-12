@@ -263,7 +263,7 @@
                 try {
                     var parsed = JSON.parse(activeUser);
                     if (parsed && (parsed.email || parsed.phone)) {
-                        window.location.href = 'mobile_app.html';
+                        window.location.href = 'mobile_app';
                         return;
                     }
                 } catch (e) { }
@@ -341,7 +341,7 @@
                             };
                             saveUserSessionAndLocal(userObj);
                             showMobileToast('Login successful! Redirecting...', 'success');
-                            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
+                            setTimeout(() => { window.location.href = 'mobile_app'; }, 800);
                             return;
                         } else if (data.status === 'error') {
                             // Check local storage fallback before rejecting
@@ -353,7 +353,7 @@
                             if (localMatch && localMatch.pass === pass) {
                                 saveUserSessionAndLocal(localMatch);
                                 showMobileToast('Login successful! Redirecting...', 'success');
-                                setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
+                                setTimeout(() => { window.location.href = 'mobile_app'; }, 800);
                                 return;
                             }
                             showMobileToast(data.message, 'error');
@@ -383,7 +383,7 @@
 
             saveUserSessionAndLocal(userInDb);
             showMobileToast('Login successful! Redirecting...', 'success');
-            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
+            setTimeout(() => { window.location.href = 'mobile_app'; }, 800);
         }
 
         async function mobileProcessClientRegister() {
@@ -440,7 +440,7 @@
                             };
                             saveUserSessionAndLocal(newUser);
                             showMobileToast('Registration successful! Redirecting...', 'success');
-                            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
+                            setTimeout(() => { window.location.href = 'mobile_app'; }, 800);
                             return;
                         } else if (data.status === 'error') {
                             showMobileToast(data.message, 'error');
@@ -473,7 +473,7 @@
             saveUserSessionAndLocal(newUser);
 
             showMobileToast('Registration successful! Redirecting...', 'success');
-            setTimeout(() => { window.location.href = 'mobile_app.html'; }, 800);
+            setTimeout(() => { window.location.href = 'mobile_app'; }, 800);
         }
     </script>
 </body>

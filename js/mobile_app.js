@@ -211,12 +211,64 @@ function renderUserContacts() {
 
 function updateAllAvatarImages(src) {
     if (!src) return;
-    const avatars = document.querySelectorAll('#profileUserAvatar, #sidebarUserAvatar, .sidebar-avatar-img, .profile-avatar-img');
+    const avatars = document.querySelectorAll('#profileUserAvatar, #sidebarUserAvatar, #modalProfileAvatarPreview, .sidebar-avatar-img, .profile-avatar-img');
     avatars.forEach(img => {
         img.src = src;
     });
 }
 window.updateAllAvatarImages = updateAllAvatarImages;
+
+// Pending avatar URL for modal edit profile
+let pendingModalAvatarUrl = '';
+
+function triggerModalAvatarUpload() {
+    const fileInput = document.getElementById('modalAvatarFileInput');
+    if (fileInput) fileInput.click();
+}
+window.triggerModalAvatarUpload = triggerModalAvatarUpload;
+
+async function handleModalAvatarChange(input) {
+    if (!input || !input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    // Local instant preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const previewImg = document.getElementById('modalProfileAvatarPreview');
+        if (previewImg) previewImg.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    // Upload via API
+    try {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const uploadRes = await fetch('api/upload.php', {
+            method: 'POST',
+            body: formData
+        });
+        const uploadData = await uploadRes.json();
+
+        if (uploadData.status === 'success' && uploadData.image_path) {
+            pendingModalAvatarUrl = uploadData.image_path;
+        } else {
+            pendingModalAvatarUrl = await new Promise((res) => {
+                const r = new FileReader();
+                r.onload = (ev) => res(ev.target.result);
+                r.readAsDataURL(file);
+            });
+        }
+    } catch (err) {
+        console.warn('Modal avatar upload API warning:', err);
+        pendingModalAvatarUrl = await new Promise((res) => {
+            const r = new FileReader();
+            r.onload = (ev) => res(ev.target.result);
+            r.readAsDataURL(file);
+        });
+    }
+}
+window.handleModalAvatarChange = handleModalAvatarChange;
 
 // PROFILE PICTURE (AVATAR) UPLOAD CONTROLLERS
 function triggerAvatarUpload() {
@@ -331,6 +383,14 @@ function openMobileAuthModal(modalType) {
             if (addressInput) addressInput.value = currentUser.address || currentUser.delivery_address || '';
         }
 
+        const previewImg = document.getElementById('modalProfileAvatarPreview');
+        if (previewImg) {
+            previewImg.src = (currentUser && currentUser.avatar) ? currentUser.avatar : 'img/chefs/1.jpg';
+        }
+        pendingModalAvatarUrl = (currentUser && currentUser.avatar) ? currentUser.avatar : '';
+        const modalFileInput = document.getElementById('modalAvatarFileInput');
+        if (modalFileInput) modalFileInput.value = '';
+
         populateModalCustomContacts();
 
         const modal = document.getElementById('profileEditModal');
@@ -407,10 +467,18 @@ async function saveMobileProfileContacts() {
     currentUser.phone = newPhone;
     currentUser.email = newEmail;
     currentUser.address = newAddress;
+    currentUser.delivery_address = newAddress;
     currentUser.custom_contacts = customContacts;
+
+    if (pendingModalAvatarUrl) {
+        currentUser.avatar = pendingModalAvatarUrl;
+    }
 
     // Save to localStorage immediately
     localStorage.setItem('favcafe_active_user', JSON.stringify(currentUser));
+    if (currentUser.avatar) {
+        updateAllAvatarImages(currentUser.avatar);
+    }
 
     // Send to API update endpoint if possible
     try {
@@ -421,7 +489,8 @@ async function saveMobileProfileContacts() {
             full_name: newName,
             phone: newPhone,
             email: newEmail,
-            address: newAddress
+            address: newAddress,
+            avatar: currentUser.avatar || ''
         };
 
         const res = await fetch('api/auth.php?action=update_profile', {
@@ -432,6 +501,17 @@ async function saveMobileProfileContacts() {
         const resData = await res.json();
         if (resData.status === 'success' && resData.user) {
             currentUser.id = resData.user.id || currentUser.id;
+            if (resData.user.avatar) currentUser.avatar = resData.user.avatar;
+            if (resData.user.email) currentUser.email = resData.user.email;
+            if (resData.user.full_name) {
+                currentUser.name = resData.user.full_name;
+                currentUser.full_name = resData.user.full_name;
+            }
+            if (resData.user.phone) currentUser.phone = resData.user.phone;
+            if (resData.user.address) {
+                currentUser.address = resData.user.address;
+                currentUser.delivery_address = resData.user.address;
+            }
             localStorage.setItem('favcafe_active_user', JSON.stringify(currentUser));
         } else if (resData.status === 'error') {
             showToast('⚠️ ' + resData.message);
@@ -441,9 +521,27 @@ async function saveMobileProfileContacts() {
         console.warn('API update failed, saved locally:', e);
     }
 
+    // Sync registered users list in localStorage if it exists
+    try {
+        let regUsers = JSON.parse(localStorage.getItem('favcafe_registered_users') || '[]');
+        let matchedIdx = regUsers.findIndex(u => (u.email && (u.email.toLowerCase() === prevEmail.toLowerCase() || u.email.toLowerCase() === newEmail.toLowerCase())) || (u.id && u.id === currentUser.id));
+        if (matchedIdx !== -1) {
+            regUsers[matchedIdx] = { ...regUsers[matchedIdx], ...currentUser };
+        } else {
+            regUsers.push(currentUser);
+        }
+        localStorage.setItem('favcafe_registered_users', JSON.stringify(regUsers));
+    } catch (ex) {
+        console.warn('Error syncing favcafe_registered_users:', ex);
+    }
+
     renderUserContacts();
+    if (currentUser.avatar) {
+        updateAllAvatarImages(currentUser.avatar);
+    }
+    pendingModalAvatarUrl = '';
     closeMobileAuthModal('profile_edit');
-    showToast('✅ Contacts updated successfully!');
+    showToast('✅ Profile updated successfully!');
 }
 window.saveMobileProfileContacts = saveMobileProfileContacts;
 

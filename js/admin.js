@@ -93,7 +93,7 @@ function initAdminAuthSession() {
 
 function adminSignOut() {
     localStorage.removeItem('favcafe_admin_user');
-    window.location.href = 'index.html';
+    window.location.href = './';
 }
 window.adminSignOut = adminSignOut;
 window.initAdminAuthSession = initAdminAuthSession;
