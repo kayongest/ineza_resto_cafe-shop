@@ -1045,17 +1045,179 @@
          </section>
 
          <!-- ============================================================
-               TAB 7: ANALYTICS
+               TAB 7: ANALYTICS & SALES REPORTING
                ============================================================ -->
          <section id="tab-analytics" class="tab-section">
-            <div class="page-title-row">
+            <div class="page-title-row flex-wrap gap-2 mb-4">
                <div>
-                  <h3>Sales &amp; Revenue Analytics</h3>
-                  <p>Gain insights into sales trends, order volumes, and top dishes.</p>
+                  <h3 class="mb-0"><i class="fas fa-chart-line me-2" style="color:var(--primary);"></i>Sales &amp; Financial Analytics</h3>
+                  <p class="text-muted small mb-0">Detailed financial reporting, payment reconciliation, top dishes, and fiscal audit exports.</p>
+               </div>
+               <!-- Export & Date Range Controls Toolbar -->
+               <div class="d-flex align-items-center flex-wrap gap-2">
+                  <div class="btn-group btn-group-sm" role="group" id="analyticsRangePills">
+                     <button type="button" class="btn btn-outline-primary active" onclick="setAnalyticsRange('all', this)">All Time</button>
+                     <button type="button" class="btn btn-outline-primary" onclick="setAnalyticsRange('today', this)">Today</button>
+                     <button type="button" class="btn btn-outline-primary" onclick="setAnalyticsRange('7days', this)">Last 7 Days</button>
+                     <button type="button" class="btn btn-outline-primary" onclick="setAnalyticsRange('30days', this)">This Month</button>
+                  </div>
+                  <div class="dropdown">
+                     <button class="btn btn-sm btn-success dropdown-toggle rounded-pill px-3 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-file-export me-1"></i> Export Data
+                     </button>
+                     <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); exportAnalyticsCSV();"><i class="fas fa-file-csv me-2 text-success"></i>Export to CSV / Excel</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); printEbmTaxSummary();"><i class="fas fa-file-invoice me-2 text-primary"></i>Print RRA EBM Tax Summary</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); printShiftZReport();"><i class="fas fa-receipt me-2 text-warning"></i>Print Daily Shift / Z-Report (80mm)</a></li>
+                     </ul>
+                  </div>
                </div>
             </div>
-            <div class="admin-card">
-               <p class="text-muted">Revenue trends and sales reporting widgets.</p>
+
+            <!-- EXECUTIVE KPI CARDS -->
+            <div class="row g-3 mb-4">
+               <div class="col-xl-3 col-md-6">
+                  <div class="admin-card p-3 h-100 shadow-sm border-start border-4 border-primary">
+                     <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Gross Revenue</span>
+                        <div class="badge bg-primary bg-opacity-10 text-primary p-2 rounded-circle"><i class="fas fa-coins fa-lg"></i></div>
+                     </div>
+                     <h3 class="fw-bold mb-1 text-dark" id="analyticsGrossRevenue">0 RWF</h3>
+                     <div class="small text-muted"><i class="fas fa-info-circle me-1"></i>Total sales before tax</div>
+                  </div>
+               </div>
+               <div class="col-xl-3 col-md-6">
+                  <div class="admin-card p-3 h-100 shadow-sm border-start border-4 border-success">
+                     <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">RRA 18% VAT</span>
+                        <div class="badge bg-success bg-opacity-10 text-success p-2 rounded-circle"><i class="fas fa-receipt fa-lg"></i></div>
+                     </div>
+                     <h3 class="fw-bold mb-1 text-success" id="analyticsVatAmount">0 RWF</h3>
+                     <div class="small text-muted"><i class="fas fa-shield-alt me-1 text-success"></i>Fiscal tax liability included</div>
+                  </div>
+               </div>
+               <div class="col-xl-3 col-md-6">
+                  <div class="admin-card p-3 h-100 shadow-sm border-start border-4 border-info">
+                     <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Orders Settled</span>
+                        <div class="badge bg-info bg-opacity-10 text-info p-2 rounded-circle"><i class="fas fa-shopping-bag fa-lg"></i></div>
+                     </div>
+                     <h3 class="fw-bold mb-1 text-dark" id="analyticsTotalOrdersCount">0</h3>
+                     <div class="small text-muted" id="analyticsAvgOrderValue">Avg: 0 RWF / order</div>
+                  </div>
+               </div>
+               <div class="col-xl-3 col-md-6">
+                  <div class="admin-card p-3 h-100 shadow-sm border-start border-4 border-warning">
+                     <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small fw-bold text-uppercase">Mobile Money Ratio</span>
+                        <div class="badge bg-warning bg-opacity-10 text-warning p-2 rounded-circle"><i class="fas fa-mobile-alt fa-lg"></i></div>
+                     </div>
+                     <h3 class="fw-bold mb-1 text-dark" id="analyticsMoMoPercent">0%</h3>
+                     <div class="small text-muted" id="analyticsMoMoTotal">MTN *182* &amp; Airtel collections</div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- ANALYTICS BREAKDOWN ROW: Payment Methods & Service Options -->
+            <div class="row g-4 mb-4">
+               <!-- Payment Reconciliation Breakdown -->
+               <div class="col-lg-6">
+                  <div class="admin-card h-100 shadow-sm">
+                     <div class="admin-card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-wallet me-2" style="color:var(--primary);"></i>Payment Method Settlement</h5>
+                        <span class="badge bg-light text-dark border" id="analyticsPaymentOrdersTotal">0 Orders</span>
+                     </div>
+                     <div class="p-3" id="analyticsPaymentBreakdownList">
+                        <!-- Rendered dynamically -->
+                     </div>
+                  </div>
+               </div>
+
+               <!-- Fulfilment Channels Breakdown -->
+               <div class="col-lg-6">
+                  <div class="admin-card h-100 shadow-sm">
+                     <div class="admin-card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-motorcycle me-2 text-info"></i>Fulfilment Channels (Dine-in vs Delivery)</h5>
+                        <span class="badge bg-light text-dark border" id="analyticsFulfilmentTotal">100% Total</span>
+                     </div>
+                     <div class="p-3" id="analyticsFulfilmentBreakdownList">
+                        <!-- Rendered dynamically -->
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- TOP DISHES LEADERBOARD ROW -->
+            <div class="row g-4 mb-4">
+               <div class="col-lg-12">
+                  <div class="admin-card shadow-sm">
+                     <div class="admin-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="mb-0"><i class="fas fa-award me-2 text-warning"></i>Top Selling Dishes Leaderboard</h5>
+                        <span class="small text-muted">Ranked by units ordered</span>
+                     </div>
+                     <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                           <thead class="table-light">
+                              <tr>
+                                 <th style="width:60px;">RANK</th>
+                                 <th>DISH / MENU ITEM</th>
+                                 <th>CATEGORY</th>
+                                 <th>UNITS ORDERED</th>
+                                 <th>UNIT PRICE</th>
+                                 <th class="text-end">EST. REVENUE</th>
+                              </tr>
+                           </thead>
+                           <tbody id="analyticsTopDishesTbody">
+                              <!-- Dynamically rendered -->
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- ITEMIZED AUDIT TRAIL TABLE WITH PAGINATION & EXPORT -->
+            <div class="row g-4">
+               <div class="col-lg-12">
+                  <div class="admin-card shadow-sm">
+                     <div class="admin-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="mb-0"><i class="fas fa-list-alt me-2" style="color:var(--primary);"></i>Itemized Orders &amp; Audit Trail</h5>
+                        <div class="d-flex align-items-center gap-2">
+                           <input type="text" id="analyticsSearchInput" class="form-control form-control-sm rounded-pill" placeholder="Search order ID, customer, item..." style="max-width:240px;" oninput="onAnalyticsSearch(this.value)">
+                           <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="exportAnalyticsCSV()">
+                              <i class="fas fa-file-excel me-1"></i> Export Excel
+                           </button>
+                        </div>
+                     </div>
+                     <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                           <thead class="table-dark">
+                              <tr>
+                                 <th>ORDER ID</th>
+                                 <th>DATE &amp; TIME</th>
+                                 <th>CUSTOMER</th>
+                                 <th>ITEMS SUMMARY</th>
+                                 <th>OPTION</th>
+                                 <th>PAYMENT</th>
+                                 <th>TOTAL (RWF)</th>
+                                 <th>STATUS</th>
+                              </tr>
+                           </thead>
+                           <tbody id="analyticsAuditTbody">
+                              <!-- Dynamically rendered -->
+                           </tbody>
+                        </table>
+                     </div>
+                     <!-- Analytics Table Pagination Footer (10 items per page) -->
+                     <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center flex-wrap gap-2 rounded-bottom" id="analyticsPaginationBar">
+                        <div class="small text-muted fw-bold" id="analyticsPaginationInfo">Showing 0 orders</div>
+                        <nav>
+                           <ul class="pagination pagination-sm mb-0 gap-1" id="analyticsPaginationNav"></ul>
+                        </nav>
+                     </div>
+                  </div>
+               </div>
             </div>
          </section>
 

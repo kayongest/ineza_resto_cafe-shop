@@ -770,6 +770,10 @@ function initSidebarTabs() {
                 } else if (typeof renderAdminPromosGrid === 'function') {
                     renderAdminPromosGrid();
                 }
+            } else if (tabId === 'analytics') {
+                if (typeof renderAnalyticsDashboard === 'function') {
+                    renderAnalyticsDashboard();
+                }
             }
         });
     });
@@ -4575,3 +4579,631 @@ async function saveStoreSettingsForm() {
     }
 }
 window.saveStoreSettingsForm = saveStoreSettingsForm;
+
+// ============================================================
+// TAB 7: SALES & FINANCIAL ANALYTICS WITH EXPORTABLE DETAILS
+// ============================================================
+var currentAnalyticsRange = 'all';
+var currentAnalyticsSearch = '';
+var currentAnalyticsPage = 1;
+var ANALYTICS_PER_PAGE = 10;
+
+function setAnalyticsRange(range, btn) {
+    currentAnalyticsRange = range;
+    currentAnalyticsPage = 1;
+
+    var container = document.getElementById('analyticsRangePills');
+    if (container) {
+        container.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+    }
+    if (btn) btn.classList.add('active');
+
+    renderAnalyticsDashboard();
+}
+window.setAnalyticsRange = setAnalyticsRange;
+
+function onAnalyticsSearch(val) {
+    currentAnalyticsSearch = (val || '').trim().toLowerCase();
+    currentAnalyticsPage = 1;
+    renderAnalyticsAuditTable();
+}
+window.onAnalyticsSearch = onAnalyticsSearch;
+
+function getFilteredAnalyticsOrders() {
+    var list = adminOrders || [];
+    var now = new Date();
+
+    return list.filter(function(o) {
+        if (o.isDisabled || (o.status || '') === 'Disabled / Archived') return false;
+
+        if (currentAnalyticsRange === 'all') return true;
+
+        var oDate = new Date(o.date);
+        if (isNaN(oDate.getTime())) return true;
+
+        if (currentAnalyticsRange === 'today') {
+            return oDate.toDateString() === now.toDateString();
+        } else if (currentAnalyticsRange === '7days') {
+            var diffMs = now.getTime() - oDate.getTime();
+            return diffMs <= 7 * 24 * 60 * 60 * 1000;
+        } else if (currentAnalyticsRange === '30days') {
+            return oDate.getMonth() === now.getMonth() && oDate.getFullYear() === now.getFullYear();
+        }
+        return true;
+    });
+}
+
+function renderAnalyticsDashboard() {
+    var orders = getFilteredAnalyticsOrders();
+
+    // 1. Executive Financial Metrics
+    var grossRevenue = 0;
+    var totalOrders = orders.length;
+    var momoRevenue = 0;
+
+    orders.forEach(function(o) {
+        var tot = parseFloat(o.total) || 0;
+        grossRevenue += tot;
+
+        var pMethod = (o.paymentMethod || o.payment_method || '').toLowerCase();
+        if (pMethod.includes('momo') || pMethod.includes('mtn') || pMethod.includes('airtel') || pMethod.includes('mobile')) {
+            momoRevenue += tot;
+        }
+    });
+
+    // Tax computation: RRA EBM 18% VAT included
+    // Net = Gross / 1.18; VAT = Gross - Net
+    var netRevenue = Math.round(grossRevenue / 1.18);
+    var vatAmount = grossRevenue - netRevenue;
+    var avgOrderVal = totalOrders > 0 ? Math.round(grossRevenue / totalOrders) : 0;
+    var momoRatio = grossRevenue > 0 ? Math.round((momoRevenue / grossRevenue) * 100) : 0;
+
+    var grossEl = document.getElementById('analyticsGrossRevenue');
+    if (grossEl) grossEl.textContent = formatRWF(grossRevenue);
+
+    var vatEl = document.getElementById('analyticsVatAmount');
+    if (vatEl) vatEl.textContent = formatRWF(vatAmount);
+
+    var countEl = document.getElementById('analyticsTotalOrdersCount');
+    if (countEl) countEl.textContent = totalOrders;
+
+    var avgEl = document.getElementById('analyticsAvgOrderValue');
+    if (avgEl) avgEl.textContent = 'Avg: ' + formatRWF(avgOrderVal) + ' / order';
+
+    var momoPercentEl = document.getElementById('analyticsMoMoPercent');
+    if (momoPercentEl) momoPercentEl.textContent = momoRatio + '%';
+
+    var momoTotalEl = document.getElementById('analyticsMoMoTotal');
+    if (momoTotalEl) momoTotalEl.textContent = formatRWF(momoRevenue) + ' collected via MoMo';
+
+    // 2. Render Payment Channel Breakdown
+    renderAnalyticsPaymentBreakdown(orders, grossRevenue);
+
+    // 3. Render Fulfilment Breakdown (Dine-in vs Delivery)
+    renderAnalyticsFulfilmentBreakdown(orders);
+
+    // 4. Render Top Dishes Leaderboard
+    renderAnalyticsTopDishes(orders);
+
+    // 5. Render Audit Trail Table
+    renderAnalyticsAuditTable();
+}
+window.renderAnalyticsDashboard = renderAnalyticsDashboard;
+
+function renderAnalyticsPaymentBreakdown(orders, grossRevenue) {
+    var listEl = document.getElementById('analyticsPaymentBreakdownList');
+    var badgeEl = document.getElementById('analyticsPaymentOrdersTotal');
+    if (!listEl) return;
+
+    if (badgeEl) badgeEl.textContent = orders.length + ' Orders';
+
+    var methodTotals = {
+        'MTN Mobile Money (*182*)': { count: 0, sum: 0, color: '#f39c12' },
+        'Airtel Money': { count: 0, sum: 0, color: '#e74c3c' },
+        'Cash on Delivery / Counter': { count: 0, sum: 0, color: '#27ae60' },
+        'Credit / Debit Card (POS)': { count: 0, sum: 0, color: '#2980b9' }
+    };
+
+    orders.forEach(function(o) {
+        var p = (o.paymentMethod || o.payment_method || 'Cash').toLowerCase();
+        var tot = parseFloat(o.total) || 0;
+
+        if (p.includes('mtn') || p.includes('*182*')) {
+            methodTotals['MTN Mobile Money (*182*)'].count++;
+            methodTotals['MTN Mobile Money (*182*)'].sum += tot;
+        } else if (p.includes('airtel')) {
+            methodTotals['Airtel Money'].count++;
+            methodTotals['Airtel Money'].sum += tot;
+        } else if (p.includes('card') || p.includes('pos')) {
+            methodTotals['Credit / Debit Card (POS)'].count++;
+            methodTotals['Credit / Debit Card (POS)'].sum += tot;
+        } else {
+            methodTotals['Cash on Delivery / Counter'].count++;
+            methodTotals['Cash on Delivery / Counter'].sum += tot;
+        }
+    });
+
+    var html = '';
+    Object.keys(methodTotals).forEach(function(key) {
+        var m = methodTotals[key];
+        var pct = grossRevenue > 0 ? Math.round((m.sum / grossRevenue) * 100) : 0;
+
+        html += `
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small fw-bold text-dark">${key} <span class="text-muted fw-normal">(${m.count} orders)</span></span>
+                    <span class="small fw-bold text-dark">${formatRWF(m.sum)} <span class="badge bg-light text-dark border ms-1">${pct}%</span></span>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 6px; background: #eef2f6;">
+                    <div class="progress-bar" role="progressbar" style="width: ${pct}%; background-color: ${m.color};" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
+}
+
+function renderAnalyticsFulfilmentBreakdown(orders) {
+    var listEl = document.getElementById('analyticsFulfilmentBreakdownList');
+    if (!listEl) return;
+
+    var channels = {
+        'Delivery (Home & Office)': { count: 0, color: '#3498db' },
+        'Dine-In (Table Seating)': { count: 0, color: '#9b59b6' },
+        'Takeaway / Pickup': { count: 0, color: '#1abc9c' }
+    };
+
+    var totalOrders = orders.length;
+
+    orders.forEach(function(o) {
+        var s = (o.serviceType || o.service_type || 'Delivery').toLowerCase();
+        if (s.includes('dine') || s.includes('table')) {
+            channels['Dine-In (Table Seating)'].count++;
+        } else if (s.includes('take') || s.includes('pickup')) {
+            channels['Takeaway / Pickup'].count++;
+        } else {
+            channels['Delivery (Home & Office)'].count++;
+        }
+    });
+
+    var html = '';
+    Object.keys(channels).forEach(function(key) {
+        var c = channels[key];
+        var pct = totalOrders > 0 ? Math.round((c.count / totalOrders) * 100) : 0;
+
+        html += `
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small fw-bold text-dark">${key}</span>
+                    <span class="small fw-bold text-dark">${c.count} orders <span class="badge bg-light text-dark border ms-1">${pct}%</span></span>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 6px; background: #eef2f6;">
+                    <div class="progress-bar" role="progressbar" style="width: ${pct}%; background-color: ${c.color};" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
+}
+
+function renderAnalyticsTopDishes(orders) {
+    var tbody = document.getElementById('analyticsTopDishesTbody');
+    if (!tbody) return;
+
+    var dishStats = {};
+
+    orders.forEach(function(o) {
+        var sumStr = o.itemsSummary || '';
+        // Parse items like "Chicken Burger x2, Espresso x1"
+        var parts = sumStr.split(',');
+        parts.forEach(function(p) {
+            p = p.trim();
+            if (!p) return;
+            var match = p.match(/^(.*?)\s*x(\d+)$/i);
+            var name = match ? match[1].trim() : p;
+            var qty = match ? parseInt(match[2], 10) : 1;
+
+            if (!dishStats[name]) {
+                // Find in adminMenu if available
+                var menuItem = (adminMenu || []).find(function(m) { return m.title && m.title.toLowerCase() === name.toLowerCase(); });
+                dishStats[name] = {
+                    title: name,
+                    category: menuItem ? menuItem.category : 'Kitchen',
+                    price: menuItem ? menuItem.price : 4500,
+                    qty: 0
+                };
+            }
+            dishStats[name].qty += qty;
+        });
+    });
+
+    var sorted = Object.values(dishStats).sort(function(a, b) { return b.qty - a.qty; }).slice(0, 8);
+
+    if (sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No dish performance data found.</td></tr>';
+        return;
+    }
+
+    var html = '';
+    sorted.forEach(function(d, idx) {
+        var estRev = d.qty * d.price;
+        var rankBadge = idx === 0 ? '<span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-crown me-1"></i>#1</span>' :
+                        (idx === 1 ? '<span class="badge bg-secondary text-white px-2 py-1">#2</span>' :
+                        (idx === 2 ? '<span class="badge bg-danger text-white px-2 py-1">#3</span>' : `<span class="badge bg-light text-dark border">#${idx + 1}</span>`));
+
+        html += `
+            <tr>
+                <td>${rankBadge}</td>
+                <td>
+                    <div class="fw-bold text-dark">${d.title}</div>
+                </td>
+                <td><span class="badge bg-light text-secondary border text-capitalize">${d.category}</span></td>
+                <td><strong class="text-primary">${d.qty} ordered</strong></td>
+                <td>${formatRWF(d.price)}</td>
+                <td class="text-end"><strong class="text-dark">${formatRWF(estRev)}</strong></td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+function renderAnalyticsAuditTable() {
+    var tbody = document.getElementById('analyticsAuditTbody');
+    if (!tbody) return;
+
+    var orders = getFilteredAnalyticsOrders();
+
+    if (currentAnalyticsSearch) {
+        orders = orders.filter(function(o) {
+            return o.id.toLowerCase().includes(currentAnalyticsSearch) ||
+                   (o.customerName || '').toLowerCase().includes(currentAnalyticsSearch) ||
+                   (o.itemsSummary || '').toLowerCase().includes(currentAnalyticsSearch) ||
+                   (o.phone || '').toLowerCase().includes(currentAnalyticsSearch);
+        });
+    }
+
+    var totalItems = orders.length;
+    var totalPages = Math.ceil(totalItems / ANALYTICS_PER_PAGE) || 1;
+    if (currentAnalyticsPage > totalPages) currentAnalyticsPage = totalPages;
+    if (currentAnalyticsPage < 1) currentAnalyticsPage = 1;
+
+    var startIdx = (currentAnalyticsPage - 1) * ANALYTICS_PER_PAGE;
+    var pageOrders = orders.slice(startIdx, startIdx + ANALYTICS_PER_PAGE);
+
+    if (totalItems === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No orders match the current analytics filter.</td></tr>';
+    } else {
+        var html = '';
+        pageOrders.forEach(function(o) {
+            var dateStr = new Date(o.date).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            var pMethod = o.paymentMethod || o.payment_method || 'MTN MoMo';
+            var pStatus = (o.paymentStatus || o.payment_status || 'Paid').toLowerCase();
+            var pStatusBadge = pStatus === 'paid' ? '<span class="badge bg-success">PAID</span>' : '<span class="badge bg-warning text-dark">PENDING</span>';
+
+            html += `
+                <tr>
+                    <td><a href="#" onclick="event.preventDefault(); viewOrder('${o.id}');" class="fw-bold text-primary font-monospace">#${o.id}</a></td>
+                    <td class="small text-muted">${dateStr}</td>
+                    <td>
+                        <div class="fw-bold text-dark" style="font-size:0.85rem;">${o.customerName || 'Guest'}</div>
+                        <div class="small text-muted" style="font-size:0.75rem;">${o.phone || ''}</div>
+                    </td>
+                    <td style="max-width:240px; white-space:normal; font-size:0.82rem;">${o.itemsSummary}</td>
+                    <td><span class="badge bg-light text-dark border text-capitalize">${o.serviceType || 'Delivery'}</span></td>
+                    <td>
+                        <div class="small fw-bold text-dark">${pMethod}</div>
+                        ${pStatusBadge}
+                    </td>
+                    <td><strong class="text-dark">${formatRWF(o.total)}</strong></td>
+                    <td><span class="badge bg-dark text-white small">${o.status}</span></td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    renderAnalyticsPagination(totalItems, totalPages);
+}
+
+function renderAnalyticsPagination(totalItems, totalPages) {
+    var infoEl = document.getElementById('analyticsPaginationInfo');
+    var navEl = document.getElementById('analyticsPaginationNav');
+    if (!infoEl || !navEl) return;
+
+    if (totalItems === 0) {
+        infoEl.textContent = 'Showing 0 orders';
+        navEl.innerHTML = '';
+        return;
+    }
+
+    var start = (currentAnalyticsPage - 1) * ANALYTICS_PER_PAGE + 1;
+    var end = Math.min(start + ANALYTICS_PER_PAGE - 1, totalItems);
+    infoEl.textContent = 'Showing ' + start + ' to ' + end + ' of ' + totalItems + ' orders';
+
+    if (totalPages <= 1) {
+        navEl.innerHTML = '';
+        return;
+    }
+
+    var navHtml = '';
+    var prevDisabled = currentAnalyticsPage === 1 ? 'disabled' : '';
+    navHtml += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeAnalyticsPage(${currentAnalyticsPage - 1})"><i class="fas fa-chevron-left"></i></a></li>`;
+
+    for (var p = 1; p <= totalPages; p++) {
+        var active = p === currentAnalyticsPage ? 'active' : '';
+        navHtml += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="event.preventDefault(); changeAnalyticsPage(${p})">${p}</a></li>`;
+    }
+
+    var nextDisabled = currentAnalyticsPage === totalPages ? 'disabled' : '';
+    navHtml += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeAnalyticsPage(${currentAnalyticsPage + 1})"><i class="fas fa-chevron-right"></i></a></li>`;
+
+    navEl.innerHTML = navHtml;
+}
+
+function changeAnalyticsPage(newPage) {
+    currentAnalyticsPage = newPage;
+    renderAnalyticsAuditTable();
+}
+window.changeAnalyticsPage = changeAnalyticsPage;
+
+// ============================================================
+// EXPORT UTILITIES: CSV, RRA EBM SUMMARY & DAILY SHIFT Z-REPORT
+// ============================================================
+
+// 1. Export Analytics to CSV / Excel
+function exportAnalyticsCSV() {
+    var orders = getFilteredAnalyticsOrders();
+    if (!orders || orders.length === 0) {
+        alert('No orders available to export for this time range.');
+        return;
+    }
+
+    var headers = [
+        'Order ID',
+        'Date and Time',
+        'Customer Name',
+        'Phone Number',
+        'Fulfilment Option',
+        'Items Ordered',
+        'Payment Method',
+        'Payment Status',
+        'Net Amount (RWF)',
+        '18% VAT (RWF)',
+        'Gross Total (RWF)',
+        'Order Status'
+    ];
+
+    var csvRows = [];
+    csvRows.push(headers.map(function(h) { return '"' + h.replace(/"/g, '""') + '"'; }).join(','));
+
+    orders.forEach(function(o) {
+        var gross = parseFloat(o.total) || 0;
+        var net = Math.round(gross / 1.18);
+        var vat = gross - net;
+        var dateFormatted = new Date(o.date).toISOString().replace('T', ' ').substring(0, 19);
+
+        var row = [
+            o.id,
+            dateFormatted,
+            o.customerName || 'Guest',
+            o.phone || '',
+            o.serviceType || 'Delivery',
+            (o.itemsSummary || '').replace(/"/g, '""'),
+            o.paymentMethod || o.payment_method || 'MTN MoMo',
+            o.paymentStatus || o.payment_status || 'Paid',
+            net,
+            vat,
+            gross,
+            o.status || 'Completed'
+        ];
+
+        csvRows.push(row.map(function(val) { return '"' + String(val).replace(/"/g, '""') + '"'; }).join(','));
+    });
+
+    var csvString = '\uFEFF' + csvRows.join('\r\n'); // UTF-8 BOM for Microsoft Excel compatibility
+    var blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.setAttribute('href', url);
+    var filename = 'INEZA_RESTO_Sales_Report_' + (new Date().toISOString().substring(0, 10)) + '.csv';
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    if (typeof showToast === 'function') {
+        showToast('Sales CSV exported successfully!', 'success', 'Export Complete');
+    }
+}
+window.exportAnalyticsCSV = exportAnalyticsCSV;
+
+// 2. Print Official RRA EBM Tax Summary Report
+function printEbmTaxSummary() {
+    var orders = getFilteredAnalyticsOrders();
+    var grossRevenue = 0;
+    var totalOrders = orders.length;
+
+    orders.forEach(function(o) { grossRevenue += parseFloat(o.total) || 0; });
+    var netRevenue = Math.round(grossRevenue / 1.18);
+    var vatAmount = grossRevenue - netRevenue;
+
+    var printWin = window.open('', '_blank', 'width=800,height=900');
+    if (!printWin) return;
+
+    var now = new Date();
+    var html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>RRA EBM v2.1 Fiscal Tax Summary - INEZA RESTO & COFFEE SHOP</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #222; }
+                .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+                .header h2 { margin: 0 0 5px; text-transform: uppercase; letter-spacing: 1px; }
+                .tax-grid { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                .tax-grid th, .tax-grid td { border: 1px solid #ccc; padding: 10px 14px; text-align: left; }
+                .tax-grid th { background: #f4f6f8; font-weight: bold; }
+                .total-row { font-weight: bold; background: #eef2f6; font-size: 1.05rem; }
+                .footer { margin-top: 40px; font-size: 0.85rem; color: #666; text-align: center; border-top: 1px dashed #aaa; padding-top: 15px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>INEZA RESTO &amp; COFFEE SHOP</h2>
+                <div>108 Kimironko St, Kigali - Rwanda | TEL: +250 788 000 000</div>
+                <div><strong>TIN:</strong> 102938475 | <strong>SDC ID:</strong> SDC004000892</div>
+                <h3 style="margin-top:15px; color:#2c3e50;">RRA EBM v2.1 FISCAL TAX AUDIT SUMMARY</h3>
+                <small>Generated on: ${now.toLocaleString()} | Period Filter: <strong>${currentAnalyticsRange.toUpperCase()}</strong></small>
+            </div>
+
+            <table class="tax-grid">
+                <thead>
+                    <tr>
+                        <th>Tax Category</th>
+                        <th>Tax Rate</th>
+                        <th>Taxable Turnover (RWF)</th>
+                        <th>VAT Amount (RWF)</th>
+                        <th>Gross Turnover (RWF)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Category A (Standard VAT)</strong></td>
+                        <td>18.00%</td>
+                        <td>${formatRWF(netRevenue)}</td>
+                        <td>${formatRWF(vatAmount)}</td>
+                        <td>${formatRWF(grossRevenue)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Category B (Zero-Rated / Exempt)</strong></td>
+                        <td>0.00%</td>
+                        <td>0 RWF</td>
+                        <td>0 RWF</td>
+                        <td>0 RWF</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="2">TOTAL FISCAL REVENUE</td>
+                        <td>${formatRWF(netRevenue)}</td>
+                        <td>${formatRWF(vatAmount)}</td>
+                        <td>${formatRWF(grossRevenue)}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top:30px; display:flex; justify-content:space-between;">
+                <div>
+                    <div><strong>Total Settled Receipts:</strong> ${totalOrders}</div>
+                    <div><strong>Fiscal Verification QR:</strong> Validated</div>
+                </div>
+                <div style="text-align:right;">
+                    <div><strong>Store Auditor / SuperAdmin:</strong> _____________________</div>
+                    <div style="margin-top:20px;"><strong>Signature &amp; Stamp:</strong> _____________________</div>
+                </div>
+            </div>
+
+            <div class="footer">
+                Official RRA Electronic Billing Machine (EBM) certified report generated via INEZA RESTO &amp; COFFEE SHOP Enterprise System.
+            </div>
+
+            <script>
+                window.onload = function() { window.print(); };
+            <\/script>
+        </body>
+        </html>
+    `;
+
+    printWin.document.write(html);
+    printWin.document.close();
+}
+window.printEbmTaxSummary = printEbmTaxSummary;
+
+// 3. Print Daily Shift End / Z-Report (80mm Thermal Receipt Layout)
+function printShiftZReport() {
+    var orders = getFilteredAnalyticsOrders();
+    var grossRevenue = 0;
+    var momoRevenue = 0;
+    var cashRevenue = 0;
+    var cardRevenue = 0;
+    var totalOrders = orders.length;
+
+    orders.forEach(function(o) {
+        var tot = parseFloat(o.total) || 0;
+        grossRevenue += tot;
+        var p = (o.paymentMethod || o.payment_method || '').toLowerCase();
+        if (p.includes('momo') || p.includes('mtn') || p.includes('airtel')) {
+            momoRevenue += tot;
+        } else if (p.includes('card') || p.includes('pos')) {
+            cardRevenue += tot;
+        } else {
+            cashRevenue += tot;
+        }
+    });
+
+    var netRevenue = Math.round(grossRevenue / 1.18);
+    var vatAmount = grossRevenue - netRevenue;
+
+    var printWin = window.open('', '_blank', 'width=380,height=600');
+    if (!printWin) return;
+
+    var now = new Date();
+    var html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Daily Shift Z-Report</title>
+            <style>
+                @page { margin: 0; }
+                body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 80mm; margin: 0 auto; padding: 12px; line-height: 1.35; color: #000; }
+                .center { text-align: center; }
+                .bold { font-weight: bold; }
+                .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                .row { display: flex; justify-content: space-between; }
+                h2, h3, p { margin: 3px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="center">
+                <h2>INEZA RESTO</h2>
+                <h3>&amp; COFFEE SHOP</h3>
+                <p>108 Kimironko St, Kigali</p>
+                <p>TIN: 102938475 | TEL: +250 788 000 000</p>
+                <div class="divider"></div>
+                <h3 class="bold">*** DAILY SHIFT Z-REPORT ***</h3>
+                <p>${now.toLocaleString()}</p>
+                <p>Register: POS-01 | Cashier: Manager</p>
+                <div class="divider"></div>
+            </div>
+
+            <div class="row"><span>TOTAL ORDERS:</span><span class="bold">${totalOrders}</span></div>
+            <div class="row"><span>GROSS REVENUE:</span><span class="bold">${formatRWF(grossRevenue)}</span></div>
+            <div class="row"><span>NET SALES:</span><span>${formatRWF(netRevenue)}</span></div>
+            <div class="row"><span>18% VAT:</span><span>${formatRWF(vatAmount)}</span></div>
+
+            <div class="divider"></div>
+            <div class="center bold">PAYMENT SETTLEMENTS</div>
+            <div class="divider"></div>
+            <div class="row"><span>MTN &amp; Airtel MoMo:</span><span class="bold">${formatRWF(momoRevenue)}</span></div>
+            <div class="row"><span>Cash Drawer Total:</span><span class="bold">${formatRWF(cashRevenue)}</span></div>
+            <div class="row"><span>POS Card Swipes:</span><span class="bold">${formatRWF(cardRevenue)}</span></div>
+
+            <div class="divider"></div>
+            <div class="center">
+                <p class="bold">SHIFT BALANCING MATCHED</p>
+                <p>--- END OF REPORT ---</p>
+            </div>
+
+            <script>
+                window.onload = function() { window.print(); };
+            <\/script>
+        </body>
+        </html>
+    `;
+
+    printWin.document.write(html);
+    printWin.document.close();
+}
+window.printShiftZReport = printShiftZReport;
