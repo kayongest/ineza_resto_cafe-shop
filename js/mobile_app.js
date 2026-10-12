@@ -1809,7 +1809,7 @@ function checkout() {
     const deliveryFee = 1000;
     const finalTotal = Math.max(0, subtotal + deliveryFee - promoDiscountAmount - appliedLoyaltyPoints);
     const itemsSummaryStr = cart.map(i => `${i.title} x${i.qty || 1}`).join(', ');
-    const orderCode = 'FC-' + Math.floor(1000 + Math.random() * 9000);
+    const orderCode = 'INC-' + Math.floor(1000 + Math.random() * 9000);
 
     const activeUser = JSON.parse(localStorage.getItem('favcafe_active_user') || '{}');
     const custName = activeUser.name || 'James';
@@ -2108,6 +2108,7 @@ function getOrderStatusDetails(statusStr) {
 
 function filterOrderHistoryTab(status, element) {
     currentOrderFilter = status;
+    currentMobileOrdersPage = 1;
     document.querySelectorAll('#orderStatusFilterPills .status-pill-btn').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -2120,6 +2121,7 @@ let userSearchOrdersQuery = '';
 
 function filterOrdersListByQuery(query) {
     userSearchOrdersQuery = (query || '').toLowerCase().trim();
+    currentMobileOrdersPage = 1;
     loadMobileOrderHistory();
 }
 window.filterOrdersListByQuery = filterOrdersListByQuery;
@@ -2137,7 +2139,7 @@ function getAllUserOrders() {
     if (!ordersList || ordersList.length === 0) {
         ordersList = [
             {
-                id: 'FC-3307',
+                id: 'INC-3307',
                 date: new Date().toISOString(),
                 status: 'Order Received',
                 serviceType: 'delivery',
@@ -2151,7 +2153,7 @@ function getAllUserOrders() {
                 ]
             },
             {
-                id: 'FC-1234',
+                id: 'INC-1234',
                 date: new Date(Date.now() - 3600000).toISOString(),
                 status: 'On the Way',
                 serviceType: 'delivery',
@@ -2164,7 +2166,7 @@ function getAllUserOrders() {
                 ]
             },
             {
-                id: 'FC-2840',
+                id: 'INC-2840',
                 date: new Date(Date.now() - 7200000).toISOString(),
                 status: 'Being Prepared',
                 serviceType: 'takeaway',
@@ -2176,7 +2178,7 @@ function getAllUserOrders() {
                 ]
             },
             {
-                id: 'FC-6129',
+                id: 'INC-6129',
                 date: new Date(Date.now() - 86400000).toISOString(),
                 status: 'Delivered',
                 serviceType: 'delivery',
@@ -2192,6 +2194,17 @@ function getAllUserOrders() {
     }
     return ordersList;
 }
+
+const MOBILE_ORDERS_PER_PAGE = 5;
+let currentMobileOrdersPage = 1;
+
+function changeMobileOrdersPage(newPage) {
+    currentMobileOrdersPage = newPage;
+    loadMobileOrderHistory();
+    const container = document.getElementById('mobileOrderHistoryList');
+    if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+window.changeMobileOrdersPage = changeMobileOrdersPage;
 
 function loadMobileOrderHistory() {
     const container = document.getElementById('mobileOrderHistoryList');
@@ -2217,8 +2230,18 @@ function loadMobileOrderHistory() {
     }
 
     container.innerHTML = '';
+    const pagContainer = document.getElementById('mobileOrdersPaginationContainer');
 
-    if (filtered.length === 0) {
+    const totalOrders = filtered.length;
+    const totalPages = Math.ceil(totalOrders / MOBILE_ORDERS_PER_PAGE) || 1;
+    if (currentMobileOrdersPage > totalPages) currentMobileOrdersPage = totalPages;
+    if (currentMobileOrdersPage < 1) currentMobileOrdersPage = 1;
+
+    const startIdx = (currentMobileOrdersPage - 1) * MOBILE_ORDERS_PER_PAGE;
+    const pageOrders = filtered.slice(startIdx, startIdx + MOBILE_ORDERS_PER_PAGE);
+
+    if (totalOrders === 0) {
+        if (pagContainer) pagContainer.innerHTML = '';
         container.innerHTML = `
             <div class="text-center py-5 text-muted-custom">
                 <i class="far fa-file-alt mb-3" style="font-size:2.5rem; opacity:0.3;"></i>
@@ -2229,7 +2252,7 @@ function loadMobileOrderHistory() {
         return;
     }
 
-    filtered.forEach(o => {
+    pageOrders.forEach(o => {
         const meta = getOrderStatusDetails(o.status);
         let items = o.items || [];
         if (!items || items.length === 0) {
@@ -2299,6 +2322,31 @@ function loadMobileOrderHistory() {
         `;
     });
 
+    if (pagContainer) {
+        const startNum = startIdx + 1;
+        const endNum = Math.min(startIdx + MOBILE_ORDERS_PER_PAGE, totalOrders);
+        pagContainer.innerHTML = `
+            <div class="text-xs text-muted-custom" style="font-size:0.75rem; color:#8c9cb8;">
+                Showing <strong class="text-white">${startNum}</strong>-<strong class="text-white">${endNum}</strong> of <strong class="text-cyan">${totalOrders}</strong>
+            </div>
+            <div class="d-flex align-items-center gap-1" style="display:flex; align-items:center; gap:6px;">
+                <button type="button" class="btn btn-sm ${currentMobileOrdersPage === 1 ? 'disabled opacity-50' : ''}" 
+                    style="background:#232d4b; color:#fff; border-radius:8px; padding:4px 10px; font-size:0.75rem; border:1px solid rgba(255,255,255,0.1); cursor:pointer;" 
+                    onclick="changeMobileOrdersPage(${currentMobileOrdersPage - 1})" ${currentMobileOrdersPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left me-1"></i> Prev
+                </button>
+                <span style="font-size:0.75rem; color:#38b6ff; font-weight:700; background:#121827; padding:4px 10px; border-radius:8px; border:1px solid rgba(56,182,255,0.3);">
+                    ${currentMobileOrdersPage} / ${totalPages}
+                </span>
+                <button type="button" class="btn btn-sm ${currentMobileOrdersPage === totalPages ? 'disabled opacity-50' : ''}" 
+                    style="background:#232d4b; color:#fff; border-radius:8px; padding:4px 10px; font-size:0.75rem; border:1px solid rgba(255,255,255,0.1); cursor:pointer;" 
+                    onclick="changeMobileOrdersPage(${currentMobileOrdersPage + 1})" ${currentMobileOrdersPage === totalPages ? 'disabled' : ''}>
+                    Next <i class="fas fa-chevron-right ms-1"></i>
+                </button>
+            </div>
+        `;
+    }
+
     // If tracking modal is currently open for an order, refresh it with updated status in real-time
     if (currentTrackingOrderId) {
         const trackingModal = document.getElementById('mobileOrderTrackingModal');
@@ -2322,6 +2370,7 @@ function openOrderTrackingModal(orderId) {
     currentTrackingOrderId = target.id;
     const modal = document.getElementById('mobileOrderTrackingModal');
     if (!modal) return;
+    if (typeof applyWhatsAppVisibility === 'function') applyWhatsAppVisibility();
     modal.classList.add('active');
 
     const meta = getOrderStatusDetails(target.status);
@@ -2476,6 +2525,45 @@ _Thank you for dining with INEZA RESTO & COFFEE SHOP!_`;
     window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank');
 }
 window.shareCurrentMobileOrderWhatsApp = shareCurrentMobileOrderWhatsApp;
+
+/* ============================================================
+   WHATSAPP VISIBILITY SYNC ENGINE (MOBILE)
+   ============================================================ */
+function applyWhatsAppVisibility() {
+    let isEnabled = true;
+    try {
+        const settingVal = localStorage.getItem('favcafe_setting_whatsapp');
+        if (settingVal === 'false') isEnabled = false;
+        const cartSettings = JSON.parse(localStorage.getItem('favcafe_cart_settings') || '{}');
+        if (cartSettings.showWhatsApp === false) isEnabled = false;
+    } catch(e) {}
+
+    const els = document.querySelectorAll('.whatsapp-toggleable');
+    els.forEach(el => {
+        if (!isEnabled) {
+            el.style.setProperty('display', 'none', 'important');
+        } else {
+            el.style.removeProperty('display');
+        }
+    });
+}
+window.applyWhatsAppVisibility = applyWhatsAppVisibility;
+
+window.addEventListener('storage', (e) => {
+    if (e.key === 'favcafe_setting_whatsapp' || e.key === 'favcafe_cart_settings' || e.key === 'favcafe_cart_settings_signal') {
+        applyWhatsAppVisibility();
+    }
+});
+try {
+    const bc = new BroadcastChannel('favcafe_settings_channel');
+    bc.onmessage = (e) => {
+        if (e.data && e.data.type === 'cart_settings_updated') {
+            applyWhatsAppVisibility();
+        }
+    };
+} catch(e) {}
+document.addEventListener('DOMContentLoaded', applyWhatsAppVisibility);
+setTimeout(applyWhatsAppVisibility, 300);
 
 // FAVORITES / OFFERS
 function loadFavorites() {

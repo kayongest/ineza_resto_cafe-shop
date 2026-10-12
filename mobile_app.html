@@ -17,7 +17,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <!-- Foodia Dark Navy CSS -->
-    <link rel="stylesheet" href="css/mobile_app.css?v=6.5">
+    <link rel="stylesheet" href="css/mobile_app.css?v=6.6">
 </head>
 
 <body>
@@ -343,6 +343,9 @@
             <div id="mobileOrderHistoryList">
                 <!-- Dynamically populated Order Cards -->
             </div>
+
+            <!-- Mobile Orders Pagination Controls (5 items per page) -->
+            <div id="mobileOrdersPaginationContainer" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; margin-bottom: 24px; padding: 10px 4px;"></div>
         </div>
 
         <!-- 5. NOTIFICATION VIEW -->
@@ -825,7 +828,7 @@
             <div class="custom-modal-header" style="border-bottom: none; padding-bottom: 0;">
                 <div>
                     <h3 id="trackingOrderCodeText" style="font-size: 1.15rem; color:#fff; font-weight:700;">Order
-                        #FC-0000</h3>
+                        #INC-0000</h3>
                     <span id="trackingStatusBadgePill" class="order-status-badge mt-1" style="font-size:0.75rem;">
                         <span class="status-pill-dot" style="background:var(--status-pending);"></span> Order Received
                     </span>
@@ -874,8 +877,8 @@
                     <button type="button" class="btn-secondary-custom flex-grow-1" onclick="closeOrderTrackingModal()">
                         <i class="fas fa-arrow-left me-1"></i> Back
                     </button>
-                    <button type="button" class="btn btn-success flex-grow-1 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-1 shadow-sm" onclick="shareCurrentMobileOrderWhatsApp()" style="background:#25D366; border-color:#25D366; color:#fff; font-size:0.88rem;">
-                        <i class="fab fa-whatsapp fs-5"></i> WhatsApp
+                    <button type="button" class="btn btn-whatsapp-modern flex-grow-1 rounded-pill fw-bold whatsapp-toggleable" onclick="shareCurrentMobileOrderWhatsApp()" style="font-size:0.88rem; padding: 10px 16px;">
+                        <i class="fab fa-whatsapp"></i> <span>Share on WhatsApp</span>
                     </button>
                 </div>
             </div>
@@ -890,7 +893,7 @@
             <!-- Header -->
             <div class="order-tracking-header" style="background:#1e293b; padding:15px; display:flex; justify-content:space-between;">
                 <div>
-                    <h3 id="receiptOrderCodeText" style="font-size: 1.15rem; color:#fff; font-weight:700;">Order #FC-0000</h3>
+                    <h3 id="receiptOrderCodeText" style="font-size: 1.15rem; color:#fff; font-weight:700;">Order #INC-0000</h3>
                     <span id="receiptDateText" style="font-size:0.75rem; color:#94a3b8;"></span>
                 </div>
                 <button type="button" class="modal-circle-close-btn" onclick="closeReceiptModal()">&times;</button>
@@ -1053,7 +1056,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/mobile_app.js?v=7.1"></script>
+    <script src="js/mobile_app.js?v=7.2"></script>
 </body>
 
 </html>

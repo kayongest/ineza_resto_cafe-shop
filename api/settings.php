@@ -80,7 +80,8 @@ if ($action === 'update') {
         'delivery_fee',
         'currency',
         'vat_percent',
-        'opening_hours'
+        'opening_hours',
+        'whatsapp_enabled'
     ];
 
     try {

@@ -1075,7 +1075,7 @@ function initSidebarTabs() {
 var currentLiveOrdersFilter = 'all';
 var currentLiveOrdersSearch = '';
 var currentLiveOrdersPage = 1;
-var LIVE_ORDERS_PER_PAGE = 7;
+var LIVE_ORDERS_PER_PAGE = 5;
 
 function onLiveOrdersSearchChange() {
     var input = document.getElementById('liveOrdersSearchInput');
@@ -1618,7 +1618,7 @@ function saveLiveOrderForm() {
         if (typeof showToast === 'function') showToast('Live order #' + id + ' successfully updated!', 'success', 'Order Saved');
     } else {
         // Create new order
-        var newId = 'FC-' + Math.floor(1000 + Math.random() * 9000);
+        var newId = 'INC-' + Math.floor(1000 + Math.random() * 9000);
         var newOrder = {
             id: newId,
             date: new Date().toISOString(),
@@ -4729,11 +4729,16 @@ function initCartAdminSettings() {
     var summaryBadge = document.getElementById('badgeSummaryStatus');
     var callWaiterBadge = document.getElementById('badgeCallWaiterStatus');
     var reservationsBadge = document.getElementById('badgeReservationsStatus');
+    var whatsappCheckbox = document.getElementById('settingToggleWhatsApp');
+    var whatsappBadge = document.getElementById('badgeWhatsAppStatus');
+
+    var showWhatsApp = (settings.showWhatsApp !== undefined) ? settings.showWhatsApp : (localStorage.getItem('favcafe_setting_whatsapp') !== 'false');
 
     if (extrasCheckbox) extrasCheckbox.checked = settings.showExtras;
     if (summaryCheckbox) summaryCheckbox.checked = settings.showSummaryDiscounts;
     if (callWaiterCheckbox) callWaiterCheckbox.checked = settings.showCallWaiter;
     if (reservationsCheckbox) reservationsCheckbox.checked = settings.showReservations;
+    if (whatsappCheckbox) whatsappCheckbox.checked = showWhatsApp;
 
     if (extrasBadge) {
         extrasBadge.textContent = settings.showExtras ? 'ENABLED' : 'DISABLED';
@@ -4751,6 +4756,10 @@ function initCartAdminSettings() {
         reservationsBadge.textContent = settings.showReservations ? 'ENABLED' : 'DISABLED';
         reservationsBadge.className = settings.showReservations ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
     }
+    if (whatsappBadge) {
+        whatsappBadge.textContent = showWhatsApp ? 'ENABLED' : 'DISABLED';
+        whatsappBadge.className = showWhatsApp ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
 
     applyAdminReservationsVisibility(settings.showReservations);
     updateKitchenAudioUI();
@@ -4762,15 +4771,19 @@ function handleCartSettingChange() {
     var summaryCheckbox = document.getElementById('settingToggleSummary');
     var callWaiterCheckbox = document.getElementById('settingToggleCallWaiter');
     var reservationsCheckbox = document.getElementById('settingToggleReservations');
+    var whatsappCheckbox = document.getElementById('settingToggleWhatsApp');
+
     var extrasBadge = document.getElementById('badgeExtrasStatus');
     var summaryBadge = document.getElementById('badgeSummaryStatus');
     var callWaiterBadge = document.getElementById('badgeCallWaiterStatus');
     var reservationsBadge = document.getElementById('badgeReservationsStatus');
+    var whatsappBadge = document.getElementById('badgeWhatsAppStatus');
 
     var showExtras = extrasCheckbox ? extrasCheckbox.checked : true;
     var showSummaryDiscounts = summaryCheckbox ? summaryCheckbox.checked : true;
     var showCallWaiter = callWaiterCheckbox ? callWaiterCheckbox.checked : true;
     var showReservations = reservationsCheckbox ? reservationsCheckbox.checked : false;
+    var showWhatsApp = whatsappCheckbox ? whatsappCheckbox.checked : true;
 
     if (extrasBadge) {
         extrasBadge.textContent = showExtras ? 'ENABLED' : 'DISABLED';
@@ -4788,13 +4801,18 @@ function handleCartSettingChange() {
         reservationsBadge.textContent = showReservations ? 'ENABLED' : 'DISABLED';
         reservationsBadge.className = showReservations ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
     }
+    if (whatsappBadge) {
+        whatsappBadge.textContent = showWhatsApp ? 'ENABLED' : 'DISABLED';
+        whatsappBadge.className = showWhatsApp ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
 
     applyAdminReservationsVisibility(showReservations);
 
-    var newSettings = { showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter, showReservations: showReservations };
+    var newSettings = { showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter, showReservations: showReservations, showWhatsApp: showWhatsApp };
     try {
         localStorage.setItem('favcafe_cart_settings', JSON.stringify(newSettings));
-        localStorage.setItem('favcafe_cart_settings_signal', JSON.stringify({ showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter, showReservations: showReservations, ts: Date.now() }));
+        localStorage.setItem('favcafe_setting_whatsapp', showWhatsApp ? 'true' : 'false');
+        localStorage.setItem('favcafe_cart_settings_signal', JSON.stringify({ showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter, showReservations: showReservations, showWhatsApp: showWhatsApp, ts: Date.now() }));
     } catch (e) {}
 
     try {
@@ -4802,8 +4820,17 @@ function handleCartSettingChange() {
         chan.postMessage({ type: 'cart_settings_updated', settings: newSettings });
     } catch (e) {}
 
+    // Persist to store_settings table
+    try {
+        fetch('api/settings.php?action=update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings: { whatsapp_enabled: showWhatsApp ? 'true' : 'false' } })
+        }).catch(function(err){});
+    } catch (e) {}
+
     if (typeof showToast === 'function') {
-        showToast('Cart drawer options updated & synced to mobile app!', 'success', 'Cart Settings');
+        showToast('Store feature settings updated & synced!', 'success', 'Settings');
     }
 }
 window.handleCartSettingChange = handleCartSettingChange;
@@ -4811,7 +4838,7 @@ window.handleCartSettingChange = handleCartSettingChange;
 function saveCartAdminSettings() {
     handleCartSettingChange();
     if (typeof showToast === 'function') {
-        showToast('All mobile cart settings saved successfully!', 'success', 'Saved');
+        showToast('All operational & WhatsApp settings saved successfully!', 'success', 'Saved');
     }
 }
 window.saveCartAdminSettings = saveCartAdminSettings;

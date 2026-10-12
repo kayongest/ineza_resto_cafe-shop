@@ -1011,7 +1011,7 @@ function handleOrderSubmission(e) {
 
     var subtotal = cart.reduce(function (acc, i) { return acc + i.price * i.quantity; }, 0);
     var itemsSummaryStr = cart.map(function (i) { return i.title + ' x' + i.quantity; }).join(', ');
-    var orderCode = 'FC-' + Math.floor(1000 + Math.random() * 9000);
+    var orderCode = 'INC-' + Math.floor(1000 + Math.random() * 9000);
 
     var newOrder = {
         id: orderCode,
@@ -1143,7 +1143,7 @@ function confirmMomoUssdSuccess() {
     if (!targetOrder && cart && cart.length > 0) {
         var subtotal = cart.reduce(function (acc, i) { return acc + i.price * i.quantity; }, 0);
         targetOrder = {
-            id: 'FC-' + Math.floor(1000 + Math.random() * 9000),
+            id: 'INC-' + Math.floor(1000 + Math.random() * 9000),
             date: new Date().toISOString(),
             customerName: 'Guest Customer',
             phone: '+250 788 700 870',
@@ -1225,6 +1225,7 @@ function completeOrderPlacement(newOrder) {
 
     var successModal = document.getElementById('orderSuccessModal');
     if (successModal) {
+        if (typeof applyWhatsAppVisibility === 'function') applyWhatsAppVisibility();
         successModal.classList.add('open');
         document.body.style.overflow = 'hidden';
     }
@@ -1624,8 +1625,16 @@ function renderMyOrders() {
         return;
     }
 
+    var totalOrders = displayOrders.length;
+    var totalPages = Math.ceil(totalOrders / DESKTOP_ORDERS_PER_PAGE) || 1;
+    if (currentCustomerOrdersPage > totalPages) currentCustomerOrdersPage = totalPages;
+    if (currentCustomerOrdersPage < 1) currentCustomerOrdersPage = 1;
+
+    var startIdx = (currentCustomerOrdersPage - 1) * DESKTOP_ORDERS_PER_PAGE;
+    var pageOrders = displayOrders.slice(startIdx, startIdx + DESKTOP_ORDERS_PER_PAGE);
+
     var html = '';
-    displayOrders.forEach(function (o) {
+    pageOrders.forEach(function (o) {
         var dateFormatted = new Date(o.date).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         var statusBadgeClass = 'bg-info text-dark';
         if (o.status === 'Completed' || o.status === 'Delivered') statusBadgeClass = 'bg-success';
@@ -1649,8 +1658,32 @@ function renderMyOrders() {
         `;
     });
 
+    if (totalOrders > 0) {
+        var startShow = startIdx + 1;
+        var endShow = Math.min(startIdx + DESKTOP_ORDERS_PER_PAGE, totalOrders);
+        html += `
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top flex-wrap gap-2" style="font-size:0.85rem;">
+                <div class="text-muted">Showing <strong>${startShow}</strong> to <strong>${endShow}</strong> of <strong>${totalOrders}</strong> orders</div>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary ${currentCustomerOrdersPage === 1 ? 'disabled' : ''}" onclick="changeCustomerOrdersPage(${currentCustomerOrdersPage - 1})"><i class="fas fa-chevron-left me-1"></i> Prev</button>
+                    <span class="btn btn-light disabled px-3 fw-bold text-dark">${currentCustomerOrdersPage} / ${totalPages}</span>
+                    <button type="button" class="btn btn-outline-secondary ${currentCustomerOrdersPage === totalPages ? 'disabled' : ''}" onclick="changeCustomerOrdersPage(${currentCustomerOrdersPage + 1})">Next <i class="fas fa-chevron-right ms-1"></i></button>
+                </div>
+            </div>
+        `;
+    }
+
     container.innerHTML = html;
 }
+
+var DESKTOP_ORDERS_PER_PAGE = 5;
+var currentCustomerOrdersPage = 1;
+
+function changeCustomerOrdersPage(newPage) {
+    currentCustomerOrdersPage = newPage;
+    renderMyOrdersModal();
+}
+window.changeCustomerOrdersPage = changeCustomerOrdersPage;
 
 var currentTrackedOrderId = null;
 
@@ -1828,6 +1861,7 @@ function openTimelineModal(orderId) {
 
     var modal = document.getElementById('timelineModal');
     if (modal) {
+        if (typeof applyWhatsAppVisibility === 'function') applyWhatsAppVisibility();
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
     }
@@ -1908,6 +1942,45 @@ _Thank you for dining with INEZA RESTO & COFFEE SHOP!_`;
 }
 window.shareOrderToWhatsApp = shareOrderToWhatsApp;
 window.shareCurrentOrderToWhatsApp = function() { shareOrderToWhatsApp(); };
+
+/* ============================================================
+   WHATSAPP VISIBILITY SYNC ENGINE (DESKTOP)
+   ============================================================ */
+function applyWhatsAppVisibility() {
+    var isEnabled = true;
+    try {
+        var settingVal = localStorage.getItem('favcafe_setting_whatsapp');
+        if (settingVal === 'false') isEnabled = false;
+        var cartSettings = JSON.parse(localStorage.getItem('favcafe_cart_settings') || '{}');
+        if (cartSettings.showWhatsApp === false) isEnabled = false;
+    } catch(e) {}
+
+    var els = document.querySelectorAll('.whatsapp-toggleable');
+    els.forEach(function(el) {
+        if (!isEnabled) {
+            el.style.setProperty('display', 'none', 'important');
+        } else {
+            el.style.removeProperty('display');
+        }
+    });
+}
+window.applyWhatsAppVisibility = applyWhatsAppVisibility;
+
+window.addEventListener('storage', function(e) {
+    if (e.key === 'favcafe_setting_whatsapp' || e.key === 'favcafe_cart_settings' || e.key === 'favcafe_cart_settings_signal') {
+        applyWhatsAppVisibility();
+    }
+});
+try {
+    var bc = new BroadcastChannel('favcafe_settings_channel');
+    bc.onmessage = function(e) {
+        if (e.data && e.data.type === 'cart_settings_updated') {
+            applyWhatsAppVisibility();
+        }
+    };
+} catch(e) {}
+document.addEventListener('DOMContentLoaded', applyWhatsAppVisibility);
+setTimeout(applyWhatsAppVisibility, 300);
 
 
 /* MENU DETAIL POPUP MODAL */

@@ -1633,7 +1633,7 @@
 
          <div class="bg-light p-3 rounded-3 my-3 border">
             <div class="small text-muted mb-1 text-uppercase fw-semibold" style="letter-spacing: 0.5px;">Order Tracking Number</div>
-            <h4 id="successOrderCode" class="text-dark font-weight-bold mb-0 font-monospace" style="font-size:1.65rem; color:var(--primary) !important;">#FC-0000</h4>
+            <h4 id="successOrderCode" class="text-dark font-weight-bold mb-0 font-monospace" style="font-size:1.65rem; color:var(--primary) !important;">#INC-0000</h4>
             <div class="small text-success mt-2 fw-semibold"><i class="fas fa-clock me-1"></i> Estimated Prep Time: 20-30 mins</div>
          </div>
 
@@ -1645,8 +1645,8 @@
                <i class="fas fa-truck me-1"></i> Track Order
             </button>
          </div>
-         <button type="button" class="btn btn-success w-100 rounded-pill py-2 mt-2 font-weight-bold d-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="shareOrderToWhatsApp()" style="background:#25D366; border-color:#25D366; color:#ffffff;">
-            <i class="fab fa-whatsapp fs-5"></i> <span>Share Receipt on WhatsApp</span>
+         <button type="button" class="btn btn-whatsapp-modern w-100 rounded-pill py-2 mt-2 whatsapp-toggleable" onclick="shareOrderToWhatsApp()">
+            <i class="fab fa-whatsapp"></i> <span>Share Receipt on WhatsApp</span>
          </button>
       </div>
    </div>
@@ -1677,7 +1677,7 @@
       <div class="modal-standard-box" style="max-width:520px;">
          <div class="modal-standard-header">
             <div class="d-flex align-items-center gap-2 flex-wrap">
-               <h4 id="timelineOrderCode" class="mb-0 font-monospace">Order #FC-0000</h4>
+               <h4 id="timelineOrderCode" class="mb-0 font-monospace">Order #INC-0000</h4>
                <span id="timelineStatusBadge" class="status-badge badge bg-info text-dark rounded-pill px-3 py-1 fw-semibold">Kitchen Preparing</span>
             </div>
             <button type="button" class="modal-standard-close" onclick="closeTimelineModal()" title="Close Tracking"><i class="fas fa-times"></i></button>
@@ -1696,8 +1696,8 @@
                <button type="button" class="btn btn-outline-dark flex-grow-1 rounded-pill py-2 font-weight-bold" onclick="closeTimelineModal()">
                   <i class="fas fa-arrow-left me-1"></i> Back to Orders
                </button>
-               <button type="button" class="btn btn-success flex-grow-1 rounded-pill py-2 font-weight-bold d-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="shareOrderToWhatsApp(currentTrackedOrderId)" style="background:#25D366; border-color:#25D366; color:#ffffff;">
-                  <i class="fab fa-whatsapp fs-5"></i> <span>Share on WhatsApp</span>
+               <button type="button" class="btn btn-whatsapp-modern flex-grow-1 rounded-pill py-2 whatsapp-toggleable" onclick="shareOrderToWhatsApp(currentTrackedOrderId)">
+                  <i class="fab fa-whatsapp"></i> <span>Share on WhatsApp</span>
                </button>
             </div>
          </div>

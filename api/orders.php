@@ -56,7 +56,7 @@ if ($pdo === null) {
         $preparedBy = trim($data['preparedBy'] ?? 'Head Chef');
         $servedBy = trim($data['servedBy'] ?? 'Floor Waiter');
 
-        $newId = !empty($data['id']) ? trim($data['id']) : ('FC-' . rand(1000, 9999));
+        $newId = !empty($data['id']) ? trim($data['id']) : ('INC-' . rand(1000, 9999));
         $newOrder = [
             'id' => $newId,
             'date' => date('c'),
@@ -264,7 +264,7 @@ if ($action === 'create') {
     $preparedBy = trim($data['preparedBy'] ?? 'Head Chef');
     $servedBy = trim($data['servedBy'] ?? 'Floor Waiter');
 
-    $newId = !empty($data['id']) ? trim($data['id']) : ('FC-' . rand(1000, 9999));
+    $newId = !empty($data['id']) ? trim($data['id']) : ('INC-' . rand(1000, 9999));
     $now = date('Y-m-d H:i:s');
 
     try {
