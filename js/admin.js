@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderStaffAndLoyaltyTables();
     loadAdminCategories();
     initAdminAuthSession();
+    enforceRolePermissions();
     initSidebarTabs();
     initResponsiveSidebar();
     initSearchAndFilter();
@@ -2617,22 +2618,41 @@ try {
 } catch(e) {}
 
 /* ============================================================
-   STAFF MEMBERS & ROLES & CUSTOMER LOYALTY POINTS ENGINE
+   STAFF MEMBERS & ROLES & REGISTERED USERS ENGINE (DATABASE BACKED)
    ============================================================ */
 var adminStaffList = [];
 var adminCustomerLoyaltyList = [];
+var allUsersDatabaseList = [];
 
-function loadStaffAndLoyaltyData() {
+async function loadStaffAndLoyaltyData() {
+    try {
+        var res = await fetch('api/users.php?action=list');
+        if (res.ok) {
+            var data = await res.json();
+            if (data.status === 'success') {
+                allUsersDatabaseList = data.users || [];
+                adminStaffList = data.staff || [];
+                adminCustomerLoyaltyList = data.customers || [];
+                localStorage.setItem('favcafe_staff_members', JSON.stringify(adminStaffList));
+                localStorage.setItem('favcafe_customer_loyalty', JSON.stringify(adminCustomerLoyaltyList));
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('[Users API] Failed to fetch live users from database, using local fallback', e);
+    }
+
+    // Graceful Local Fallback
     try {
         var storedStaff = localStorage.getItem('favcafe_staff_members');
         if (storedStaff) {
             adminStaffList = JSON.parse(storedStaff);
         } else {
             adminStaffList = [
-                { id: 1, name: 'Admin Staff', code: 'admin_Favorite Cafe', phone: '+250 788 000 111', role: 'Super Admin', permissions: 'Full Access (All Modules)', status: 'Active' },
-                { id: 2, name: 'Jean Paul Ndayi', code: 'chef_jp', phone: '+250 788 222 333', role: 'Head Chef / Kitchen Manager', permissions: 'Kitchen Queue & Orders', status: 'Active' },
-                { id: 3, name: 'Aline Uwase', code: 'waiter_aline', phone: '+250 788 444 555', role: 'Floor Manager / Waiter', permissions: 'Table Dining Tracker', status: 'Active' },
-                { id: 4, name: 'Kagabo Patrick', code: 'cashier_pat', phone: '+250 788 666 777', role: 'Cashier & POS Billing', permissions: 'Checkout & Receipts', status: 'Active' }
+                { id: 1, full_name: 'Admin Staff', email: 'admin@ineza.rw', phone: '+250 788 000 111', role: 'admin', permissions: 'Full Access (All Modules)', is_active: 1 },
+                { id: 2, full_name: 'Jean Paul Ndayi', email: 'chef_jp@ineza.rw', phone: '+250 788 222 333', role: 'chef', permissions: 'Kitchen Queue & Orders', is_active: 1 },
+                { id: 3, full_name: 'Aline Uwase', email: 'waiter_aline@ineza.rw', phone: '+250 788 444 555', role: 'waiter', permissions: 'Table Dining Tracker', is_active: 1 },
+                { id: 4, full_name: 'Kagabo Patrick', email: 'cashier_pat@ineza.rw', phone: '+250 788 666 777', role: 'cashier', permissions: 'Checkout & Receipts', is_active: 1 }
             ];
             saveStaffMembers();
         }
@@ -2646,10 +2666,9 @@ function loadStaffAndLoyaltyData() {
             adminCustomerLoyaltyList = JSON.parse(storedCust);
         } else {
             adminCustomerLoyaltyList = [
-                { id: 'CUST-101', name: 'Kayonga Raul', phone: '+250 788 700 870', email: 'kayonga70@gmail.com', loyaltyPoints: 2500 },
-                { id: 'CUST-102', name: 'Eric Munyaneza', phone: '+250 788 123 456', email: 'eric@example.com', loyaltyPoints: 1200 },
-                { id: 'CUST-103', name: 'Alice Umutoni', phone: '+250 788 999 000', email: 'alice@example.com', loyaltyPoints: 850 },
-                { id: 'CUST-104', name: 'Keza Diane', phone: '+250 733 444 555', email: 'keza@example.com', loyaltyPoints: 3000 }
+                { id: 9, full_name: 'Patrick Kayonga', phone: '0788123456', email: 'testuser@ineza.rw', loyalty_points: 1500, is_active: 1, created_at: '2026-10-12 01:22:07' },
+                { id: 8, full_name: 'Yves Debande', phone: '+250784522222', email: 'debandey@gmail.com', loyalty_points: 0, is_active: 1, created_at: '2026-10-09 11:12:08' },
+                { id: 2, full_name: 'Lucas Lucavich', phone: '+250788785421', email: 'lucavich@gmail.com', loyalty_points: 2500, is_active: 1, created_at: '2026-09-15 08:30:00' }
             ];
             saveCustomerLoyalty();
         }
@@ -2670,67 +2689,160 @@ function saveCustomerLoyalty() {
     } catch (e) {}
 }
 
-function renderStaffAndLoyaltyTables() {
-    loadStaffAndLoyaltyData();
+async function renderStaffAndLoyaltyTables() {
+    await loadStaffAndLoyaltyData();
+    filterUsersTable();
+}
 
-    // Render Staff Table
+function filterUsersTable() {
+    var search = (document.getElementById('userSearchInput') ? document.getElementById('userSearchInput').value : '').toLowerCase().trim();
+    var filterRole = document.getElementById('userRoleFilter') ? document.getElementById('userRoleFilter').value : 'all';
+
+    // 1. Filter and Render Staff Table
     var staffTbody = document.getElementById('staffTableBody');
     var staffCounter = document.getElementById('staffTotalCounter');
-    if (staffTbody) {
-        if (staffCounter) staffCounter.textContent = adminStaffList.length + ' Active Staff';
-        var html = '';
-        adminStaffList.forEach(function(s) {
-            var roleBadgeClass = 'bg-primary';
-            if (s.role.includes('Chef')) roleBadgeClass = 'bg-warning text-dark';
-            else if (s.role.includes('Floor')) roleBadgeClass = 'bg-info text-dark';
-            else if (s.role.includes('Cashier')) roleBadgeClass = 'bg-success';
 
-            html += `
-                <tr>
-                    <td><span class="badge bg-dark font-monospace">${s.code}</span></td>
-                    <td>
-                        <div class="font-weight-bold text-dark">${s.name}</div>
-                        <div class="small text-muted">${s.phone}</div>
-                    </td>
-                    <td><span class="badge ${roleBadgeClass} px-2 py-1">${s.role}</span></td>
-                    <td><span class="small text-muted font-weight-bold">${s.permissions || 'Standard Access'}</span></td>
-                    <td><span class="badge ${s.status === 'Active' ? 'bg-success' : 'bg-secondary'}">${s.status}</span></td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditStaffModal(${s.id})"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteStaffMember(${s.id})"><i class="fas fa-trash-alt"></i></button>
-                    </td>
-                </tr>
-            `;
-        });
-        staffTbody.innerHTML = html;
+    var filteredStaff = adminStaffList.filter(function(s) {
+        var name = (s.full_name || s.name || '').toLowerCase();
+        var email = (s.email || s.code || '').toLowerCase();
+        var phone = (s.phone || '').toLowerCase();
+        var matchesSearch = !search || name.includes(search) || email.includes(search) || phone.includes(search);
+        var matchesRole = filterRole === 'all' || filterRole === 'staff_only' || s.role === filterRole || (filterRole === 'admin' && s.role.includes('admin'));
+        return matchesSearch && matchesRole;
+    });
+
+    if (staffTbody) {
+        if (staffCounter) staffCounter.textContent = filteredStaff.length + ' Active Staff';
+        if (filteredStaff.length === 0) {
+            staffTbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No matching staff members found.</td></tr>';
+        } else {
+            var html = '';
+            filteredStaff.forEach(function(s) {
+                var roleName = s.role;
+                var roleBadgeClass = 'bg-primary';
+                if (s.role === 'admin' || s.role.includes('Admin')) { roleName = 'Super Admin'; roleBadgeClass = 'bg-danger text-white'; }
+                else if (s.role === 'chef' || s.role.includes('Chef')) { roleName = 'Head Chef'; roleBadgeClass = 'bg-warning text-dark'; }
+                else if (s.role === 'waiter' || s.role.includes('Waiter')) { roleName = 'Floor Waiter'; roleBadgeClass = 'bg-info text-dark'; }
+                else if (s.role === 'cashier' || s.role.includes('Cashier')) { roleName = 'Cashier / POS'; roleBadgeClass = 'bg-success text-white'; }
+
+                var permissionsDesc = s.permissions || (
+                    s.role === 'admin' ? 'Full Access (All Modules)' :
+                    s.role === 'chef' ? 'Kitchen Queue & Orders' :
+                    s.role === 'waiter' ? 'Table Dining Tracker' : 'Checkout & Receipts'
+                );
+
+                var isActive = (s.is_active === undefined || s.is_active === 1 || s.is_active === '1');
+
+                html += `
+                    <tr>
+                        <td><span class="badge bg-dark font-monospace">${s.email || ('STAFF-' + s.id)}</span></td>
+                        <td>
+                            <div class="fw-bold text-dark">${s.full_name || s.name}</div>
+                            <div class="small text-muted">${s.phone || 'N/A'}</div>
+                        </td>
+                        <td><span class="badge ${roleBadgeClass} px-2 py-1 font-monospace">${roleName}</span></td>
+                        <td><span class="small text-muted fw-bold">${permissionsDesc}</span></td>
+                        <td>
+                            <span class="badge ${isActive ? 'bg-success' : 'bg-secondary'} cursor-pointer" onclick="toggleUserStatus(${s.id})" title="Click to Toggle Status">
+                                <i class="fas fa-circle me-1" style="font-size:0.5rem;"></i>${isActive ? 'Active' : 'Suspended'}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditStaffModal(${s.id})" title="Edit Staff Member"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteStaffMember(${s.id})" title="Remove Staff Account"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            staffTbody.innerHTML = html;
+        }
     }
 
-    // Render Customer Loyalty Table
+    // 2. Filter and Render Registered Customers Table
     var custTbody = document.getElementById('customerLoyaltyTableBody');
     var custCounter = document.getElementById('customerTotalCounter');
+
+    var filteredCustomers = adminCustomerLoyaltyList.filter(function(c) {
+        var name = (c.full_name || c.name || '').toLowerCase();
+        var email = (c.email || '').toLowerCase();
+        var phone = (c.phone || '').toLowerCase();
+        var matchesSearch = !search || name.includes(search) || email.includes(search) || phone.includes(search);
+        var matchesRole = filterRole === 'all' || filterRole === 'customer_only' || filterRole === 'customer';
+        return matchesSearch && matchesRole;
+    });
+
     if (custTbody) {
-        if (custCounter) custCounter.textContent = adminCustomerLoyaltyList.length + ' Customer Accounts';
-        var html2 = '';
-        adminCustomerLoyaltyList.forEach(function(c) {
-            html2 += `
-                <tr>
-                    <td><span class="badge bg-secondary font-monospace">${c.id}</span></td>
-                    <td>
-                        <div class="font-weight-bold text-dark">${c.name}</div>
-                        <div class="small text-muted">${c.phone}</div>
-                    </td>
-                    <td><span class="small text-primary font-weight-bold">${c.email}</span></td>
-                    <td><span class="badge bg-warning text-dark fs-6 px-3 py-1 font-monospace"><i class="fas fa-star me-1"></i>${c.loyaltyPoints.toLocaleString()} Pts</span></td>
-                    <td><strong class="text-success">${formatRWF(c.loyaltyPoints)} RWF</strong></td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-warning text-dark font-weight-bold rounded-pill px-3" onclick="quickGrantPoints('${c.id}')">
-                            <i class="fas fa-plus-circle me-1"></i> Grant Points
-                        </button>
-                    </td>
-                </tr>
-            `;
+        if (custCounter) custCounter.textContent = filteredCustomers.length + ' Customer Accounts';
+        if (filteredCustomers.length === 0) {
+            custTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No matching registered customers found.</td></tr>';
+        } else {
+            var html2 = '';
+            filteredCustomers.forEach(function(c) {
+                var pts = parseInt(c.loyalty_points || c.loyaltyPoints || 0);
+                var isActive = (c.is_active === undefined || c.is_active === 1 || c.is_active === '1');
+                var joinedDate = c.created_at ? new Date(c.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'Member';
+
+                html2 += `
+                    <tr>
+                        <td><span class="badge bg-secondary font-monospace">#CUST-${c.id}</span></td>
+                        <td>
+                            <div class="fw-bold text-dark">${c.full_name || c.name}</div>
+                            ${c.address ? `<div class="small text-muted"><i class="fas fa-map-marker-alt me-1 text-danger"></i>${c.address}</div>` : ''}
+                        </td>
+                        <td><span class="font-monospace text-dark">${c.phone || 'N/A'}</span></td>
+                        <td><span class="small text-primary fw-bold">${c.email}</span></td>
+                        <td>
+                            <span class="badge bg-warning text-dark fs-6 px-3 py-1 font-monospace">
+                                <i class="fas fa-star me-1 text-warning"></i>${pts.toLocaleString()} Pts
+                            </span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm ${isActive ? 'btn-outline-success' : 'btn-outline-secondary'} rounded-pill py-0 px-2 small" onclick="toggleUserStatus(${c.id})">
+                                <i class="fas fa-circle me-1" style="font-size:0.45rem;"></i>${isActive ? 'Active' : 'Suspended'}
+                            </button>
+                        </td>
+                        <td><small class="text-muted">${joinedDate}</small></td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3" onclick="quickGrantPoints(${c.id})">
+                                <i class="fas fa-plus-circle me-1"></i> Grant Pts
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            custTbody.innerHTML = html2;
+        }
+    }
+}
+
+async function toggleUserStatus(userId) {
+    if (!userId) return;
+    try {
+        var res = await fetch('api/users.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'toggle_status', id: userId })
         });
-        custTbody.innerHTML = html2;
+        if (res.ok) {
+            var data = await res.json();
+            if (data.status === 'success') {
+                showToast(data.message, 'success', 'Account Status');
+                renderStaffAndLoyaltyTables();
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('[Toggle Status] API call failed, falling back locally');
+    }
+
+    // Local fallback
+    var found = adminStaffList.find(function(s) { return s.id === userId; }) || adminCustomerLoyaltyList.find(function(c) { return c.id === userId; });
+    if (found) {
+        found.is_active = (found.is_active === 1 || found.is_active === undefined) ? 0 : 1;
+        saveStaffMembers();
+        saveCustomerLoyalty();
+        filterUsersTable();
+        showToast('Account status updated locally.', 'info');
     }
 }
 
@@ -2748,18 +2860,17 @@ function openAddStaffModal() {
 }
 
 function openEditStaffModal(id) {
-    loadStaffAndLoyaltyData();
     var s = adminStaffList.find(function(staff) { return staff.id === id; });
     if (!s) return;
 
     document.getElementById('staffId').value = s.id;
-    document.getElementById('staffName').value = s.name;
-    document.getElementById('staffCode').value = s.code;
-    document.getElementById('staffPhone').value = s.phone;
-    document.getElementById('staffRole').value = s.role;
+    document.getElementById('staffName').value = s.full_name || s.name || '';
+    document.getElementById('staffCode').value = s.email || s.code || '';
+    document.getElementById('staffPhone').value = s.phone || '';
+    document.getElementById('staffRole').value = s.role || 'staff';
     document.getElementById('staffPass').value = '••••••••';
 
-    document.getElementById('staffModalTitle').innerHTML = '<i class="fas fa-user-edit me-2" style="color:var(--primary);"></i>Edit Staff: ' + s.name;
+    document.getElementById('staffModalTitle').innerHTML = '<i class="fas fa-user-edit me-2" style="color:var(--primary);"></i>Edit Staff: ' + (s.full_name || s.name);
 
     var modal = document.getElementById('staffModal');
     if (modal) {
@@ -2776,65 +2887,126 @@ function closeStaffModal() {
     }
 }
 
-function confirmSaveStaff(e) {
+async function confirmSaveStaff(e) {
     if (e && e.preventDefault) e.preventDefault();
     var id = document.getElementById('staffId').value;
     var name = document.getElementById('staffName').value.trim();
-    var code = document.getElementById('staffCode').value.trim();
+    var email = document.getElementById('staffCode').value.trim();
     var phone = document.getElementById('staffPhone').value.trim();
     var role = document.getElementById('staffRole').value;
-
-    loadStaffAndLoyaltyData();
+    var pass = document.getElementById('staffPass').value.trim();
 
     var permissionsMap = {
-        'Super Admin': 'Full Access (All Modules)',
-        'Head Chef / Kitchen Manager': 'Kitchen Queue & Orders',
-        'Floor Manager / Waiter': 'Table Dining Tracker',
-        'Cashier & POS Billing': 'Checkout & Receipts'
+        'admin': 'Full Access (All Modules)',
+        'chef': 'Kitchen Queue & Orders',
+        'waiter': 'Table Dining Tracker',
+        'cashier': 'Checkout & Receipts',
+        'staff': 'General Floor Access'
     };
+    var perms = permissionsMap[role] || 'Standard Access';
 
+    try {
+        if (id) {
+            // Update role/perms via API
+            var res = await fetch('api/users.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'update_role', id: parseInt(id), role: role, permissions: perms })
+            });
+            if (res.ok) {
+                var data = await res.json();
+                if (data.status === 'success') {
+                    showToast(data.message, 'success', 'Staff Access');
+                    closeStaffModal();
+                    renderStaffAndLoyaltyTables();
+                    return;
+                }
+            }
+        } else {
+            // Create staff via API
+            var res = await fetch('api/users.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'create_staff', full_name: name, email: email, phone: phone, role: role, permissions: perms, password: pass })
+            });
+            if (res.ok) {
+                var data = await res.json();
+                if (data.status === 'success') {
+                    showToast(data.message, 'success', 'Staff Member Added');
+                    closeStaffModal();
+                    renderStaffAndLoyaltyTables();
+                    return;
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[Staff API] Network error, falling back locally', err);
+    }
+
+    // Local fallback
     if (id) {
         var s = adminStaffList.find(function(staff) { return staff.id === parseInt(id); });
         if (s) {
-            s.name = name;
-            s.code = code;
+            s.full_name = name;
+            s.email = email;
             s.phone = phone;
             s.role = role;
-            s.permissions = permissionsMap[role] || 'Standard Access';
+            s.permissions = perms;
         }
     } else {
         adminStaffList.push({
             id: Date.now(),
-            name: name,
-            code: code,
+            full_name: name,
+            email: email,
             phone: phone,
             role: role,
-            permissions: permissionsMap[role] || 'Standard Access',
-            status: 'Active'
+            permissions: perms,
+            is_active: 1
         });
     }
 
     saveStaffMembers();
     closeStaffModal();
-    renderStaffAndLoyaltyTables();
-    showToast('Staff member "' + name + '" saved successfully!', 'success', 'Staff Access');
+    filterUsersTable();
+    showToast('Staff member "' + name + '" saved locally.', 'success', 'Staff Access');
 }
 
-function deleteStaffMember(id) {
+async function deleteStaffMember(id) {
     if (!confirm('Are you sure you want to delete this staff account?')) return;
-    loadStaffAndLoyaltyData();
+
+    try {
+        var res = await fetch('api/users.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: id })
+        });
+        if (res.ok) {
+            var data = await res.json();
+            if (data.status === 'success') {
+                showToast(data.message, 'info', 'Staff Account');
+                renderStaffAndLoyaltyTables();
+                return;
+            } else {
+                showToast(data.message, 'error', 'Action Denied');
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('[Delete Staff API] Falling back locally', e);
+    }
+
     adminStaffList = adminStaffList.filter(function(s) { return s.id !== id; });
     saveStaffMembers();
-    renderStaffAndLoyaltyTables();
-    showToast('Staff member deleted.', 'info');
+    filterUsersTable();
+    showToast('Staff member deleted locally.', 'info');
 }
 
 function openGrantPointsModal() {
-    loadStaffAndLoyaltyData();
     var select = document.getElementById('grantCustomerSelect');
     if (select) {
         select.innerHTML = adminCustomerLoyaltyList.map(function(c) {
-            return `<option value="${c.id}">${c.name} (${c.email}) - Current: ${c.loyaltyPoints} Pts</option>`;
+            var pts = c.loyalty_points || c.loyaltyPoints || 0;
+            return `<option value="${c.id}">${c.full_name || c.name} (${c.email || c.phone}) - Current: ${pts} Pts</option>`;
         }).join('');
     }
 
@@ -2859,9 +3031,9 @@ function quickGrantPoints(custId) {
     if (select) select.value = custId;
 }
 
-function confirmGrantPointsSubmit(e) {
+async function confirmGrantPointsSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
-    var custId = document.getElementById('grantCustomerSelect').value;
+    var custId = parseInt(document.getElementById('grantCustomerSelect').value);
     var amount = parseInt(document.getElementById('grantPointsAmount').value) || 0;
 
     if (!custId || amount <= 0) {
@@ -2869,17 +3041,90 @@ function confirmGrantPointsSubmit(e) {
         return;
     }
 
-    loadStaffAndLoyaltyData();
+    try {
+        var res = await fetch('api/users.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'grant_points', id: custId, points: amount })
+        });
+        if (res.ok) {
+            var data = await res.json();
+            if (data.status === 'success') {
+                closeGrantPointsModal();
+                renderStaffAndLoyaltyTables();
+                showToast(data.message, 'success', 'Points Credited');
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('[Grant Points API] Falling back locally', e);
+    }
+
     var cust = adminCustomerLoyaltyList.find(function(c) { return c.id === custId; });
     if (cust) {
-        cust.loyaltyPoints += amount;
+        cust.loyalty_points = (cust.loyalty_points || 0) + amount;
         saveCustomerLoyalty();
         closeGrantPointsModal();
-        renderStaffAndLoyaltyTables();
-        logNotification('sms', cust.phone, 'Favorite Cafe Bonus: You have been granted ' + amount + ' Loyalty Points! Total Balance: ' + cust.loyaltyPoints + ' Pts.', 'Loyalty Bonus Granted');
-        showToast('Granted ' + amount + ' Loyalty Points to ' + cust.name + '!', 'success', 'Points Credited');
+        filterUsersTable();
+        showToast('Granted ' + amount + ' Loyalty Points to ' + (cust.full_name || cust.name) + '!', 'success', 'Points Credited');
     }
 }
+
+/* ROLE & PERMISSION ENFORCEMENT */
+function enforceRolePermissions() {
+    var activeAdmin = null;
+    try {
+        activeAdmin = JSON.parse(localStorage.getItem('favcafe_admin_user') || localStorage.getItem('favcafe_active_user'));
+    } catch (e) { }
+
+    if (!activeAdmin) return;
+    var role = (activeAdmin.role || '').toLowerCase();
+
+    // If Super Admin, unrestricted
+    if (role === 'admin' || role === 'super admin' || (activeAdmin.email && activeAdmin.email.includes('admin'))) {
+        return;
+    }
+
+    // Role-specific restrictions
+    if (role === 'chef') {
+        // Kitchen staff focuses on KDS and Orders
+        var restrictedTabs = ['analytics', 'settings', 'promos', 'users'];
+        restrictedTabs.forEach(function(tabName) {
+            var item = document.querySelector(`.sidebar-item[data-tab="${tabName}"]`);
+            if (item) {
+                item.style.opacity = '0.4';
+                item.style.pointerEvents = 'none';
+                item.title = 'Access Restricted (Super Admin only)';
+            }
+        });
+    } else if (role === 'waiter') {
+        // Floor Waiter focuses on Table Dining and Orders
+        var restrictedTabs = ['analytics', 'settings', 'promos', 'users', 'kitchen'];
+        restrictedTabs.forEach(function(tabName) {
+            var item = document.querySelector(`.sidebar-item[data-tab="${tabName}"]`);
+            if (item) {
+                item.style.opacity = '0.4';
+                item.style.pointerEvents = 'none';
+                item.title = 'Access Restricted (Super Admin only)';
+            }
+        });
+    } else if (role === 'cashier') {
+        // Cashier focuses on POS Live Orders and Receipts
+        var restrictedTabs = ['settings', 'promos', 'users', 'tables'];
+        restrictedTabs.forEach(function(tabName) {
+            var item = document.querySelector(`.sidebar-item[data-tab="${tabName}"]`);
+            if (item) {
+                item.style.opacity = '0.4';
+                item.style.pointerEvents = 'none';
+                item.title = 'Access Restricted (Super Admin only)';
+            }
+        });
+    }
+}
+
+window.filterUsersTable = filterUsersTable;
+window.toggleUserStatus = toggleUserStatus;
+window.enforceRolePermissions = enforceRolePermissions;
 
 window.renderStaffAndLoyaltyTables = renderStaffAndLoyaltyTables;
 window.openAddStaffModal = openAddStaffModal;

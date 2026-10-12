@@ -64,6 +64,19 @@ if ($pdo) {
         if (!$colsAv) {
             $pdo->exec("ALTER TABLE `users` ADD COLUMN `avatar` text DEFAULT NULL AFTER `address` ");
         }
+
+        $colsPerm = $pdo->query("SHOW COLUMNS FROM `users` LIKE 'permissions'")->fetch();
+        if (!$colsPerm) {
+            $pdo->exec("ALTER TABLE `users` ADD COLUMN `permissions` text DEFAULT NULL AFTER `role` ");
+        }
+
+        $colsPts = $pdo->query("SHOW COLUMNS FROM `users` LIKE 'loyalty_points'")->fetch();
+        if (!$colsPts) {
+            $pdo->exec("ALTER TABLE `users` ADD COLUMN `loyalty_points` int(11) DEFAULT 0 AFTER `permissions` ");
+        }
+
+        // Expand enum for role if needed
+        $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` enum('customer','staff','admin','chef','waiter','cashier') DEFAULT 'customer'");
     } catch (PDOException $eCol) {
         // Ignore schema check errors
     }
