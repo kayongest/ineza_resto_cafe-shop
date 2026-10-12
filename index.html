@@ -777,7 +777,7 @@
                </button>
 
                <!-- Dine-In Table Indicator & Waiter Call in Navbar -->
-               <button type="button" id="navTableIndicator" class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm" onclick="openTableServiceModal()" title="Table Assistance & Service" style="display:none; font-weight:700; font-size:0.85rem; align-items:center; gap:6px;">
+               <button type="button" id="navTableIndicator" class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm" onclick="event.preventDefault(); event.stopPropagation(); openTableServiceModal(event);" title="Table Assistance & Service" style="display:none; font-weight:700; font-size:0.85rem; align-items:center; gap:6px;">
                   <span class="pulse-beacon" style="width:8px;height:8px;background:#15803d;"></span>
                   <i class="fas fa-concierge-bell text-dark"></i>
                   <span id="navTableNumberLabel" class="text-dark">Table 05</span>
@@ -1963,7 +1963,7 @@
           FLOATING CALL WAITER / TABLE SERVICE ACTION (DINE-IN)
           ============================================================ -->
     <div id="tableServiceFloatingWrap" class="table-service-float-container" style="display:none;">
-       <button type="button" class="btn-table-service-pill shadow-lg" onclick="openTableServiceModal()" title="Table Assistance & Service">
+       <button type="button" class="btn-table-service-pill shadow-lg" onclick="event.preventDefault(); event.stopPropagation(); openTableServiceModal(event);" title="Table Assistance & Service">
           <span class="pulse-beacon"></span>
           <i class="fas fa-concierge-bell me-1 text-warning"></i>
           <span id="floatingTableLabel">Table 01</span>
@@ -1972,8 +1972,8 @@
     </div>
 
     <!-- TABLE SERVICE REQUEST MODAL -->
-    <div id="tableServiceModal" class="custom-modal-overlay" onclick="if(event.target===this)closeTableServiceModal()">
-       <div class="modal-standard-box" style="max-width:440px;">
+    <div id="tableServiceModal" class="custom-modal-overlay">
+       <div class="modal-standard-box" style="max-width:440px;" onclick="event.stopPropagation()">
           <div class="modal-standard-header">
              <div class="d-flex align-items-center gap-2">
                 <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px; height:36px; background:rgba(230,126,34,0.15); color:var(--primary);">
@@ -2138,7 +2138,11 @@
             }
          });
          // Expose robust modal handlers globally immediately
-         window.openTableServiceModal = function() {
+         window.openTableServiceModal = function(ev) {
+            if (ev) {
+               if (typeof ev.preventDefault === 'function') ev.preventDefault();
+               if (typeof ev.stopPropagation === 'function') ev.stopPropagation();
+            }
             var modal = document.getElementById('tableServiceModal');
             var activeTable = sessionStorage.getItem('favcafe_active_table') || localStorage.getItem('favcafe_active_table') || '01';
             var titleEl = document.getElementById('tableServiceModalTitle');
@@ -2151,16 +2155,23 @@
                modal.classList.add('open');
                modal.style.setProperty('display', 'flex', 'important');
                modal.style.setProperty('opacity', '1', 'important');
+               modal.style.setProperty('visibility', 'visible', 'important');
+               modal.style.setProperty('pointer-events', 'auto', 'important');
                document.body.style.overflow = 'hidden';
             }
          };
 
-         window.closeTableServiceModal = function() {
+         window.closeTableServiceModal = function(ev) {
+            if (ev) {
+               if (typeof ev.stopPropagation === 'function') ev.stopPropagation();
+            }
             var modal = document.getElementById('tableServiceModal');
             if (modal) {
                modal.classList.remove('open');
                modal.style.setProperty('display', 'none', 'important');
                modal.style.setProperty('opacity', '0', 'important');
+               modal.style.setProperty('visibility', 'hidden', 'important');
+               modal.style.setProperty('pointer-events', 'none', 'important');
                document.body.style.overflow = '';
             }
          };
