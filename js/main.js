@@ -2748,11 +2748,17 @@ function checkTableServiceFloatingPill() {
         }
     } catch(e) {}
 
+    var navTableBtn = document.getElementById('navTableIndicator');
+    var navTableLabel = document.getElementById('navTableNumberLabel');
+
     if (activeTable && showCallWaiter) {
         if (labelEl) labelEl.textContent = 'Table ' + activeTable;
         floatWrap.style.setProperty('display', 'block', 'important');
+        if (navTableLabel) navTableLabel.textContent = 'Table ' + activeTable;
+        if (navTableBtn) navTableBtn.style.setProperty('display', 'inline-flex', 'important');
     } else {
         floatWrap.style.setProperty('display', 'none', 'important');
+        if (navTableBtn) navTableBtn.style.setProperty('display', 'none', 'important');
     }
 
     applyCustomerReservationVisibility(showReservations);

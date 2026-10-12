@@ -329,16 +329,16 @@
       }
        /* FLOATING CALL WAITER PILL */
        .table-service-float-container {
-          position: fixed;
-          bottom: 24px;
-          left: 24px;
-          z-index: 1040;
+          position: fixed !important;
+          bottom: 24px !important;
+          left: 24px !important;
+          z-index: 99999999 !important;
           animation: floatIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
        }
        @media (max-width: 768px) {
           .table-service-float-container {
-             bottom: 18px;
-             left: 16px;
+             bottom: 18px !important;
+             left: 16px !important;
           }
        }
        @keyframes floatIn {
@@ -774,6 +774,14 @@
                <!-- Dark / Light Theme Toggle -->
                <button type="button" class="btn-theme-toggle" id="themeToggleBtn" data-theme-toggle title="Toggle Dark / Light Mode" aria-label="Toggle Dark / Light Mode">
                   <i class="fas fa-moon"></i>
+               </button>
+
+               <!-- Dine-In Table Indicator & Waiter Call in Navbar -->
+               <button type="button" id="navTableIndicator" class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm" onclick="openTableServiceModal()" title="Table Assistance & Service" style="display:none; font-weight:700; font-size:0.85rem; align-items:center; gap:6px;">
+                  <span class="pulse-beacon" style="width:8px;height:8px;background:#15803d;"></span>
+                  <i class="fas fa-concierge-bell text-dark"></i>
+                  <span id="navTableNumberLabel" class="text-dark">Table 05</span>
+                  <span class="badge bg-dark rounded-pill ms-1 px-2" style="font-size:0.7rem;">Call Waiter</span>
                </button>
 
                <!-- Cart Button with Live Badge -->
@@ -2079,6 +2087,8 @@
 
             var pillWrap = document.getElementById('tableServiceFloatingWrap');
             var pillLabel = document.getElementById('floatingTableLabel');
+            var navTableBtn = document.getElementById('navTableIndicator');
+            var navTableLabel = document.getElementById('navTableNumberLabel');
             var reserveBtn = document.getElementById('navReserveBtn');
 
             var showCallWaiter = true;
@@ -2095,8 +2105,11 @@
             if (tableNum && showCallWaiter) {
                if (pillLabel) pillLabel.textContent = 'Table ' + tableNum;
                if (pillWrap) pillWrap.style.setProperty('display', 'block', 'important');
-            } else if (pillWrap) {
-               pillWrap.style.setProperty('display', 'none', 'important');
+               if (navTableLabel) navTableLabel.textContent = 'Table ' + tableNum;
+               if (navTableBtn) navTableBtn.style.setProperty('display', 'inline-flex', 'important');
+            } else {
+               if (pillWrap) pillWrap.style.setProperty('display', 'none', 'important');
+               if (navTableBtn) navTableBtn.style.setProperty('display', 'none', 'important');
             }
 
             if (reserveBtn) {
