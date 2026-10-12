@@ -340,99 +340,178 @@ function renderStatusSelectDropdown(orderId, currentStatus) {
     `;
 }
 
-// Render Live Orders Table
+// ============================================================
+// OVERVIEW DASHBOARD: RECENT ORDERS (5/PAGE) & KITCHEN (4/PAGE)
+// ============================================================
+var RECENT_ORDERS_PER_PAGE = 5;
+var currentRecentOrdersPage = 1;
+var currentRecentOrdersFilter = 'all';
+var currentRecentOrdersSearch = '';
+
+var KITCHEN_PER_PAGE = 4;
+var currentKitchenPage = 1;
+
+// Render Live Orders Table (5 items per page)
 function renderOrdersTable(filterStatus, searchQuery) {
     var tbody = document.getElementById('adminOrdersTbody');
     if (!tbody) return;
 
+    if (filterStatus !== undefined && filterStatus !== null) {
+        currentRecentOrdersFilter = filterStatus;
+    }
+    if (searchQuery !== undefined && searchQuery !== null) {
+        currentRecentOrdersSearch = searchQuery;
+    }
+
     var filtered = adminOrders.filter(function(o) {
         var matchStatus = true;
-        if (filterStatus && filterStatus !== 'all') {
-            if (filterStatus === 'preparing') matchStatus = o.status === 'Kitchen Preparing' || o.status === 'Preparing' || o.status === 'Being Prepared' || o.status.includes('Confirmed');
-            else if (filterStatus === 'ready') matchStatus = o.status === 'Ready for Delivery' || o.status === 'Ready' || o.status === 'Out for Delivery' || o.status === 'On the Way';
-            else if (filterStatus === 'completed') matchStatus = o.status === 'Completed' || o.status === 'Delivered' || o.status === 'Closed';
+        if (currentRecentOrdersFilter && currentRecentOrdersFilter !== 'all') {
+            if (currentRecentOrdersFilter === 'preparing') matchStatus = o.status === 'Kitchen Preparing' || o.status === 'Preparing' || o.status === 'Being Prepared' || o.status.includes('Confirmed');
+            else if (currentRecentOrdersFilter === 'ready') matchStatus = o.status === 'Ready for Delivery' || o.status === 'Ready' || o.status === 'Out for Delivery' || o.status === 'On the Way';
+            else if (currentRecentOrdersFilter === 'completed') matchStatus = o.status === 'Completed' || o.status === 'Delivered' || o.status === 'Closed';
         }
 
         var matchSearch = true;
-        if (searchQuery && searchQuery.trim()) {
-            var q = searchQuery.toLowerCase();
+        if (currentRecentOrdersSearch && currentRecentOrdersSearch.trim()) {
+            var q = currentRecentOrdersSearch.toLowerCase();
             matchSearch = o.id.toLowerCase().includes(q) ||
-                          o.customerName.toLowerCase().includes(q) ||
-                          o.itemsSummary.toLowerCase().includes(q);
+                          (o.customerName || '').toLowerCase().includes(q) ||
+                          (o.itemsSummary || '').toLowerCase().includes(q);
         }
 
         return matchStatus && matchSearch;
     });
 
-    if (filtered.length === 0) {
+    var totalItems = filtered.length;
+    var totalPages = Math.ceil(totalItems / RECENT_ORDERS_PER_PAGE) || 1;
+    if (currentRecentOrdersPage > totalPages) currentRecentOrdersPage = totalPages;
+    if (currentRecentOrdersPage < 1) currentRecentOrdersPage = 1;
+
+    var startIdx = (currentRecentOrdersPage - 1) * RECENT_ORDERS_PER_PAGE;
+    var pageItems = filtered.slice(startIdx, startIdx + RECENT_ORDERS_PER_PAGE);
+
+    if (totalItems === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No orders match your criteria.</td></tr>';
+    } else {
+        var html = '';
+        pageItems.forEach(function(o) {
+            var timeStr = new Date(o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            var advanceStepBtn = getStageAdvanceButton(o.id, o.status);
+            var cancelBtn = '';
+            var isClosedOrCancelled = (o.status || '').includes('Closed') || (o.status || '').includes('Cancelled');
+            if (!isClosedOrCancelled) {
+                cancelBtn = `<button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="advanceAdminOrder('${o.id}', 'Cancelled')" title="Mark as Cancelled"><i class="fas fa-times"></i></button>`;
+            }
+
+            var statusSelectDropdown = renderStatusSelectDropdown(o.id, o.status);
+
+            var actionGroup = `
+                <div class="d-flex align-items-center justify-content-end gap-1">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Order status & actions">
+                        ${advanceStepBtn}
+                        ${cancelBtn}
+                        <button class="btn btn-sm btn-outline-info py-1 px-2" onclick="viewOrder('${o.id}')" title="View Order Details"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary py-1 px-2" onclick="openReceiptModal('${o.id}')" title="Print Receipt"><i class="fas fa-print"></i></button>
+                        <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="disableOrder('${o.id}')" title="Disable Order (Save to Archives)"><i class="fas fa-ban"></i></button>
+                    </div>
+                    ${statusSelectDropdown}
+                </div>
+            `;
+
+            var initial = (o.customerName || 'G').charAt(0).toUpperCase();
+            var fulPill = getFulfilmentStatusPill(o);
+
+            html += `
+                <tr>
+                    <td><a href="#" onclick="event.preventDefault(); viewOrder('${o.id}');" class="table-order-link">#${o.id}</a></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="cust-avatar-circle">${initial}</div>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size:0.88rem;">${o.customerName || 'Guest'}</div>
+                                <div class="small text-muted" style="font-size:0.75rem;">${o.phone || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="max-width:240px; white-space:normal; word-wrap:break-word;">${o.itemsSummary}</td>
+                    <td><span class="text-secondary small font-weight-bold text-capitalize">${o.serviceType || 'Delivery'}</span></td>
+                    <td><strong class="text-dark">${formatRWF(o.total)}</strong></td>
+                    <td>${fulPill}</td>
+                    <td>${actionGroup}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    renderRecentOrdersPagination(totalItems, totalPages);
+}
+
+function renderRecentOrdersPagination(totalItems, totalPages) {
+    var infoEl = document.getElementById('recentOrdersPaginationInfo');
+    var navEl = document.getElementById('recentOrdersPaginationNav');
+    if (!infoEl || !navEl) return;
+
+    if (totalItems === 0) {
+        infoEl.textContent = 'Showing 0 orders';
+        navEl.innerHTML = '';
         return;
     }
 
-    var html = '';
-    filtered.forEach(function(o) {
-        var timeStr = new Date(o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        var advanceStepBtn = getStageAdvanceButton(o.id, o.status);
-        var cancelBtn = '';
-        var isClosedOrCancelled = (o.status || '').includes('Closed') || (o.status || '').includes('Cancelled');
-        if (!isClosedOrCancelled) {
-            cancelBtn = `<button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="advanceAdminOrder('${o.id}', 'Cancelled')" title="Mark as Cancelled"><i class="fas fa-times"></i></button>`;
-        }
+    var start = (currentRecentOrdersPage - 1) * RECENT_ORDERS_PER_PAGE + 1;
+    var end = Math.min(start + RECENT_ORDERS_PER_PAGE - 1, totalItems);
+    infoEl.textContent = 'Showing ' + start + ' to ' + end + ' of ' + totalItems + ' orders';
 
-        var statusSelectDropdown = renderStatusSelectDropdown(o.id, o.status);
+    if (totalPages <= 1) {
+        navEl.innerHTML = '';
+        return;
+    }
 
-        var actionGroup = `
-            <div class="d-flex align-items-center justify-content-end gap-1">
-                <div class="btn-group btn-group-sm" role="group" aria-label="Order status & actions">
-                    ${advanceStepBtn}
-                    ${cancelBtn}
-                    <button class="btn btn-sm btn-outline-info py-1 px-2" onclick="viewOrder('${o.id}')" title="View Order Details"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary py-1 px-2" onclick="openReceiptModal('${o.id}')" title="Print Receipt"><i class="fas fa-print"></i></button>
-                    <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="disableOrder('${o.id}')" title="Disable Order (Save to Archives)"><i class="fas fa-ban"></i></button>
-                </div>
-                ${statusSelectDropdown}
-            </div>
-        `;
+    var navHtml = '';
+    var prevDisabled = currentRecentOrdersPage === 1 ? 'disabled' : '';
+    navHtml += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeRecentOrdersPage(${currentRecentOrdersPage - 1})"><i class="fas fa-chevron-left"></i></a></li>`;
 
-        var initial = (o.customerName || 'G').charAt(0).toUpperCase();
-        var fulPill = getFulfilmentStatusPill(o);
+    for (var p = 1; p <= totalPages; p++) {
+        var active = p === currentRecentOrdersPage ? 'active' : '';
+        navHtml += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="event.preventDefault(); changeRecentOrdersPage(${p})">${p}</a></li>`;
+    }
 
-        html += `
-            <tr>
-                <td><a href="#" onclick="event.preventDefault(); viewOrder('${o.id}');" class="table-order-link">#${o.id}</a></td>
-                <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="cust-avatar-circle">${initial}</div>
-                        <div>
-                            <div class="fw-bold text-dark" style="font-size:0.88rem;">${o.customerName || 'Guest'}</div>
-                            <div class="small text-muted" style="font-size:0.75rem;">${o.phone || ''}</div>
-                        </div>
-                    </div>
-                </td>
-                <td style="max-width:240px; white-space:normal; word-wrap:break-word;">${o.itemsSummary}</td>
-                <td><span class="text-secondary small font-weight-bold text-capitalize">${o.serviceType || 'Delivery'}</span></td>
-                <td><strong class="text-dark">${formatRWF(o.total)}</strong></td>
-                <td>${fulPill}</td>
-                <td>${actionGroup}</td>
-            </tr>
-        `;
-    });
+    var nextDisabled = currentRecentOrdersPage === totalPages ? 'disabled' : '';
+    navHtml += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeRecentOrdersPage(${currentRecentOrdersPage + 1})"><i class="fas fa-chevron-right"></i></a></li>`;
 
-    tbody.innerHTML = html;
+    navEl.innerHTML = navHtml;
 }
 
-// Render Kitchen Tickets Grid
+function changeRecentOrdersPage(newPage) {
+    currentRecentOrdersPage = newPage;
+    renderOrdersTable();
+}
+window.changeRecentOrdersPage = changeRecentOrdersPage;
+
+// Render Kitchen Tickets Grid (4 items per page)
 function renderKitchenGrid() {
     var grid = document.getElementById('kitchenGrid');
     if (!grid) return;
 
-    if (!adminOrders || adminOrders.length === 0) {
+    var tickets = adminOrders || [];
+    var totalItems = tickets.length;
+    var totalPages = Math.ceil(totalItems / KITCHEN_PER_PAGE) || 1;
+
+    if (currentKitchenPage > totalPages) currentKitchenPage = totalPages;
+    if (currentKitchenPage < 1) currentKitchenPage = 1;
+
+    if (totalItems === 0) {
         grid.innerHTML = '<div class="col-12 text-center py-4 text-muted"><i class="fas fa-utensils fa-2x mb-2 opacity-50"></i><p>No active kitchen orders right now.</p></div>';
+        renderKitchenPagination(0, 1);
         return;
     }
 
+    var startIdx = (currentKitchenPage - 1) * KITCHEN_PER_PAGE;
+    var pageTickets = tickets.slice(startIdx, startIdx + KITCHEN_PER_PAGE);
+
     var html = '';
-    adminOrders.forEach(function(o) {
+    pageTickets.forEach(function(o) {
         var st = o.status || 'Order Received';
         var isPrep = st.includes('Received') || st.includes('Confirmed') || st.includes('Preparing') || st.includes('Being Prepared');
         var isReady = st === 'Ready' || st.includes('On the Way') || st.includes('Out for Delivery') || st.includes('Ready for Pickup');
@@ -488,7 +567,49 @@ function renderKitchenGrid() {
     });
 
     grid.innerHTML = html;
+    renderKitchenPagination(totalItems, totalPages);
 }
+
+function renderKitchenPagination(totalItems, totalPages) {
+    var infoEl = document.getElementById('kitchenPaginationInfo');
+    var navEl = document.getElementById('kitchenPaginationNav');
+    if (!infoEl || !navEl) return;
+
+    if (totalItems === 0) {
+        infoEl.textContent = 'Showing 0 tickets';
+        navEl.innerHTML = '';
+        return;
+    }
+
+    var start = (currentKitchenPage - 1) * KITCHEN_PER_PAGE + 1;
+    var end = Math.min(start + KITCHEN_PER_PAGE - 1, totalItems);
+    infoEl.textContent = 'Showing ' + start + ' to ' + end + ' of ' + totalItems + ' tickets';
+
+    if (totalPages <= 1) {
+        navEl.innerHTML = '';
+        return;
+    }
+
+    var navHtml = '';
+    var prevDisabled = currentKitchenPage === 1 ? 'disabled' : '';
+    navHtml += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeKitchenPage(${currentKitchenPage - 1})"><i class="fas fa-chevron-left"></i></a></li>`;
+
+    for (var p = 1; p <= totalPages; p++) {
+        var active = p === currentKitchenPage ? 'active' : '';
+        navHtml += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="event.preventDefault(); changeKitchenPage(${p})">${p}</a></li>`;
+    }
+
+    var nextDisabled = currentKitchenPage === totalPages ? 'disabled' : '';
+    navHtml += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeKitchenPage(${currentKitchenPage + 1})"><i class="fas fa-chevron-right"></i></a></li>`;
+
+    navEl.innerHTML = navHtml;
+}
+
+function changeKitchenPage(newPage) {
+    currentKitchenPage = newPage;
+    renderKitchenGrid();
+}
+window.changeKitchenPage = changeKitchenPage;
 
 // Advance Order Status
 function advanceAdminOrder(orderId, newStatus) {
@@ -1770,12 +1891,14 @@ function initSearchAndFilter() {
             document.querySelectorAll('.order-filter-pills .filter-pill').forEach(function(p) { p.classList.remove('active'); });
             this.classList.add('active');
             currentFilter = this.getAttribute('data-filter');
+            currentRecentOrdersPage = 1;
             renderOrdersTable(currentFilter, searchInput ? searchInput.value : '');
         });
     });
 
     if (searchInput) {
         searchInput.addEventListener('input', function() {
+            currentRecentOrdersPage = 1;
             renderOrdersTable(currentFilter, this.value);
         });
     }
