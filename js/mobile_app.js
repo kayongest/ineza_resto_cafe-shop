@@ -2315,6 +2315,70 @@ function closeOrderTrackingModal() {
 }
 window.closeOrderTrackingModal = closeOrderTrackingModal;
 
+function shareCurrentMobileOrderWhatsApp(orderId) {
+    const ordersList = typeof getAllUserOrders === 'function' ? getAllUserOrders() : [];
+    const idToFind = orderId || currentTrackingOrderId;
+    const order = (ordersList && ordersList.length > 0) ? ordersList.find(o => String(o.id) === String(idToFind)) : null;
+    if (!order) {
+        if (typeof showAppToast === 'function') {
+            showAppToast('No active order found to share on WhatsApp!', 'warning');
+        } else {
+            alert('No active order found to share on WhatsApp!');
+        }
+        return;
+    }
+
+    let itemsText = '';
+    if (Array.isArray(order.items) && order.items.length > 0) {
+        itemsText = order.items.map(item => {
+            const count = item.quantity || item.qty || 1;
+            const price = item.price || 0;
+            const formatFn = typeof formatRWF === 'function' ? formatRWF : (val => val + ' RWF');
+            return `• ${count}x ${item.title || item.name || 'Item'} (${formatFn(price * count)})`;
+        }).join('\n');
+    } else if (order.itemsSummary) {
+        itemsText = `• ${order.itemsSummary}`;
+    } else {
+        itemsText = '• Food & Beverage Order';
+    }
+
+    const serviceInfo = (order.serviceType || 'Dine-In').toUpperCase();
+    const activeTable = order.table || sessionStorage.getItem('favcafe_active_table') || '01';
+    let serviceDetail = serviceInfo;
+    if (order.serviceType === 'dinein' || order.table) {
+        serviceDetail += ` (Table ${activeTable})`;
+    } else if (order.address) {
+        serviceDetail += ` (Delivery: ${order.address})`;
+    }
+
+    const formatFn = typeof formatRWF === 'function' ? formatRWF : (val => val + ' RWF');
+    const totalFormatted = formatFn(order.total || 0);
+
+    const message = 
+`🍽️ *INEZA RESTO & COFFEE SHOP*
+🧾 *Order Receipt:* #${order.id}
+👤 *Customer:* ${order.customerName || 'Valued Customer'}
+📞 *Phone:* ${order.phone || '+250 788 000 000'}
+📍 *Service:* ${serviceDetail}
+💳 *Payment:* ${(order.paymentMethod || 'Cash').toUpperCase()}
+
+📋 *Ordered Items:*
+${itemsText}
+
+💰 *TOTAL PAID:* ${totalFormatted} (18% VAT Incl.)
+⏱️ *Status:* ${order.status || 'Order Received'}
+
+📍 *Address:* 108 Kimironko St, Kigali - Rwanda
+📞 *Hotline:* +250 788 000 000
+🔗 *Track Online:* ${window.location.origin}${window.location.pathname}?table=${activeTable}
+
+_Thank you for dining with INEZA RESTO & COFFEE SHOP!_`;
+
+    const encoded = encodeURIComponent(message);
+    window.open('https://api.whatsapp.com/send?text=' + encoded, '_blank');
+}
+window.shareCurrentMobileOrderWhatsApp = shareCurrentMobileOrderWhatsApp;
+
 // FAVORITES / OFFERS
 function loadFavorites() {
     const favStr = localStorage.getItem('favcafe_favorites');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'favorite-cafe-cache-v17';
+const CACHE_NAME = 'favorite-cafe-cache-v18';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

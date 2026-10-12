@@ -862,9 +862,14 @@
                     <!-- Dynamic from JS -->
                 </div>
 
-                <button type="button" class="btn-secondary-custom w-100 mt-4" onclick="closeOrderTrackingModal()">
-                    <i class="fas fa-arrow-left me-1"></i> Back to Orders
-                </button>
+                <div class="d-flex gap-2 mt-4">
+                    <button type="button" class="btn-secondary-custom flex-grow-1" onclick="closeOrderTrackingModal()">
+                        <i class="fas fa-arrow-left me-1"></i> Back
+                    </button>
+                    <button type="button" class="btn btn-success flex-grow-1 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-1 shadow-sm" onclick="shareCurrentMobileOrderWhatsApp()" style="background:#25D366; border-color:#25D366; color:#fff; font-size:0.88rem;">
+                        <i class="fab fa-whatsapp fs-5"></i> WhatsApp
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1040,7 +1045,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/mobile_app.js?v=6.6"></script>
+    <script src="js/mobile_app.js?v=7.0"></script>
 </body>
 
 </html>

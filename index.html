@@ -1645,6 +1645,9 @@
                <i class="fas fa-truck me-1"></i> Track Order
             </button>
          </div>
+         <button type="button" class="btn btn-success w-100 rounded-pill py-2 mt-2 font-weight-bold d-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="shareOrderToWhatsApp()" style="background:#25D366; border-color:#25D366; color:#ffffff;">
+            <i class="fab fa-whatsapp fs-5"></i> <span>Share Receipt on WhatsApp</span>
+         </button>
       </div>
    </div>
 
@@ -1689,9 +1692,14 @@
             <div class="timeline-stepper" id="timelineStepper">
                <!-- Timeline steps rendered dynamically -->
             </div>
-            <button type="button" class="btn btn-outline-dark w-100 mt-4 rounded-pill py-2 font-weight-bold" onclick="closeTimelineModal()">
-               <i class="fas fa-arrow-left me-1"></i> Back to Orders
-            </button>
+            <div class="d-flex gap-2 mt-4">
+               <button type="button" class="btn btn-outline-dark flex-grow-1 rounded-pill py-2 font-weight-bold" onclick="closeTimelineModal()">
+                  <i class="fas fa-arrow-left me-1"></i> Back to Orders
+               </button>
+               <button type="button" class="btn btn-success flex-grow-1 rounded-pill py-2 font-weight-bold d-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="shareOrderToWhatsApp(currentTrackedOrderId)" style="background:#25D366; border-color:#25D366; color:#ffffff;">
+                  <i class="fab fa-whatsapp fs-5"></i> <span>Share on WhatsApp</span>
+               </button>
+            </div>
          </div>
       </div>
    </div>
@@ -2052,7 +2060,7 @@
    <script src="js/aos.js"></script>
    <script src="js/swiper-bundle.min.js"></script>
    <script src="js/jquery.magnific-popup.min.js"></script>
-   <script src="js/main.js?v=33.0"></script>
+   <script src="js/main.js?v=34.0"></script>
 
    <!-- ============================================================
    EXTRA: Global click handler for data-auth-modal buttons
