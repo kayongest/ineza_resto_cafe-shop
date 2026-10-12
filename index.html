@@ -2066,12 +2066,76 @@
       })();
    </script>
 
-   <!-- PWA Service Worker Registration -->
+   <!-- Immediate Table Service & Reservation Initializer (zero delay, bypasses caching) -->
+   <script>
+      (function () {
+         function syncInstantPill() {
+            var params = new URLSearchParams(window.location.search);
+            var tableNum = params.get('table') || sessionStorage.getItem('favcafe_active_table') || localStorage.getItem('favcafe_active_table');
+            if (tableNum) {
+               sessionStorage.setItem('favcafe_active_table', tableNum);
+               localStorage.setItem('favcafe_active_table', tableNum);
+            }
+
+            var pillWrap = document.getElementById('tableServiceFloatingWrap');
+            var pillLabel = document.getElementById('floatingTableLabel');
+            var reserveBtn = document.getElementById('navReserveBtn');
+
+            var showCallWaiter = true;
+            var showReservations = false;
+            try {
+               var raw = localStorage.getItem('favcafe_cart_settings');
+               if (raw) {
+                  var parsed = JSON.parse(raw);
+                  if (parsed.showCallWaiter === false) showCallWaiter = false;
+                  if (parsed.showReservations === true) showReservations = true;
+               }
+            } catch (e) {}
+
+            if (tableNum && showCallWaiter) {
+               if (pillLabel) pillLabel.textContent = 'Table ' + tableNum;
+               if (pillWrap) pillWrap.style.setProperty('display', 'block', 'important');
+            } else if (pillWrap) {
+               pillWrap.style.setProperty('display', 'none', 'important');
+            }
+
+            if (reserveBtn) {
+               if (showReservations) {
+                  reserveBtn.style.setProperty('display', 'inline-flex', 'important');
+               } else {
+                  reserveBtn.style.setProperty('display', 'none', 'important');
+               }
+            }
+         }
+
+         // Run immediately and upon DOM ready
+         syncInstantPill();
+         if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', syncInstantPill);
+         }
+
+         // Listen to settings update channel & storage events
+         try {
+            var ch = new BroadcastChannel('favcafe_settings_channel');
+            ch.onmessage = function (ev) { syncInstantPill(); };
+         } catch (e) {}
+         window.addEventListener('storage', function (ev) {
+            if (ev.key === 'favcafe_cart_settings' || ev.key === 'favcafe_cart_settings_signal') {
+               syncInstantPill();
+            }
+         });
+      })();
+   </script>
+
+   <!-- PWA Service Worker Registration & Live Update -->
    <script>
       if ('serviceWorker' in navigator) {
          window.addEventListener('load', function() {
             navigator.serviceWorker.register('./sw.js').then(function(reg) {
-               console.log('[PWA] INEZA RESTO & COFFEE SHOP ServiceWorker registered with scope: ', reg.scope);
+               console.log('[PWA] ServiceWorker registered:', reg.scope);
+               if (typeof reg.update === 'function') {
+                  reg.update();
+               }
             }).catch(function(err) {
                console.log('[PWA] ServiceWorker registration failed: ', err);
             });
