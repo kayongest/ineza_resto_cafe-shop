@@ -2701,8 +2701,8 @@ window.addToCart = addToCart;
 window.changeCartQty = changeCartQty;
 window.removeCartItem = removeCartItem;
 window.loadDynamicCustomerMenu = loadDynamicCustomerMenu;
-window.addExtraToCart = addExtraToCart;
-window.applyPromoCode = applyPromoCode;
+if (typeof addExtraToCart !== 'undefined') { window.addExtraToCart = addExtraToCart; }
+if (typeof applyPromoCode !== 'undefined') { window.applyPromoCode = applyPromoCode; }
 window.openReservationModal = openReservationModal;
 window.closeReservationModal = closeReservationModal;
 window.handleReservationSubmit = handleReservationSubmit;
