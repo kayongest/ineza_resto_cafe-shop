@@ -2624,6 +2624,24 @@ var adminStaffList = [];
 var adminCustomerLoyaltyList = [];
 var allUsersDatabaseList = [];
 
+// Pagination Configuration (10 users per page)
+var CUSTOMERS_PER_PAGE = 10;
+var currentCustomerPage = 1;
+var STAFF_PER_PAGE = 10;
+var currentStaffPage = 1;
+
+function changeCustomerPage(page) {
+    currentCustomerPage = Math.max(1, page);
+    filterUsersTable();
+}
+window.changeCustomerPage = changeCustomerPage;
+
+function changeStaffPage(page) {
+    currentStaffPage = Math.max(1, page);
+    filterUsersTable();
+}
+window.changeStaffPage = changeStaffPage;
+
 async function loadStaffAndLoyaltyData() {
     try {
         var res = await fetch('api/users.php?action=list');
@@ -2713,11 +2731,48 @@ function filterUsersTable() {
 
     if (staffTbody) {
         if (staffCounter) staffCounter.textContent = filteredStaff.length + ' Active Staff';
-        if (filteredStaff.length === 0) {
+        var totalStaff = filteredStaff.length;
+        var totalStaffPages = Math.ceil(totalStaff / STAFF_PER_PAGE) || 1;
+        if (currentStaffPage > totalStaffPages) currentStaffPage = totalStaffPages;
+        if (currentStaffPage < 1) currentStaffPage = 1;
+
+        var startStaffIdx = (currentStaffPage - 1) * STAFF_PER_PAGE;
+        var endStaffIdx = startStaffIdx + STAFF_PER_PAGE;
+        var pageStaff = filteredStaff.slice(startStaffIdx, endStaffIdx);
+
+        // Update Staff Pagination Bar Info
+        var staffInfoEl = document.getElementById('staffPaginationInfo');
+        if (staffInfoEl) {
+            if (totalStaff === 0) {
+                staffInfoEl.textContent = 'Showing 0 staff members';
+            } else {
+                var displayStaffEnd = Math.min(endStaffIdx, totalStaff);
+                staffInfoEl.textContent = 'Showing ' + (startStaffIdx + 1) + ' to ' + displayStaffEnd + ' of ' + totalStaff + ' staff members';
+            }
+        }
+
+        // Render Staff Pagination Buttons
+        var staffNavEl = document.getElementById('staffPaginationNav');
+        if (staffNavEl) {
+            var staffNavHtml = '';
+            var prevStaffDisabled = currentStaffPage === 1 ? 'disabled' : '';
+            staffNavHtml += `<li class="page-item ${prevStaffDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeStaffPage(${currentStaffPage - 1})"><i class="fas fa-chevron-left"></i></a></li>`;
+
+            for (var sp = 1; sp <= totalStaffPages; sp++) {
+                var activeStaffClass = sp === currentStaffPage ? 'active' : '';
+                staffNavHtml += `<li class="page-item ${activeStaffClass}"><a class="page-link" href="#" onclick="event.preventDefault(); changeStaffPage(${sp})">${sp}</a></li>`;
+            }
+
+            var nextStaffDisabled = currentStaffPage === totalStaffPages || totalStaffPages === 0 ? 'disabled' : '';
+            staffNavHtml += `<li class="page-item ${nextStaffDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeStaffPage(${currentStaffPage + 1})"><i class="fas fa-chevron-right"></i></a></li>`;
+            staffNavEl.innerHTML = staffNavHtml;
+        }
+
+        if (pageStaff.length === 0) {
             staffTbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No matching staff members found.</td></tr>';
         } else {
             var html = '';
-            filteredStaff.forEach(function(s) {
+            pageStaff.forEach(function(s) {
                 var roleName = s.role;
                 var roleBadgeClass = 'bg-primary';
                 if (s.role === 'admin' || s.role.includes('Admin')) { roleName = 'Super Admin'; roleBadgeClass = 'bg-danger text-white'; }
@@ -2758,7 +2813,7 @@ function filterUsersTable() {
         }
     }
 
-    // 2. Filter and Render Registered Customers Table
+    // 2. Filter and Render Registered Customers Table (10 per page)
     var custTbody = document.getElementById('customerLoyaltyTableBody');
     var custCounter = document.getElementById('customerTotalCounter');
 
@@ -2773,11 +2828,48 @@ function filterUsersTable() {
 
     if (custTbody) {
         if (custCounter) custCounter.textContent = filteredCustomers.length + ' Customer Accounts';
-        if (filteredCustomers.length === 0) {
+        var totalCustomers = filteredCustomers.length;
+        var totalCustomerPages = Math.ceil(totalCustomers / CUSTOMERS_PER_PAGE) || 1;
+        if (currentCustomerPage > totalCustomerPages) currentCustomerPage = totalCustomerPages;
+        if (currentCustomerPage < 1) currentCustomerPage = 1;
+
+        var startCustIdx = (currentCustomerPage - 1) * CUSTOMERS_PER_PAGE;
+        var endCustIdx = startCustIdx + CUSTOMERS_PER_PAGE;
+        var pageCustomers = filteredCustomers.slice(startCustIdx, endCustIdx);
+
+        // Update Customer Pagination Bar Info
+        var custInfoEl = document.getElementById('customerPaginationInfo');
+        if (custInfoEl) {
+            if (totalCustomers === 0) {
+                custInfoEl.textContent = 'Showing 0 customers';
+            } else {
+                var displayCustEnd = Math.min(endCustIdx, totalCustomers);
+                custInfoEl.textContent = 'Showing ' + (startCustIdx + 1) + ' to ' + displayCustEnd + ' of ' + totalCustomers + ' customers';
+            }
+        }
+
+        // Render Customer Pagination Buttons
+        var custNavEl = document.getElementById('customerPaginationNav');
+        if (custNavEl) {
+            var custNavHtml = '';
+            var prevCustDisabled = currentCustomerPage === 1 ? 'disabled' : '';
+            custNavHtml += `<li class="page-item ${prevCustDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeCustomerPage(${currentCustomerPage - 1})"><i class="fas fa-chevron-left"></i></a></li>`;
+
+            for (var cp = 1; cp <= totalCustomerPages; cp++) {
+                var activeCustClass = cp === currentCustomerPage ? 'active' : '';
+                custNavHtml += `<li class="page-item ${activeCustClass}"><a class="page-link" href="#" onclick="event.preventDefault(); changeCustomerPage(${cp})">${cp}</a></li>`;
+            }
+
+            var nextCustDisabled = currentCustomerPage === totalCustomerPages || totalCustomerPages === 0 ? 'disabled' : '';
+            custNavHtml += `<li class="page-item ${nextCustDisabled}"><a class="page-link" href="#" onclick="event.preventDefault(); changeCustomerPage(${currentCustomerPage + 1})"><i class="fas fa-chevron-right"></i></a></li>`;
+            custNavEl.innerHTML = custNavHtml;
+        }
+
+        if (pageCustomers.length === 0) {
             custTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">No matching registered customers found.</td></tr>';
         } else {
             var html2 = '';
-            filteredCustomers.forEach(function(c) {
+            pageCustomers.forEach(function(c) {
                 var pts = parseInt(c.loyalty_points || c.loyaltyPoints || 0);
                 var isActive = (c.is_active === undefined || c.is_active === 1 || c.is_active === '1');
                 var joinedDate = c.created_at ? new Date(c.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'Member';
