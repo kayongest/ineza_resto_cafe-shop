@@ -125,6 +125,139 @@ if ($action === 'list') {
     }
     exit;
 
+} elseif ($action === 'create_customer') {
+    $fullName = trim($data['full_name'] ?? $data['name'] ?? '');
+    $email = strtolower(trim($data['email'] ?? ''));
+    $phone = trim($data['phone'] ?? '');
+    $address = trim($data['address'] ?? '');
+    $loyaltyPoints = (int)($data['loyalty_points'] ?? 0);
+    $password = trim($data['password'] ?? 'ineza2026');
+
+    if (empty($fullName) || empty($phone)) {
+        echo json_encode(['status' => 'error', 'message' => 'Please provide customer name and phone number.']);
+        exit;
+    }
+
+    if (empty($email)) {
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+        $email = 'cust_' . substr($cleanPhone, -6) . '@ineza.rw';
+    }
+
+    // Check duplicate email or phone
+    $chkStmt = $pdo->prepare("SELECT id FROM users WHERE email = ? OR phone = ? LIMIT 1");
+    $chkStmt->execute([$email, $phone]);
+    if ($chkStmt->fetch()) {
+        echo json_encode(['status' => 'error', 'message' => 'A user account with this email or phone number already exists!']);
+        exit;
+    }
+
+    $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+
+    try {
+        $stmt = $pdo->prepare("INSERT INTO users (full_name, email, phone, address, role, loyalty_points, password_hash, is_active) VALUES (?, ?, ?, ?, 'customer', ?, ?, 1)");
+        $stmt->execute([$fullName, $email, $phone, $address, $loyaltyPoints, $passwordHash]);
+        $newId = (int)$pdo->lastInsertId();
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => "Customer account '$fullName' created successfully!",
+            'customer' => [
+                'id' => $newId,
+                'full_name' => $fullName,
+                'email' => $email,
+                'phone' => $phone,
+                'address' => $address,
+                'loyalty_points' => $loyaltyPoints,
+                'role' => 'customer',
+                'is_active' => 1
+            ]
+        ]);
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit;
+
+} elseif ($action === 'get_customer' || $action === 'get') {
+    $userId = (int)($data['id'] ?? $data['user_id'] ?? $_GET['id'] ?? 0);
+    if ($userId <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Valid User ID required.']);
+        exit;
+    }
+
+    try {
+        $stmt = $pdo->prepare("SELECT id, full_name, email, phone, address, role, loyalty_points, is_active, created_at FROM users WHERE id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            echo json_encode(['status' => 'error', 'message' => 'Customer not found.']);
+            exit;
+        }
+
+        echo json_encode([
+            'status' => 'success',
+            'customer' => $user
+        ]);
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit;
+
+} elseif ($action === 'update_customer') {
+    $userId = (int)($data['id'] ?? $data['user_id'] ?? 0);
+    $fullName = isset($data['full_name']) ? trim($data['full_name']) : (isset($data['name']) ? trim($data['name']) : null);
+    $email = isset($data['email']) ? strtolower(trim($data['email'])) : null;
+    $phone = isset($data['phone']) ? trim($data['phone']) : null;
+    $address = isset($data['address']) ? trim($data['address']) : null;
+    $loyaltyPoints = isset($data['loyalty_points']) ? (int)$data['loyalty_points'] : null;
+    $password = isset($data['password']) ? trim($data['password']) : '';
+
+    if ($userId <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Valid Customer ID required.']);
+        exit;
+    }
+
+    // Check duplicate email or phone against other users
+    if (!empty($email) || !empty($phone)) {
+        $chk = $pdo->prepare("SELECT id FROM users WHERE (email = ? OR (phone IS NOT NULL AND phone != '' AND phone = ?)) AND id != ? LIMIT 1");
+        $chk->execute([$email ?? '', $phone ?? '', $userId]);
+        if ($chk->fetch()) {
+            echo json_encode(['status' => 'error', 'message' => 'Another account is already using this email or phone number.']);
+            exit;
+        }
+    }
+
+    $fields = [];
+    $params = [];
+
+    if ($fullName !== null) { $fields[] = "full_name = ?"; $params[] = $fullName; }
+    if ($email !== null) { $fields[] = "email = ?"; $params[] = $email; }
+    if ($phone !== null) { $fields[] = "phone = ?"; $params[] = $phone; }
+    if ($address !== null) { $fields[] = "address = ?"; $params[] = $address; }
+    if ($loyaltyPoints !== null) { $fields[] = "loyalty_points = ?"; $params[] = $loyaltyPoints; }
+    if (!empty($password) && $password !== '••••••••') {
+        $fields[] = "password_hash = ?";
+        $params[] = password_hash($password, PASSWORD_BCRYPT);
+    }
+
+    if (!empty($fields)) {
+        $params[] = $userId;
+        $sql = "UPDATE users SET " . implode(", ", $fields) . " WHERE id = ?";
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Customer account details updated successfully!'
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    } else {
+        echo json_encode(['status' => 'success', 'message' => 'No changes made.']);
+    }
+    exit;
+
 } elseif ($action === 'update_role') {
     $userId = (int)($data['id'] ?? $data['user_id'] ?? 0);
     $newRole = trim($data['role'] ?? '');

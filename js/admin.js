@@ -2803,8 +2803,14 @@ function filterUsersTable() {
                         </td>
                         <td><small class="text-muted">${joinedDate}</small></td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-3" onclick="quickGrantPoints(${c.id})">
-                                <i class="fas fa-plus-circle me-1"></i> Grant Pts
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditCustomerModal(${c.id})" title="Edit Customer Profile">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning text-dark me-1" onclick="quickGrantPoints(${c.id})" title="Grant Loyalty Points">
+                                <i class="fas fa-coins"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomerAccount(${c.id})" title="Delete Customer Account">
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </td>
                     </tr>
@@ -3069,6 +3075,220 @@ async function confirmGrantPointsSubmit(e) {
         showToast('Granted ' + amount + ' Loyalty Points to ' + (cust.full_name || cust.name) + '!', 'success', 'Points Credited');
     }
 }
+
+/* ============================================================
+   REGISTERED CUSTOMER CRUD OPERATIONS
+   ============================================================ */
+function openAddCustomerModal() {
+    var form = document.getElementById('customerForm');
+    if (form) form.reset();
+    var idInput = document.getElementById('crudCustomerId');
+    if (idInput) idInput.value = '';
+
+    var title = document.getElementById('customerModalTitle');
+    if (title) title.innerHTML = '<i class="fas fa-user-plus me-2" style="color:var(--primary);"></i>Add Customer Account';
+
+    var modal = document.getElementById('customerModal');
+    if (modal) {
+        modal.classList.add('open');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+window.openAddCustomerModal = openAddCustomerModal;
+
+async function openEditCustomerModal(id) {
+    var form = document.getElementById('customerForm');
+    if (form) form.reset();
+
+    var cust = adminCustomerLoyaltyList.find(function(c) { return c.id == id; });
+
+    // Fetch fresh from API if available
+    try {
+        var res = await fetch('api/users.php?action=get_customer&id=' + encodeURIComponent(id));
+        if (res.ok) {
+            var data = await res.json();
+            if (data.status === 'success' && data.customer) {
+                cust = data.customer;
+            }
+        }
+    } catch (e) {
+        console.warn('[Get Customer API] Falling back to memory', e);
+    }
+
+    if (!cust) {
+        showToast('Customer record not found.', 'error');
+        return;
+    }
+
+    var idInput = document.getElementById('crudCustomerId');
+    if (idInput) idInput.value = cust.id;
+
+    var nameInput = document.getElementById('crudCustomerName');
+    if (nameInput) nameInput.value = cust.full_name || cust.name || '';
+
+    var phoneInput = document.getElementById('crudCustomerPhone');
+    if (phoneInput) phoneInput.value = cust.phone || '';
+
+    var emailInput = document.getElementById('crudCustomerEmail');
+    if (emailInput) emailInput.value = cust.email || '';
+
+    var addrInput = document.getElementById('crudCustomerAddress');
+    if (addrInput) addrInput.value = cust.address || '';
+
+    var ptsInput = document.getElementById('crudCustomerPoints');
+    if (ptsInput) ptsInput.value = cust.loyalty_points || cust.loyaltyPoints || 0;
+
+    var passInput = document.getElementById('crudCustomerPassword');
+    if (passInput) passInput.value = '';
+
+    var title = document.getElementById('customerModalTitle');
+    if (title) title.innerHTML = '<i class="fas fa-user-edit me-2" style="color:var(--primary);"></i>Edit Customer: ' + (cust.full_name || cust.name);
+
+    var modal = document.getElementById('customerModal');
+    if (modal) {
+        modal.classList.add('open');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+window.openEditCustomerModal = openEditCustomerModal;
+
+function closeCustomerModal() {
+    var modal = document.getElementById('customerModal');
+    if (modal) {
+        modal.classList.remove('open');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+window.closeCustomerModal = closeCustomerModal;
+
+async function confirmSaveCustomer(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    var id = document.getElementById('crudCustomerId').value;
+    var name = (document.getElementById('crudCustomerName').value || '').trim();
+    var phone = (document.getElementById('crudCustomerPhone').value || '').trim();
+    var email = (document.getElementById('crudCustomerEmail').value || '').trim();
+    var address = (document.getElementById('crudCustomerAddress').value || '').trim();
+    var points = parseInt(document.getElementById('crudCustomerPoints').value) || 0;
+    var password = (document.getElementById('crudCustomerPassword').value || '').trim();
+
+    if (!name || !phone) {
+        showToast('Please provide both Customer Name and Phone Number.', 'warning');
+        return;
+    }
+
+    var isEdit = !!id;
+    var payload = {
+        action: isEdit ? 'update_customer' : 'create_customer',
+        id: id ? parseInt(id) : undefined,
+        full_name: name,
+        phone: phone,
+        email: email,
+        address: address,
+        loyalty_points: points,
+        password: password
+    };
+
+    try {
+        var res = await fetch('api/users.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            var data = await res.json();
+            if (data.status === 'success') {
+                closeCustomerModal();
+                showToast(data.message || (isEdit ? 'Customer profile updated successfully.' : 'New customer registered.'), 'success', 'Customer Management');
+                renderStaffAndLoyaltyTables();
+                return;
+            } else {
+                showToast(data.message || 'Operation failed.', 'error', 'Error');
+                return;
+            }
+        }
+    } catch (err) {
+        console.warn('[Save Customer API] Offline/Fallback mode', err);
+    }
+
+    // Local fallback for offline/static testing
+    if (isEdit) {
+        var cust = adminCustomerLoyaltyList.find(function(c) { return c.id == id; });
+        if (cust) {
+            cust.full_name = name;
+            cust.phone = phone;
+            if (email) cust.email = email;
+            cust.address = address;
+            cust.loyalty_points = points;
+        }
+    } else {
+        var newId = Date.now();
+        adminCustomerLoyaltyList.unshift({
+            id: newId,
+            full_name: name,
+            phone: phone,
+            email: email || ('customer_' + phone.replace(/[^0-9]/g, '') + '@inezaresto.rw'),
+            address: address,
+            loyalty_points: points,
+            is_active: 1,
+            created_at: new Date().toISOString()
+        });
+    }
+
+    saveCustomerLoyalty();
+    closeCustomerModal();
+    filterUsersTable();
+    showToast('Customer record saved in local storage.', 'info', 'Saved Locally');
+}
+window.confirmSaveCustomer = confirmSaveCustomer;
+
+async function deleteCustomerAccount(id) {
+    if (!id) return;
+    if (id === 1 || id === '1') {
+        showToast('Protected account cannot be deleted.', 'error', 'Action Denied');
+        return;
+    }
+
+    var target = adminCustomerLoyaltyList.find(function(c) { return c.id == id; });
+    var targetName = target ? (target.full_name || target.name || ('#CUST-' + id)) : ('#CUST-' + id);
+
+    if (!confirm('Are you sure you want to delete customer account "' + targetName + '"? This will remove all loyalty point history.')) {
+        return;
+    }
+
+    try {
+        var res = await fetch('api/users.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: parseInt(id) })
+        });
+
+        if (res.ok) {
+            var data = await res.json();
+            if (data.status === 'success') {
+                showToast(data.message || 'Customer account deleted.', 'info', 'Customer Deleted');
+                renderStaffAndLoyaltyTables();
+                return;
+            } else {
+                showToast(data.message || 'Unable to delete account.', 'error', 'Error');
+                return;
+            }
+        }
+    } catch (err) {
+        console.warn('[Delete Customer API] Offline fallback', err);
+    }
+
+    // Local fallback
+    adminCustomerLoyaltyList = adminCustomerLoyaltyList.filter(function(c) { return c.id != id; });
+    saveCustomerLoyalty();
+    filterUsersTable();
+    showToast('Customer removed from local storage.', 'info');
+}
+window.deleteCustomerAccount = deleteCustomerAccount;
 
 /* ROLE & PERMISSION ENFORCEMENT */
 function enforceRolePermissions() {
