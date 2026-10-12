@@ -335,6 +335,13 @@
           z-index: 99999999 !important;
           animation: floatIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
        }
+       #tableServiceModal.open {
+          display: flex !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+          z-index: 999999999 !important;
+       }
        @media (max-width: 768px) {
           .table-service-float-container {
              bottom: 18px !important;
@@ -1926,6 +1933,7 @@
           </div>
        </div>
     </div>
+ </div>
 
     <!-- ============================================================
           SYSTEM NOTIFICATION & DISPATCH LOGS MODAL
@@ -1972,7 +1980,7 @@
     </div>
 
     <!-- TABLE SERVICE REQUEST MODAL -->
-    <div id="tableServiceModal" class="custom-modal-overlay">
+    <div id="tableServiceModal" class="custom-modal-overlay" onclick="closeTableServiceModal()">
        <div class="modal-standard-box" style="max-width:440px;" onclick="event.stopPropagation()">
           <div class="modal-standard-header">
              <div class="d-flex align-items-center gap-2">
@@ -2044,7 +2052,7 @@
    <script src="js/aos.js"></script>
    <script src="js/swiper-bundle.min.js"></script>
    <script src="js/jquery.magnific-popup.min.js"></script>
-   <script src="js/main.js?v=32.0"></script>
+   <script src="js/main.js?v=33.0"></script>
 
    <!-- ============================================================
    EXTRA: Global click handler for data-auth-modal buttons
