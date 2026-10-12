@@ -127,6 +127,8 @@ try {
                 if (typeof renderKitchenGrid === 'function') renderKitchenGrid();
                 if (typeof renderFullOrdersDispatchBoard === 'function') renderFullOrdersDispatchBoard();
                 notifyNewOrderOnce(payload.order);
+            } else if (payload.type === 'table_service_requested' && payload.request) {
+                handleAdminTableServiceRequest(payload.request);
             }
         } catch (e) { /* ignore channel errors */ }
     };
@@ -136,6 +138,13 @@ try {
 window.addEventListener('storage', function(ev) {
     try {
         if (!ev || !ev.key) return;
+        if (ev.key === 'favcafe_table_service_signal' && ev.newValue) {
+            var reqPayload = JSON.parse(ev.newValue);
+            if (reqPayload && reqPayload.table) {
+                handleAdminTableServiceRequest(reqPayload);
+            }
+            return;
+        }
         if (ev.key !== 'favcafe_orders_signal') return;
         if (!ev.newValue) return;
         var payload = JSON.parse(ev.newValue);
@@ -153,6 +162,100 @@ window.addEventListener('storage', function(ev) {
         notifyNewOrderOnce(payload.order);
     } catch (e) { /* ignore storage parse errors */ }
 });
+
+/* ============================================================
+   ADMIN LIVE TABLE SERVICE REQUESTS ENGINE
+   ============================================================ */
+var adminTableRequestsList = [];
+try {
+    var savedReqs = localStorage.getItem('favcafe_table_requests');
+    if (savedReqs) adminTableRequestsList = JSON.parse(savedReqs);
+} catch(e) {}
+
+function handleAdminTableServiceRequest(req) {
+    if (!req || !req.id) return;
+    var exists = adminTableRequestsList.find(function(r) { return r.id === req.id; });
+    if (!exists) {
+        adminTableRequestsList.unshift(req);
+        try {
+            localStorage.setItem('favcafe_table_requests', JSON.stringify(adminTableRequestsList.slice(0, 20)));
+        } catch(e) {}
+    }
+
+    renderAdminTableRequests();
+
+    if (typeof showToast === 'function') {
+        showToast('🛎️ Table ' + req.table + ': ' + req.label, 'info', 'Table Assistance Request');
+    }
+}
+window.handleAdminTableServiceRequest = handleAdminTableServiceRequest;
+
+function dismissTableRequest(reqId) {
+    adminTableRequestsList = adminTableRequestsList.filter(function(r) { return r.id !== reqId; });
+    try {
+        localStorage.setItem('favcafe_table_requests', JSON.stringify(adminTableRequestsList));
+    } catch(e) {}
+    renderAdminTableRequests();
+}
+window.dismissTableRequest = dismissTableRequest;
+
+function renderAdminTableRequests() {
+    var container = document.getElementById('adminTableRequestsContainer');
+    if (!container) return;
+
+    if (!adminTableRequestsList || adminTableRequestsList.length === 0) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    container.style.display = 'block';
+    var html = `
+        <div class="card border-0 shadow-sm mb-3" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-left: 5px solid #f97316 !important; border-radius: 14px;">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-bell me-1"></i> ${adminTableRequestsList.length} Active Table Alert${adminTableRequestsList.length > 1 ? 's' : ''}</span>
+                        <strong class="text-dark" style="font-size:0.95rem;">Floor Service &amp; Waiter Assistance</strong>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="clearAllTableRequests()" style="font-size:0.75rem;">Clear All</button>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+    `;
+
+    adminTableRequestsList.forEach(function(r) {
+        var badgeColor = r.type === 'request_bill' ? 'bg-success text-white' : (r.type === 'call_waiter' ? 'bg-warning text-dark' : 'bg-info text-white');
+        html += `
+            <div class="bg-white p-2 px-3 rounded-3 border d-flex align-items-center gap-3 shadow-sm">
+                <div class="fw-bold fs-6 text-dark">Table ${r.table}</div>
+                <div>
+                    <span class="badge ${badgeColor} rounded-pill" style="font-size:0.75rem;"><i class="fas ${r.icon || 'fa-concierge-bell'} me-1"></i>${r.label}</span>
+                    <span class="small text-muted ms-1">${r.time || ''}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill ms-2" onclick="dismissTableRequest('${r.id}')" title="Mark as Attended">
+                    <i class="fas fa-check me-1"></i>Attended
+                </button>
+            </div>
+        `;
+    });
+
+    html += `
+                </div>
+            </div>
+        </div>
+    `;
+    container.innerHTML = html;
+}
+window.renderAdminTableRequests = renderAdminTableRequests;
+
+function clearAllTableRequests() {
+    adminTableRequestsList = [];
+    try {
+        localStorage.setItem('favcafe_table_requests', JSON.stringify([]));
+    } catch(e) {}
+    renderAdminTableRequests();
+}
+window.clearAllTableRequests = clearAllTableRequests;
 
 // Live Clock
 function initClock() {
@@ -2414,6 +2517,7 @@ async function toggleMenuItemStock(id, isAvailable) {
 document.addEventListener('DOMContentLoaded', function() {
     loadAdminMenu();
     renderAdminTablesTracker();
+    renderAdminTableRequests();
 });
 
 // Explicit scope bindings
@@ -4380,14 +4484,15 @@ window.savePromoItem = savePromoItem;
 // CART DRAWER SETTINGS MANAGEMENT (Add Extras & Summary/Discounts)
 // ============================================================
 function getCartAdminSettings() {
-    var defaults = { showExtras: true, showSummaryDiscounts: true };
+    var defaults = { showExtras: true, showSummaryDiscounts: true, showCallWaiter: true };
     try {
         var stored = localStorage.getItem('favcafe_cart_settings');
         if (stored) {
             var parsed = JSON.parse(stored);
             return {
                 showExtras: parsed.showExtras !== false,
-                showSummaryDiscounts: parsed.showSummaryDiscounts !== false
+                showSummaryDiscounts: parsed.showSummaryDiscounts !== false,
+                showCallWaiter: parsed.showCallWaiter !== false
             };
         }
     } catch (e) {}
@@ -4398,11 +4503,14 @@ function initCartAdminSettings() {
     var settings = getCartAdminSettings();
     var extrasCheckbox = document.getElementById('settingToggleExtras');
     var summaryCheckbox = document.getElementById('settingToggleSummary');
+    var callWaiterCheckbox = document.getElementById('settingToggleCallWaiter');
     var extrasBadge = document.getElementById('badgeExtrasStatus');
     var summaryBadge = document.getElementById('badgeSummaryStatus');
+    var callWaiterBadge = document.getElementById('badgeCallWaiterStatus');
 
     if (extrasCheckbox) extrasCheckbox.checked = settings.showExtras;
     if (summaryCheckbox) summaryCheckbox.checked = settings.showSummaryDiscounts;
+    if (callWaiterCheckbox) callWaiterCheckbox.checked = settings.showCallWaiter;
 
     if (extrasBadge) {
         extrasBadge.textContent = settings.showExtras ? 'ENABLED' : 'DISABLED';
@@ -4412,17 +4520,24 @@ function initCartAdminSettings() {
         summaryBadge.textContent = settings.showSummaryDiscounts ? 'ENABLED' : 'DISABLED';
         summaryBadge.className = settings.showSummaryDiscounts ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
     }
+    if (callWaiterBadge) {
+        callWaiterBadge.textContent = settings.showCallWaiter ? 'ENABLED' : 'DISABLED';
+        callWaiterBadge.className = settings.showCallWaiter ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
 }
 window.initCartAdminSettings = initCartAdminSettings;
 
 function handleCartSettingChange() {
     var extrasCheckbox = document.getElementById('settingToggleExtras');
     var summaryCheckbox = document.getElementById('settingToggleSummary');
+    var callWaiterCheckbox = document.getElementById('settingToggleCallWaiter');
     var extrasBadge = document.getElementById('badgeExtrasStatus');
     var summaryBadge = document.getElementById('badgeSummaryStatus');
+    var callWaiterBadge = document.getElementById('badgeCallWaiterStatus');
 
     var showExtras = extrasCheckbox ? extrasCheckbox.checked : true;
     var showSummaryDiscounts = summaryCheckbox ? summaryCheckbox.checked : true;
+    var showCallWaiter = callWaiterCheckbox ? callWaiterCheckbox.checked : true;
 
     if (extrasBadge) {
         extrasBadge.textContent = showExtras ? 'ENABLED' : 'DISABLED';
@@ -4432,11 +4547,15 @@ function handleCartSettingChange() {
         summaryBadge.textContent = showSummaryDiscounts ? 'ENABLED' : 'DISABLED';
         summaryBadge.className = showSummaryDiscounts ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
     }
+    if (callWaiterBadge) {
+        callWaiterBadge.textContent = showCallWaiter ? 'ENABLED' : 'DISABLED';
+        callWaiterBadge.className = showCallWaiter ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
 
-    var newSettings = { showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts };
+    var newSettings = { showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter };
     try {
         localStorage.setItem('favcafe_cart_settings', JSON.stringify(newSettings));
-        localStorage.setItem('favcafe_cart_settings_signal', JSON.stringify({ showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, ts: Date.now() }));
+        localStorage.setItem('favcafe_cart_settings_signal', JSON.stringify({ showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter, ts: Date.now() }));
     } catch (e) {}
 
     try {

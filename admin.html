@@ -316,6 +316,9 @@
             <div class="row g-4 mb-4">
                <!-- KITCHEN TICKETS BOARD (4 per page with pagination) -->
                <div class="col-lg-12">
+                  <!-- Live Table Service Requests Alert Banner -->
+                  <div id="adminTableRequestsContainer" class="mb-3" style="display:none;"></div>
+
                   <div class="admin-card">
                      <div class="admin-card-header">
                         <h5><i class="fas fa-fire me-2" style="color:var(--amber);"></i>Active Kitchen Live Tickets</h5>
@@ -1385,6 +1388,25 @@
                      </label>
                   </div>
                </div>
+
+               <!-- Module 3: Call Waiter & Table Service Action -->
+               <div class="d-flex justify-content-between align-items-center p-3 mb-0 rounded-3 border" style="background:#f8fafc;">
+                  <div class="pe-3">
+                     <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="fw-bold text-dark fs-6"><i class="fas fa-concierge-bell text-info me-1"></i> "Call Waiter &amp; Table Service" Pill</span>
+                        <span class="badge bg-primary rounded-pill px-2 py-1" id="badgeCallWaiterStatus" style="font-size:0.7rem;">ENABLED</span>
+                     </div>
+                     <p class="text-muted small mb-0">
+                        Shows the floating "🛎️ Call Waiter / Request Bill" button for seated diners (?table=X) allowing instant waiter calls, bill requests, or cutlery/water refills.
+                     </p>
+                  </div>
+                  <div class="text-end">
+                     <label class="switch mb-0">
+                        <input type="checkbox" id="settingToggleCallWaiter" checked onchange="handleCartSettingChange()">
+                        <span class="slider"></span>
+                     </label>
+                  </div>
+               </div>
             </div>
 
             <!-- RESTAURANT STORE OPERATIONAL PROFILE (SUPERADMIN CRUD) -->
@@ -2314,7 +2336,7 @@
    <script src="js/jquery-3.7.1.min.js"></script>
    <script src="js/bootstrap.bundle.min.js"></script>
    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-   <script src="js/admin.js?v=7.2"></script>
+   <script src="js/admin.js?v=8.0"></script>
 </body>
 
 </html>

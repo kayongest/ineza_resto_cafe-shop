@@ -2355,6 +2355,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }, 800);
     }
+    checkTableServiceFloatingPill();
 
     // Gallery items setup
     galData = [];
@@ -2718,6 +2719,118 @@ window.closeNotificationLogModal = closeNotificationLogModal;
 window.filterNotificationLogs = filterNotificationLogs;
 window.clearNotificationLogs = clearNotificationLogs;
 
+/* ============================================================
+   TABLE SERVICE / CALL WAITER CONTROLLER (DINE-IN)
+   ============================================================ */
+function checkTableServiceFloatingPill() {
+    var floatWrap = document.getElementById('tableServiceFloatingWrap');
+    var labelEl = document.getElementById('floatingTableLabel');
+    if (!floatWrap) return;
+
+    var activeTable = sessionStorage.getItem('favcafe_active_table');
+    if (!activeTable) {
+        var urlParams = new URLSearchParams(window.location.search);
+        activeTable = urlParams.get('table');
+        if (activeTable) sessionStorage.setItem('favcafe_active_table', activeTable);
+    }
+
+    // Check admin enable/disable setting
+    var showCallWaiter = true;
+    try {
+        var settingsRaw = localStorage.getItem('favcafe_cart_settings');
+        if (settingsRaw) {
+            var s = JSON.parse(settingsRaw);
+            if (s.showCallWaiter === false) showCallWaiter = false;
+        }
+    } catch(e) {}
+
+    if (activeTable && showCallWaiter) {
+        if (labelEl) labelEl.textContent = 'Table ' + activeTable;
+        floatWrap.style.display = 'block';
+    } else {
+        floatWrap.style.display = 'none';
+    }
+}
+window.checkTableServiceFloatingPill = checkTableServiceFloatingPill;
+
+function openTableServiceModal() {
+    var modal = document.getElementById('tableServiceModal');
+    var activeTable = sessionStorage.getItem('favcafe_active_table') || '01';
+    var titleEl = document.getElementById('tableServiceModalTitle');
+    var subEl = document.getElementById('tableServiceModalSubtitle');
+
+    if (titleEl) titleEl.textContent = 'Table ' + activeTable + ' Service';
+    if (subEl) subEl.textContent = 'Seated at Table ' + activeTable + ' • Instant Floor & Kitchen Alert';
+
+    if (modal) {
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+}
+window.openTableServiceModal = openTableServiceModal;
+
+function closeTableServiceModal() {
+    var modal = document.getElementById('tableServiceModal');
+    if (modal) {
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+}
+window.closeTableServiceModal = closeTableServiceModal;
+
+function submitTableServiceRequest(reqType) {
+    var activeTable = sessionStorage.getItem('favcafe_active_table') || '01';
+    var label = 'Assistance';
+    var icon = 'fa-concierge-bell';
+
+    if (reqType === 'call_waiter') {
+        label = 'Floor Waiter Assistance';
+        icon = 'fa-user-tie';
+    } else if (reqType === 'request_bill') {
+        label = 'Bill & EBM Receipt';
+        icon = 'fa-receipt';
+    } else if (reqType === 'refill_water') {
+        label = 'Water & Napkins Refill';
+        icon = 'fa-glass-whiskey';
+    }
+
+    var servicePayload = {
+        id: 'REQ-' + Date.now().toString().slice(-4),
+        table: activeTable,
+        type: reqType,
+        label: label,
+        icon: icon,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        ts: Date.now()
+    };
+
+    // 1. Broadcast to Admin KDS via BroadcastChannel
+    try {
+        var chan = new BroadcastChannel('favcafe_orders_channel');
+        chan.postMessage({ type: 'table_service_requested', request: servicePayload });
+    } catch(e) {}
+
+    // 2. Storage signal fallback
+    try {
+        localStorage.setItem('favcafe_table_service_signal', JSON.stringify(servicePayload));
+        // Keep in local active requests list
+        var existing = [];
+        try {
+            var raw = localStorage.getItem('favcafe_table_requests');
+            if (raw) existing = JSON.parse(raw);
+        } catch(e) {}
+        existing.unshift(servicePayload);
+        localStorage.setItem('favcafe_table_requests', JSON.stringify(existing.slice(0, 20)));
+    } catch(e) {}
+
+    // 3. User feedback
+    closeTableServiceModal();
+    if (typeof showToast === 'function') {
+        showToast('Request sent for Table ' + activeTable + '! Server notified.', 'success', label);
+    }
+}
+window.submitTableServiceRequest = submitTableServiceRequest;
+
 function viewOrder(orderId) {
     if (typeof window.openViewOrderModal === 'function') {
         window.openViewOrderModal(orderId);
@@ -2912,9 +3025,17 @@ try {
     storeSettingsChan.onmessage = function(e) {
         if (e.data && e.data.type === 'store_settings_updated' && e.data.settings) {
             applyLiveStoreSettingsToCustomerUI(e.data.settings);
+        } else if (e.data && e.data.type === 'cart_settings_updated') {
+            checkTableServiceFloatingPill();
         }
     };
 } catch (e) {}
+
+window.addEventListener('storage', function(e) {
+    if (e.key === 'favcafe_cart_settings' || e.key === 'favcafe_cart_settings_signal') {
+        checkTableServiceFloatingPill();
+    }
+});
 
 // Auto-check on load
 document.addEventListener('DOMContentLoaded', function() {
