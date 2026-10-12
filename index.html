@@ -2044,7 +2044,7 @@
    <script src="js/aos.js"></script>
    <script src="js/swiper-bundle.min.js"></script>
    <script src="js/jquery.magnific-popup.min.js"></script>
-   <script src="js/main.js?v=30.0"></script>
+   <script src="js/main.js?v=31.0"></script>
 
    <!-- ============================================================
    EXTRA: Global click handler for data-auth-modal buttons
@@ -2137,6 +2137,86 @@
                syncInstantPill();
             }
          });
+         // Expose robust modal handlers globally immediately
+         window.openTableServiceModal = function() {
+            var modal = document.getElementById('tableServiceModal');
+            var activeTable = sessionStorage.getItem('favcafe_active_table') || localStorage.getItem('favcafe_active_table') || '01';
+            var titleEl = document.getElementById('tableServiceModalTitle');
+            var subEl = document.getElementById('tableServiceModalSubtitle');
+
+            if (titleEl) titleEl.textContent = 'Table ' + activeTable + ' Service';
+            if (subEl) subEl.textContent = 'Seated at Table ' + activeTable + ' • Instant Floor & Kitchen Alert';
+
+            if (modal) {
+               modal.classList.add('open');
+               modal.style.setProperty('display', 'flex', 'important');
+               modal.style.setProperty('opacity', '1', 'important');
+               document.body.style.overflow = 'hidden';
+            }
+         };
+
+         window.closeTableServiceModal = function() {
+            var modal = document.getElementById('tableServiceModal');
+            if (modal) {
+               modal.classList.remove('open');
+               modal.style.setProperty('display', 'none', 'important');
+               modal.style.setProperty('opacity', '0', 'important');
+               document.body.style.overflow = '';
+            }
+         };
+
+         window.submitTableServiceRequest = function(reqType) {
+            var activeTable = sessionStorage.getItem('favcafe_active_table') || localStorage.getItem('favcafe_active_table') || '01';
+            var label = 'Floor Assistance';
+            var icon = 'fa-concierge-bell';
+
+            if (reqType === 'call_waiter') {
+               label = 'Floor Waiter Assistance';
+               icon = 'fa-user-tie';
+            } else if (reqType === 'request_bill') {
+               label = 'Bill & EBM Receipt';
+               icon = 'fa-receipt';
+            } else if (reqType === 'refill_water') {
+               label = 'Water & Napkins Refill';
+               icon = 'fa-glass-whiskey';
+            }
+
+            var servicePayload = {
+               id: 'REQ-' + Date.now().toString().slice(-4),
+               table: activeTable,
+               type: reqType,
+               label: label,
+               icon: icon,
+               time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+               ts: Date.now()
+            };
+
+            // 1. Broadcast to Admin KDS via BroadcastChannel
+            try {
+               var chan = new BroadcastChannel('favcafe_orders_channel');
+               chan.postMessage({ type: 'table_service_requested', request: servicePayload });
+            } catch(e) {}
+
+            // 2. Storage signal fallback
+            try {
+               localStorage.setItem('favcafe_table_service_signal', JSON.stringify(servicePayload));
+               var existing = [];
+               try {
+                  var raw = localStorage.getItem('favcafe_table_requests');
+                  if (raw) existing = JSON.parse(raw);
+               } catch(e) {}
+               existing.unshift(servicePayload);
+               localStorage.setItem('favcafe_table_requests', JSON.stringify(existing.slice(0, 20)));
+            } catch(e) {}
+
+            window.closeTableServiceModal();
+
+            if (typeof showToast === 'function') {
+               showToast('Floor waiter dispatched to Table ' + activeTable + '!', 'success', 'Request Sent');
+            } else {
+               alert('Request sent! Floor waiter dispatched to Table ' + activeTable);
+            }
+         };
       })();
    </script>
 
