@@ -41,6 +41,17 @@
                   <input type="text" id="promoDiscount" class="form-control" placeholder="e.g. 35%" required />
                </div>
                <div class="col-md-12">
+                  <div class="d-flex align-items-center justify-content-between p-2 bg-white rounded border">
+                     <div>
+                        <label class="form-label mb-0 fw-bold" for="promoIsActiveToggle">Enable Banner Display</label>
+                        <small class="text-muted d-block" style="font-size:0.75rem;">When enabled, this banner appears on mobile app &amp; customer screens.</small>
+                     </div>
+                     <div class="form-check form-switch fs-5 mb-0">
+                        <input class="form-check-input cursor-pointer" type="checkbox" id="promoIsActiveToggle" checked>
+                     </div>
+                  </div>
+               </div>
+               <div class="col-md-12">
                   <label for="promoImageFile" class="form-label"><i class="fas fa-image me-1" style="color:var(--primary);"></i>Upload Promo Image / Poster</label>
                   <input type="file" id="promoImageFile" class="form-control" accept="image/*" onchange="previewPromoImage(this)" />
                   <input type="hidden" id="promoImg" value="" />

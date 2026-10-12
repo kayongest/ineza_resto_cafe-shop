@@ -112,6 +112,8 @@ if ($action === 'get') {
     $discount = isset($data['discount']) ? trim($data['discount']) : '';
     $img = isset($data['img']) ? trim($data['img']) : '';
 
+    $isActive = isset($data['is_active']) ? intval($data['is_active']) : 1;
+
     if ($id <= 0 || empty($title)) {
         echo json_encode(['status' => 'error', 'message' => 'Valid ID and Title required.']);
         exit;
@@ -119,8 +121,8 @@ if ($action === 'get') {
 
     if ($pdo) {
         try {
-            $stmt = $pdo->prepare("UPDATE promos SET title = ?, subtitle = ?, discount = ?, img = ? WHERE id = ?");
-            $stmt->execute([$title, $subtitle, $discount, $img, $id]);
+            $stmt = $pdo->prepare("UPDATE promos SET title = ?, subtitle = ?, discount = ?, img = ?, is_active = ? WHERE id = ?");
+            $stmt->execute([$title, $subtitle, $discount, $img, $isActive, $id]);
         } catch (PDOException $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
             exit;
@@ -129,6 +131,29 @@ if ($action === 'get') {
 
     syncPromosJson($pdo, $jsonPath);
     echo json_encode(['status' => 'success', 'message' => 'Promo updated successfully!']);
+    exit;
+
+} elseif ($action === 'toggle_active') {
+    $id = isset($data['id']) ? intval($data['id']) : 0;
+    $isActive = isset($data['is_active']) ? intval($data['is_active']) : 1;
+
+    if ($id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Valid ID required.']);
+        exit;
+    }
+
+    if ($pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE promos SET is_active = ? WHERE id = ?");
+            $stmt->execute([$isActive, $id]);
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            exit;
+        }
+    }
+
+    syncPromosJson($pdo, $jsonPath);
+    echo json_encode(['status' => 'success', 'message' => 'Promo status toggled successfully!', 'is_active' => $isActive]);
     exit;
 
 } elseif ($action === 'delete') {

@@ -673,13 +673,15 @@ function renderHomePromos() {
     const container = document.getElementById('homePromoBannerContainer');
     if (!container) return;
 
-    if (!appPromos || appPromos.length === 0) {
+    const activePromos = (appPromos || []).filter(p => p.is_active !== false && p.is_active !== 0 && p.is_active !== '0');
+
+    if (activePromos.length === 0) {
         container.innerHTML = `
             <div class="promo-coral-card" onclick="switchTab('favorite')">
                 <div class="promo-content">
-                    <div class="promo-tag">Happy Weekend</div>
-                    <div class="promo-title-discount">60% OFF</div>
-                    <div class="promo-note">*for All Menus</div>
+                    <div class="promo-tag">INEZA RESTO</div>
+                    <div class="promo-title-discount">Special Offer</div>
+                    <div class="promo-note">*Delicious fresh meals &amp; coffee</div>
                 </div>
             </div>
         `;
@@ -687,7 +689,7 @@ function renderHomePromos() {
     }
 
     let html = '<div class="promo-carousel-wrapper">';
-    appPromos.forEach((p, idx) => {
+    activePromos.forEach((p, idx) => {
         let discountDisplay = p.discount || '60% OFF';
         if (discountDisplay && !discountDisplay.toUpperCase().includes('OFF') && discountDisplay.includes('%')) {
             discountDisplay += ' OFF';
@@ -707,9 +709,9 @@ function renderHomePromos() {
         `;
     });
 
-    if (appPromos.length > 1) {
+    if (activePromos.length > 1) {
         html += '<div class="promo-carousel-dots">';
-        appPromos.forEach((_, idx) => {
+        activePromos.forEach((_, idx) => {
             html += `<span class="promo-dot ${idx === currentPromoIndex ? 'active' : ''}" onclick="switchPromoSlide(${idx})"></span>`;
         });
         html += '</div>';
@@ -725,13 +727,15 @@ function renderOffersPromos() {
     const container = document.getElementById('offersPromoCardsContainer');
     if (!container) return;
 
-    if (!appPromos || appPromos.length === 0) {
+    const activePromos = (appPromos || []).filter(p => p.is_active !== false && p.is_active !== 0 && p.is_active !== '0');
+
+    if (activePromos.length === 0) {
         container.innerHTML = `
             <div class="promo-coral-card mb-3" style="cursor:pointer;" onclick="switchTab('menu')">
                 <div class="promo-content">
-                    <div class="promo-tag">Happy Weekend</div>
-                    <div class="promo-title-discount">60% OFF</div>
-                    <div class="promo-note">*for All Menus - Browse Menu</div>
+                    <div class="promo-tag">INEZA RESTO</div>
+                    <div class="promo-title-discount">Welcome</div>
+                    <div class="promo-note">*Explore our fresh kitchen menu</div>
                 </div>
             </div>
         `;
@@ -739,7 +743,7 @@ function renderOffersPromos() {
     }
 
     let html = '';
-    appPromos.forEach((p) => {
+    activePromos.forEach((p) => {
         let discountDisplay = p.discount || 'Special Offer';
         if (discountDisplay && !discountDisplay.toUpperCase().includes('OFF') && discountDisplay.includes('%')) {
             discountDisplay += ' OFF';

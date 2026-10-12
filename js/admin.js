@@ -4145,23 +4145,35 @@ function renderAdminPromosGrid() {
     adminPromos.forEach(function(p) {
         var card = document.createElement('div');
         card.className = 'col-md-6 col-lg-4';
+        var isActive = p.is_active !== false && p.is_active !== 0 && p.is_active !== '0';
+        var statusBadge = isActive ?
+            `<span class="badge bg-success text-white small px-2 py-1"><i class="fas fa-check-circle me-1"></i>Active</span>` :
+            `<span class="badge bg-secondary text-white small px-2 py-1"><i class="fas fa-ban me-1"></i>Disabled</span>`;
+
         var mediaHtml = p.img ? 
-            `<img src="${p.img}" alt="${p.title}" style="width:100%; height:160px; object-fit:cover;" onerror="this.onerror=null;this.parentElement.style.background='linear-gradient(135deg, #ff5e57, #ff3f34)';" />` : 
-            `<div style="height:160px; background:linear-gradient(135deg, #ff5e57, #ff3f34); display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; font-weight:800;">${p.discount || 'PROMO'}</div>`;
+            `<img src="${p.img}" alt="${p.title}" style="width:100%; height:160px; object-fit:cover; filter:${isActive ? 'none' : 'grayscale(80%)'};" onerror="this.onerror=null;this.parentElement.style.background='linear-gradient(135deg, #ff5e57, #ff3f34)';" />` : 
+            `<div style="height:160px; background:linear-gradient(135deg, ${isActive ? '#ff5e57, #ff3f34' : '#7f8c8d, #95a5a6'}); display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; font-weight:800;">${p.discount || 'PROMO'}</div>`;
 
         card.innerHTML = `
-            <div class="admin-card border h-100 d-flex flex-column shadow-sm rounded-3" style="overflow:hidden; background:#fff;">
+            <div class="admin-card border h-100 d-flex flex-column shadow-sm rounded-3" style="overflow:hidden; background:${isActive ? '#fff' : '#f8f9fa'}; opacity:${isActive ? '1' : '0.85'};">
                 <div style="height:160px; position:relative; overflow:hidden; background:#2c3e50;">
                     ${mediaHtml}
-                    <div style="position:absolute; top:10px; right:10px; background:#ff5e57; color:#fff; padding:4px 12px; border-radius:12px; font-weight:700; font-size:0.85rem; box-shadow:0 2px 6px rgba(0,0,0,0.25);">${p.discount || 'Special'}</div>
+                    <div style="position:absolute; top:10px; right:10px; background:${isActive ? '#ff5e57' : '#7f8c8d'}; color:#fff; padding:4px 12px; border-radius:12px; font-weight:700; font-size:0.85rem; box-shadow:0 2px 6px rgba(0,0,0,0.25);">${p.discount || 'Special'}</div>
+                    <div style="position:absolute; top:10px; left:10px;">${statusBadge}</div>
                 </div>
                 <div class="p-3 flex-grow-1">
                     <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing:0.5px;">${p.subtitle || 'Special Offer'}</div>
                     <h5 class="mb-1 text-dark" style="font-weight:700;">${p.title || 'Untitled Promo'}</h5>
                 </div>
-                <div class="p-3 border-top d-flex justify-content-end gap-2 bg-light">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="editPromo(${p.id})"><i class="fas fa-edit"></i> Edit</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deletePromo(${p.id})"><i class="fas fa-trash"></i> Delete</button>
+                <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 bg-light">
+                    <div class="form-check form-switch mb-0" title="Click to Enable or Disable this Promo Banner">
+                        <input class="form-check-input cursor-pointer" type="checkbox" id="promoToggleSwitch_${p.id}" ${isActive ? 'checked' : ''} onchange="togglePromoStatus(${p.id}, this.checked)">
+                        <label class="form-check-label small fw-bold text-dark cursor-pointer ms-1" for="promoToggleSwitch_${p.id}">${isActive ? 'Live' : 'Hidden'}</label>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-secondary py-1 px-2" onclick="editPromo(${p.id})" title="Edit Promo Details"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-sm btn-outline-danger py-1 px-2" onclick="deletePromo(${p.id})" title="Delete Promo"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
             </div>
         `;
@@ -4170,12 +4182,35 @@ function renderAdminPromosGrid() {
 }
 window.renderAdminPromosGrid = renderAdminPromosGrid;
 
+async function togglePromoStatus(id, newStatus) {
+    var p = adminPromos.find(x => parseInt(x.id) === parseInt(id));
+    if (p) {
+        p.is_active = newStatus ? 1 : 0;
+        saveAdminPromos();
+
+        try {
+            await fetch('api/promos.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'toggle_active', id: parseInt(id), is_active: newStatus ? 1 : 0 })
+            });
+        } catch (e) {}
+
+        renderAdminPromosGrid();
+        showToast(`Promo #${id} is now ${newStatus ? 'Active & Visible' : 'Disabled & Hidden'}.`, 'success', 'Promo Status');
+    }
+}
+window.togglePromoStatus = togglePromoStatus;
+
 function openPromoModal() {
     var form = document.getElementById('promoForm');
     if (form) form.reset();
     document.getElementById('promoId').value = '';
     document.getElementById('promoImg').value = '';
     
+    var toggleEl = document.getElementById('promoIsActiveToggle');
+    if (toggleEl) toggleEl.checked = true;
+
     var fileInput = document.getElementById('promoImageFile');
     if (fileInput) fileInput.value = '';
     var previewBox = document.getElementById('promoImagePreviewBox');
@@ -4211,7 +4246,12 @@ function editPromo(id) {
     document.getElementById('promoSubtitle').value = p.subtitle || '';
     document.getElementById('promoDiscount').value = p.discount || '';
     document.getElementById('promoImg').value = p.img || '';
-    
+
+    var toggleEl = document.getElementById('promoIsActiveToggle');
+    if (toggleEl) {
+        toggleEl.checked = p.is_active !== false && p.is_active !== 0 && p.is_active !== '0';
+    }
+
     var fileInput = document.getElementById('promoImageFile');
     if (fileInput) fileInput.value = '';
     var previewBox = document.getElementById('promoImagePreviewBox');
@@ -4260,6 +4300,8 @@ async function savePromoItem(event) {
     var discount = document.getElementById('promoDiscount').value.trim();
     var img = document.getElementById('promoImg').value.trim();
     var fileInput = document.getElementById('promoImageFile');
+    var toggleEl = document.getElementById('promoIsActiveToggle');
+    var isActive = toggleEl ? (toggleEl.checked ? 1 : 0) : 1;
 
     if (!title) {
         showToast("Please provide a promo title.", "warning");
@@ -4295,7 +4337,8 @@ async function savePromoItem(event) {
         title: title,
         subtitle: subtitle,
         discount: discount,
-        img: img
+        img: img,
+        is_active: isActive
     };
     if (id) payload.id = parseInt(id);
 
@@ -4319,11 +4362,11 @@ async function savePromoItem(event) {
     if (id) {
         var idx = adminPromos.findIndex(x => parseInt(x.id) === parseInt(id));
         if (idx > -1) {
-            adminPromos[idx] = { id: parseInt(id), title: title, subtitle: subtitle, discount: discount, img: img };
+            adminPromos[idx] = { id: parseInt(id), title: title, subtitle: subtitle, discount: discount, img: img, is_active: isActive };
         }
     } else {
         var newId = Date.now();
-        adminPromos.push({ id: newId, title: title, subtitle: subtitle, discount: discount, img: img });
+        adminPromos.push({ id: newId, title: title, subtitle: subtitle, discount: discount, img: img, is_active: isActive });
     }
 
     saveAdminPromos();
