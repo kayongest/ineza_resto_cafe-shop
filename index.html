@@ -46,7 +46,7 @@
    <!-- Local Icon & Styling Assets -->
    <link rel="stylesheet" href="css/all.min.css" />
    <link rel="stylesheet" href="css/magnific-popup.css" />
-   <link rel="stylesheet" href="css/style.css?v=19.0" />
+   <link rel="stylesheet" href="css/style.css?v=20.0" />
    <link rel="stylesheet" href="css/theme.css?v=1.0" />
    <!-- Synchronous Theme Initializer (prevents FOUC) -->
    <script src="js/theme.js"></script>
@@ -1972,7 +1972,7 @@
     </div>
 
     <!-- TABLE SERVICE REQUEST MODAL -->
-    <div id="tableServiceModal" class="custom-modal-overlay">
+    <div id="tableServiceModal" class="custom-modal-overlay" onclick="if(event.target===this)closeTableServiceModal()">
        <div class="modal-standard-box" style="max-width:440px;">
           <div class="modal-standard-header">
              <div class="d-flex align-items-center gap-2">
@@ -2044,7 +2044,7 @@
    <script src="js/aos.js"></script>
    <script src="js/swiper-bundle.min.js"></script>
    <script src="js/jquery.magnific-popup.min.js"></script>
-   <script src="js/main.js?v=31.0"></script>
+   <script src="js/main.js?v=32.0"></script>
 
    <!-- ============================================================
    EXTRA: Global click handler for data-auth-modal buttons

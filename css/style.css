@@ -3579,7 +3579,7 @@ footer {
    CART DRAWER & OVERLAY MODALS
    ============================================================ */
 .custom-modal-overlay {
-  display: none !important;
+  display: none;
   position: fixed !important;
   inset: 0 !important;
   background: rgba(10, 25, 35, 0.85) !important;
