@@ -788,8 +788,8 @@
                   <i class="fas fa-file-pdf me-1"></i><span>PDF Menu</span>
                </a>
 
-               <!-- Table Reservation Button -->
-               <button type="button" id="navReserveBtn" class="btn-nav-reserve" onclick="openReservationModal()" title="Book a Table">
+               <!-- Table Reservation Button (Controlled by Admin Settings Module) -->
+               <button type="button" id="navReserveBtn" class="btn-nav-reserve" onclick="openReservationModal()" title="Book a Table" style="display:none !important;">
                   <i class="fas fa-calendar-check me-1"></i><span>Book Table</span>
                </button>
 
@@ -2036,7 +2036,7 @@
    <script src="js/aos.js"></script>
    <script src="js/swiper-bundle.min.js"></script>
    <script src="js/jquery.magnific-popup.min.js"></script>
-   <script src="js/main.js?v=28.0"></script>
+   <script src="js/main.js?v=30.0"></script>
 
    <!-- ============================================================
    EXTRA: Global click handler for data-auth-modal buttons

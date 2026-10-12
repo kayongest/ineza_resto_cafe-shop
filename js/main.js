@@ -2727,11 +2727,13 @@ function checkTableServiceFloatingPill() {
     var labelEl = document.getElementById('floatingTableLabel');
     if (!floatWrap) return;
 
-    var activeTable = sessionStorage.getItem('favcafe_active_table');
-    if (!activeTable) {
-        var urlParams = new URLSearchParams(window.location.search);
-        activeTable = urlParams.get('table');
-        if (activeTable) sessionStorage.setItem('favcafe_active_table', activeTable);
+    var urlParams = new URLSearchParams(window.location.search);
+    var paramTable = urlParams.get('table');
+
+    var activeTable = paramTable || sessionStorage.getItem('favcafe_active_table') || localStorage.getItem('favcafe_active_table');
+    if (paramTable) {
+        sessionStorage.setItem('favcafe_active_table', paramTable);
+        localStorage.setItem('favcafe_active_table', paramTable);
     }
 
     // Check admin enable/disable setting
@@ -2748,9 +2750,9 @@ function checkTableServiceFloatingPill() {
 
     if (activeTable && showCallWaiter) {
         if (labelEl) labelEl.textContent = 'Table ' + activeTable;
-        floatWrap.style.display = 'block';
+        floatWrap.style.setProperty('display', 'block', 'important');
     } else {
-        floatWrap.style.display = 'none';
+        floatWrap.style.setProperty('display', 'none', 'important');
     }
 
     applyCustomerReservationVisibility(showReservations);
