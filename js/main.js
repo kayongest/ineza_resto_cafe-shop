@@ -2736,11 +2736,13 @@ function checkTableServiceFloatingPill() {
 
     // Check admin enable/disable setting
     var showCallWaiter = true;
+    var showReservations = false;
     try {
         var settingsRaw = localStorage.getItem('favcafe_cart_settings');
         if (settingsRaw) {
             var s = JSON.parse(settingsRaw);
             if (s.showCallWaiter === false) showCallWaiter = false;
+            if (s.showReservations === true) showReservations = true;
         }
     } catch(e) {}
 
@@ -2750,8 +2752,22 @@ function checkTableServiceFloatingPill() {
     } else {
         floatWrap.style.display = 'none';
     }
+
+    applyCustomerReservationVisibility(showReservations);
 }
 window.checkTableServiceFloatingPill = checkTableServiceFloatingPill;
+
+function applyCustomerReservationVisibility(show) {
+    var reserveBtn = document.getElementById('navReserveBtn');
+    if (reserveBtn) {
+        if (show) {
+            reserveBtn.style.setProperty('display', 'inline-flex', 'important');
+        } else {
+            reserveBtn.style.setProperty('display', 'none', 'important');
+        }
+    }
+}
+window.applyCustomerReservationVisibility = applyCustomerReservationVisibility;
 
 function openTableServiceModal() {
     var modal = document.getElementById('tableServiceModal');

@@ -4484,7 +4484,7 @@ window.savePromoItem = savePromoItem;
 // CART DRAWER SETTINGS MANAGEMENT (Add Extras & Summary/Discounts)
 // ============================================================
 function getCartAdminSettings() {
-    var defaults = { showExtras: true, showSummaryDiscounts: true, showCallWaiter: true };
+    var defaults = { showExtras: true, showSummaryDiscounts: true, showCallWaiter: true, showReservations: false };
     try {
         var stored = localStorage.getItem('favcafe_cart_settings');
         if (stored) {
@@ -4492,25 +4492,58 @@ function getCartAdminSettings() {
             return {
                 showExtras: parsed.showExtras !== false,
                 showSummaryDiscounts: parsed.showSummaryDiscounts !== false,
-                showCallWaiter: parsed.showCallWaiter !== false
+                showCallWaiter: parsed.showCallWaiter !== false,
+                showReservations: parsed.showReservations === true
             };
         }
     } catch (e) {}
     return defaults;
 }
 
+function applyAdminReservationsVisibility(show) {
+    var navRes = document.getElementById('sidebarItemReservations');
+    var navTab = document.getElementById('sidebarItemTables');
+    var statCard = document.getElementById('statCardReservations');
+
+    if (navRes) {
+        if (show) {
+            navRes.style.setProperty('display', 'flex', 'important');
+        } else {
+            navRes.style.setProperty('display', 'none', 'important');
+        }
+    }
+    if (navTab) {
+        if (show) {
+            navTab.style.setProperty('display', 'flex', 'important');
+        } else {
+            navTab.style.setProperty('display', 'none', 'important');
+        }
+    }
+    if (statCard) {
+        if (show) {
+            statCard.style.setProperty('display', 'flex', 'important');
+        } else {
+            statCard.style.setProperty('display', 'none', 'important');
+        }
+    }
+}
+window.applyAdminReservationsVisibility = applyAdminReservationsVisibility;
+
 function initCartAdminSettings() {
     var settings = getCartAdminSettings();
     var extrasCheckbox = document.getElementById('settingToggleExtras');
     var summaryCheckbox = document.getElementById('settingToggleSummary');
     var callWaiterCheckbox = document.getElementById('settingToggleCallWaiter');
+    var reservationsCheckbox = document.getElementById('settingToggleReservations');
     var extrasBadge = document.getElementById('badgeExtrasStatus');
     var summaryBadge = document.getElementById('badgeSummaryStatus');
     var callWaiterBadge = document.getElementById('badgeCallWaiterStatus');
+    var reservationsBadge = document.getElementById('badgeReservationsStatus');
 
     if (extrasCheckbox) extrasCheckbox.checked = settings.showExtras;
     if (summaryCheckbox) summaryCheckbox.checked = settings.showSummaryDiscounts;
     if (callWaiterCheckbox) callWaiterCheckbox.checked = settings.showCallWaiter;
+    if (reservationsCheckbox) reservationsCheckbox.checked = settings.showReservations;
 
     if (extrasBadge) {
         extrasBadge.textContent = settings.showExtras ? 'ENABLED' : 'DISABLED';
@@ -4524,6 +4557,12 @@ function initCartAdminSettings() {
         callWaiterBadge.textContent = settings.showCallWaiter ? 'ENABLED' : 'DISABLED';
         callWaiterBadge.className = settings.showCallWaiter ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
     }
+    if (reservationsBadge) {
+        reservationsBadge.textContent = settings.showReservations ? 'ENABLED' : 'DISABLED';
+        reservationsBadge.className = settings.showReservations ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
+
+    applyAdminReservationsVisibility(settings.showReservations);
 }
 window.initCartAdminSettings = initCartAdminSettings;
 
@@ -4531,13 +4570,16 @@ function handleCartSettingChange() {
     var extrasCheckbox = document.getElementById('settingToggleExtras');
     var summaryCheckbox = document.getElementById('settingToggleSummary');
     var callWaiterCheckbox = document.getElementById('settingToggleCallWaiter');
+    var reservationsCheckbox = document.getElementById('settingToggleReservations');
     var extrasBadge = document.getElementById('badgeExtrasStatus');
     var summaryBadge = document.getElementById('badgeSummaryStatus');
     var callWaiterBadge = document.getElementById('badgeCallWaiterStatus');
+    var reservationsBadge = document.getElementById('badgeReservationsStatus');
 
     var showExtras = extrasCheckbox ? extrasCheckbox.checked : true;
     var showSummaryDiscounts = summaryCheckbox ? summaryCheckbox.checked : true;
     var showCallWaiter = callWaiterCheckbox ? callWaiterCheckbox.checked : true;
+    var showReservations = reservationsCheckbox ? reservationsCheckbox.checked : false;
 
     if (extrasBadge) {
         extrasBadge.textContent = showExtras ? 'ENABLED' : 'DISABLED';
@@ -4551,11 +4593,17 @@ function handleCartSettingChange() {
         callWaiterBadge.textContent = showCallWaiter ? 'ENABLED' : 'DISABLED';
         callWaiterBadge.className = showCallWaiter ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
     }
+    if (reservationsBadge) {
+        reservationsBadge.textContent = showReservations ? 'ENABLED' : 'DISABLED';
+        reservationsBadge.className = showReservations ? 'badge bg-primary rounded-pill px-2 py-1' : 'badge bg-secondary rounded-pill px-2 py-1';
+    }
 
-    var newSettings = { showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter };
+    applyAdminReservationsVisibility(showReservations);
+
+    var newSettings = { showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter, showReservations: showReservations };
     try {
         localStorage.setItem('favcafe_cart_settings', JSON.stringify(newSettings));
-        localStorage.setItem('favcafe_cart_settings_signal', JSON.stringify({ showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter, ts: Date.now() }));
+        localStorage.setItem('favcafe_cart_settings_signal', JSON.stringify({ showExtras: showExtras, showSummaryDiscounts: showSummaryDiscounts, showCallWaiter: showCallWaiter, showReservations: showReservations, ts: Date.now() }));
     } catch (e) {}
 
     try {

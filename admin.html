@@ -135,14 +135,14 @@
             <span class="badge-count" id="sidebarCatBadge" style="background:var(--primary);">8</span>
          </a>
 
-         <!-- Reservations & Table Progress (Temporarily Disabled) -->
-         <a href="#" class="sidebar-item" data-tab="reservations" data-tooltip="Reservations (Disabled)" style="display:none !important;">
+         <!-- Reservations & Table Progress Module (Toggleable from Settings) -->
+         <a href="#" class="sidebar-item" id="sidebarItemReservations" data-tab="reservations" data-tooltip="Reservations" style="display:none !important;">
             <i class="fas fa-calendar-check"></i>
             <span>Reservations</span>
             <span class="badge-count" id="sidebarResBadge" style="background:#e67e22;">0</span>
          </a>
 
-         <a href="#" class="sidebar-item" data-tab="tables" data-tooltip="Table Progress (Disabled)" style="display:none !important;">
+         <a href="#" class="sidebar-item" id="sidebarItemTables" data-tab="tables" data-tooltip="Table Progress" style="display:none !important;">
             <i class="fas fa-chair"></i>
             <span>Table Progress</span>
             <span class="badge-count" id="sidebarTablesBadge" style="background:#2563eb;">0</span>
@@ -300,8 +300,8 @@
                   </div>
                </div>
 
-               <!-- Booked Tables Stat Card (Temporarily Disabled) -->
-               <div class="stat-card" style="display:none !important;">
+               <!-- Booked Tables Stat Card (Toggleable from Settings) -->
+               <div class="stat-card" id="statCardReservations" style="display:none !important;">
                   <div class="stat-icon-box orange" style="background:rgba(230,126,34,0.15);color:#e67e22;">
                      <i class="fas fa-calendar-check"></i>
                   </div>
@@ -1337,14 +1337,14 @@
                </div>
             </div>
 
-            <!-- MOBILE APP & CART DRAWER MODULES -->
+            <!-- UNIFIED RESTAURANT OPERATIONS & OPTIONAL FEATURES TOGGLE -->
             <div class="admin-card mb-4 shadow-sm">
                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom flex-wrap gap-2">
                   <div>
                      <h5 class="fw-bold mb-1 text-dark">
-                        <i class="fas fa-mobile-alt me-2 text-primary"></i>Mobile App Cart Drawer Modules
+                        <i class="fas fa-toggle-on me-2 text-primary"></i>Restaurant Operations &amp; Feature Modules
                      </h5>
-                     <p class="text-muted small mb-0">Toggle which optional features appear in the mobile shopping cart drawer for ordering customers.</p>
+                     <p class="text-muted small mb-0">Toggle which operational modules are active. Enable or disable modules as your restaurant expands without modifying any code.</p>
                   </div>
                   <span class="badge bg-success rounded-pill px-3 py-1">
                      <i class="fas fa-sync-alt me-1"></i> Real-Time Sync Active
@@ -1390,7 +1390,7 @@
                </div>
 
                <!-- Module 3: Call Waiter & Table Service Action -->
-               <div class="d-flex justify-content-between align-items-center p-3 mb-0 rounded-3 border" style="background:#f8fafc;">
+               <div class="d-flex justify-content-between align-items-center p-3 mb-3 rounded-3 border" style="background:#f8fafc;">
                   <div class="pe-3">
                      <div class="d-flex align-items-center gap-2 mb-1">
                         <span class="fw-bold text-dark fs-6"><i class="fas fa-concierge-bell text-info me-1"></i> "Call Waiter &amp; Table Service" Pill</span>
@@ -1403,6 +1403,25 @@
                   <div class="text-end">
                      <label class="switch mb-0">
                         <input type="checkbox" id="settingToggleCallWaiter" checked onchange="handleCartSettingChange()">
+                        <span class="slider"></span>
+                     </label>
+                  </div>
+               </div>
+
+               <!-- Module 4: Table Reservations & Dine-In Dining Lifecycle Tracker -->
+               <div class="d-flex justify-content-between align-items-center p-3 mb-0 rounded-3 border" style="background:#f8fafc;">
+                  <div class="pe-3">
+                     <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="fw-bold text-dark fs-6"><i class="fas fa-calendar-check text-success me-1"></i> "Table Reservations &amp; Floor Progress" Module</span>
+                        <span class="badge bg-secondary rounded-pill px-2 py-1" id="badgeReservationsStatus" style="font-size:0.7rem;">DISABLED</span>
+                     </div>
+                     <p class="text-muted small mb-0">
+                        Enables the public "Book Table" button for customers, active table booking forms, and activates the Admin Reservations &amp; Table Progress tracker tabs. Keep disabled if operating only online orders.
+                     </p>
+                  </div>
+                  <div class="text-end">
+                     <label class="switch mb-0">
+                        <input type="checkbox" id="settingToggleReservations" onchange="handleCartSettingChange()">
                         <span class="slider"></span>
                      </label>
                   </div>
