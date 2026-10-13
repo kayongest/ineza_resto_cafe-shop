@@ -39,6 +39,7 @@ async function initApp() {
     renderMenuGrid();
     renderFavoriteGrid();
     loadMobileOrderHistory();
+    renderMobileNotifications();
 
     initNetworkListener();
     initStorageSyncListener();
@@ -907,6 +908,7 @@ function initStorageSyncListener() {
         }
         if (e.key === 'favcafe_orders' || e.key === 'favcafe_orders_signal') {
             loadMobileOrderHistory();
+            if (typeof syncOrderNotifications === 'function') syncOrderNotifications();
         }
         if (e.key === 'favcafe_cart_settings' || e.key === 'favcafe_cart_settings_signal') {
             applyCartDrawerSettings();
@@ -918,12 +920,16 @@ function initStorageSyncListener() {
             checkAuth();
             renderCartItems();
         }
+        if (e.key === 'favcafe_notifications') {
+            if (typeof renderMobileNotifications === 'function') renderMobileNotifications();
+        }
     });
 
     try {
         const orderChan = new BroadcastChannel('favcafe_orders_channel');
         orderChan.onmessage = (ev) => {
             loadMobileOrderHistory();
+            if (typeof syncOrderNotifications === 'function') syncOrderNotifications();
         };
     } catch (e) {}
 
@@ -2071,6 +2077,18 @@ function confirmMobileMomoSuccess() {
 
     showToast(`🎉 MoMo Payment Approved! Order #${orderToSave.id} placed.`, 'success');
 
+    // Add Order Notification
+    if (typeof addAppNotification === 'function') {
+        addAppNotification({
+            type: 'order',
+            title: `Order #${orderToSave.id} Placed`,
+            message: `Your order of ${orderToSave.items ? orderToSave.items.length : 1} item(s) (${formatRWF(orderToSave.total)}) has been confirmed and sent to kitchen.`,
+            orderId: orderToSave.id,
+            icon: 'fa-receipt',
+            avatar: 'img/chefs/1.jpg'
+        });
+    }
+
     // Switch to Your Orders tab and open tracking
     setTimeout(() => {
         switchTab('history');
@@ -2679,6 +2697,10 @@ function switchTab(tabId, element) {
         'favorite': 'Offers & Deals'
     };
 
+    if (tabId === 'notification' && typeof renderMobileNotifications === 'function') {
+        renderMobileNotifications();
+    }
+
     const headerTitleText = document.getElementById('headerTitleText');
     if (headerTitleText) {
         headerTitleText.innerText = titles[tabId] || 'INEZA RESTO & COFFEE SHOP';
@@ -2810,3 +2832,342 @@ function downloadReceipt() {
 }
 window.downloadReceipt = downloadReceipt;
 
+
+
+// ============================================================
+// DYNAMIC NOTIFICATIONS SYSTEM
+// ============================================================
+const DEFAULT_NOTIFICATIONS = [
+    {
+        id: 'notif_welcome',
+        type: 'offer',
+        title: 'Welcome to INEZA RESTO & COFFEE SHOP!',
+        message: 'Enjoy freshly brewed Rwandan single-origin coffee and chef specialties. Get 20% off with promo FAV20.',
+        time: Date.now() - 3600000 * 2, // 2 hours ago
+        read: false,
+        icon: 'fa-coffee',
+        avatar: 'img/chefs/1.jpg'
+    },
+    {
+        id: 'notif_weekend_deal',
+        type: 'offer',
+        title: 'Happy Weekend Deal Active! ☕🎉',
+        message: 'Special 60% OFF weekend promo has been unlocked on selected bakery and beverage orders.',
+        time: Date.now() - 3600000 * 6, // 6 hours ago
+        read: false,
+        icon: 'fa-percent',
+        avatar: 'img/chefs/2.jpg'
+    },
+    {
+        id: 'notif_dine_in',
+        type: 'info',
+        title: 'Instant Table Dine-in & MoMo Pay',
+        message: 'Scan table QR codes anytime to lock your table and pay instantly with MTN MoMo or Airtel Money.',
+        time: Date.now() - 86400000, // 1 day ago
+        read: true,
+        icon: 'fa-qrcode',
+        avatar: 'img/chefs/3.jpg'
+    }
+];
+
+function getAppNotifications() {
+    try {
+        const stored = localStorage.getItem('favcafe_notifications');
+        if (!stored) {
+            localStorage.setItem('favcafe_notifications', JSON.stringify(DEFAULT_NOTIFICATIONS));
+            return DEFAULT_NOTIFICATIONS;
+        }
+        let list = JSON.parse(stored) || [];
+        // Self-heal any items with invalid or NaN timestamps
+        let fixed = false;
+        list.forEach(n => {
+            if (!n.time || isNaN(Number(n.time))) {
+                n.time = Date.now();
+                fixed = true;
+            }
+        });
+        if (fixed) {
+            localStorage.setItem('favcafe_notifications', JSON.stringify(list));
+        }
+        return list;
+    } catch (e) {
+        return DEFAULT_NOTIFICATIONS;
+    }
+}
+window.getAppNotifications = getAppNotifications;
+
+function saveAppNotifications(notifications) {
+    try {
+        localStorage.setItem('favcafe_notifications', JSON.stringify(notifications));
+        updateNotificationBadges();
+        window.dispatchEvent(new Event('storage'));
+    } catch (e) {
+        console.error('Failed saving notifications:', e);
+    }
+}
+window.saveAppNotifications = saveAppNotifications;
+
+function addAppNotification(item) {
+    const notifs = getAppNotifications();
+    const newNotif = {
+        id: 'notif_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        type: item.type || 'info', // 'order', 'offer', 'info'
+        title: item.title || 'Notification',
+        message: item.message || '',
+        orderId: item.orderId || null,
+        time: Date.now(),
+        read: false,
+        icon: item.icon || 'fa-bell',
+        avatar: item.avatar || 'img/chefs/1.jpg'
+    };
+    notifs.unshift(newNotif);
+    if (notifs.length > 50) notifs.length = 50;
+    saveAppNotifications(notifs);
+    renderMobileNotifications();
+}
+window.addAppNotification = addAppNotification;
+
+function markNotificationAsRead(notifId) {
+    const notifs = getAppNotifications();
+    const target = notifs.find(n => n.id === notifId);
+    if (target && !target.read) {
+        target.read = true;
+        saveAppNotifications(notifs);
+        renderMobileNotifications();
+    }
+}
+window.markNotificationAsRead = markNotificationAsRead;
+
+function markAllNotificationsAsRead() {
+    const notifs = getAppNotifications();
+    let hasUnread = false;
+    notifs.forEach(n => {
+        if (!n.read) {
+            n.read = true;
+            hasUnread = true;
+        }
+    });
+    if (hasUnread) {
+        saveAppNotifications(notifs);
+        renderMobileNotifications();
+        showToast('All notifications marked as read', 'info');
+    }
+}
+window.markAllNotificationsAsRead = markAllNotificationsAsRead;
+
+function clearAllNotifications() {
+    saveAppNotifications([]);
+    renderMobileNotifications();
+    showToast('Notifications cleared', 'info');
+}
+window.clearAllNotifications = clearAllNotifications;
+
+function formatNotificationTime(timestamp) {
+    if (!timestamp) return 'Just now';
+    let timeMs = Number(timestamp);
+    if (isNaN(timeMs)) {
+        timeMs = new Date(timestamp).getTime();
+    }
+    if (isNaN(timeMs) || timeMs <= 0) return 'Recently';
+
+    const now = Date.now();
+    const diff = Math.max(0, now - timeMs);
+    const sec = Math.floor(diff / 1000);
+    const min = Math.floor(sec / 60);
+    const hrs = Math.floor(min / 60);
+    const days = Math.floor(hrs / 24);
+
+    if (min < 1) return 'Just now';
+    if (min < 60) return min + ' min ago';
+    if (hrs < 24) return hrs + (hrs === 1 ? ' hr ago' : ' hrs ago');
+    if (days === 1) return 'Yesterday';
+    return days + ' days ago';
+}
+
+function updateNotificationBadges() {
+    const notifs = getAppNotifications();
+    const unreadCount = notifs.filter(n => !n.read).length;
+
+    // Sidebar badge
+    const sidebarBadge = document.getElementById('sidebarNotifBadge');
+    if (sidebarBadge) {
+        if (unreadCount > 0) {
+            sidebarBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            sidebarBadge.style.display = 'inline-block';
+        } else {
+            sidebarBadge.style.display = 'none';
+        }
+    }
+
+    // Bottom nav bell dot
+    const bottomDot = document.getElementById('bottomNavNotifBadge');
+    if (bottomDot) {
+        bottomDot.style.display = unreadCount > 0 ? 'block' : 'none';
+    }
+}
+window.updateNotificationBadges = updateNotificationBadges;
+
+// Listen for order status updates from Kitchen/Admin and trigger alerts
+function syncOrderNotifications() {
+    try {
+        const storedOrders = JSON.parse(localStorage.getItem('favcafe_orders') || '[]');
+        const statusMap = JSON.parse(sessionStorage.getItem('favcafe_known_order_statuses') || '{}');
+        
+        storedOrders.forEach(order => {
+            const orderId = String(order.id);
+            const currentStatus = order.status || 'Order Received';
+            const prevStatus = statusMap[orderId];
+
+            if (prevStatus && prevStatus !== currentStatus) {
+                let msg = 'Order #' + orderId + ' status updated to ' + currentStatus;
+                let title = 'Order #' + orderId + ' Update';
+                const sLow = currentStatus.toLowerCase();
+                let icon = 'fa-receipt';
+
+                if (sLow.includes('preparing')) {
+                    title = 'Kitchen is Preparing Order #' + orderId;
+                    msg = 'Our chef is preparing your meal fresh in the kitchen.';
+                    icon = 'fa-fire-burner';
+                } else if (sLow.includes('ready')) {
+                    title = 'Order #' + orderId + ' is Ready! 🍽️';
+                    msg = 'Your delicious order is ready for pickup / serving!';
+                    icon = 'fa-check-circle';
+                } else if (sLow.includes('delivery') || sLow.includes('way')) {
+                    title = 'Order #' + orderId + ' is On The Way! 🛵';
+                    msg = 'Our delivery captain is heading your way!';
+                    icon = 'fa-motorcycle';
+                } else if (sLow.includes('completed') || sLow.includes('delivered') || sLow.includes('served')) {
+                    title = 'Order #' + orderId + ' Completed 🎉';
+                    msg = 'Thank you for dining with INEZA RESTO & COFFEE SHOP! Enjoy your meal.';
+                    icon = 'fa-heart';
+                }
+
+                addAppNotification({
+                    type: 'order',
+                    title: title,
+                    message: msg,
+                    orderId: order.id,
+                    icon: icon,
+                    avatar: 'img/chefs/2.jpg'
+                });
+
+                showToast(title + ': ' + msg, 'info');
+            }
+            statusMap[orderId] = currentStatus;
+        });
+
+        sessionStorage.setItem('favcafe_known_order_statuses', JSON.stringify(statusMap));
+    } catch (e) {
+        console.error('Error syncing order notifications:', e);
+    }
+}
+window.syncOrderNotifications = syncOrderNotifications;
+
+let activeNotificationFilter = 'all';
+
+function setNotificationFilter(filter, el) {
+    activeNotificationFilter = filter;
+    document.querySelectorAll('#notifFilterPills .status-pill-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    if (el) el.classList.add('active');
+    renderMobileNotifications();
+}
+window.setNotificationFilter = setNotificationFilter;
+
+function handleNotificationClick(notifId) {
+    const notifs = getAppNotifications();
+    const target = notifs.find(n => n.id === notifId);
+    if (!target) return;
+
+    if (!target.read) {
+        target.read = true;
+        saveAppNotifications(notifs);
+        renderMobileNotifications();
+    }
+
+    if (target.type === 'order' && target.orderId) {
+        switchTab('history');
+        if (typeof openOrderTrackingModal === 'function') {
+            openOrderTrackingModal(target.orderId);
+        }
+    } else if (target.type === 'offer') {
+        switchTab('favorite');
+    }
+}
+window.handleNotificationClick = handleNotificationClick;
+
+function renderMobileNotifications() {
+    updateNotificationBadges();
+
+    const container = document.getElementById('mobileNotificationList');
+    if (!container) return;
+
+    const allNotifs = getAppNotifications();
+    let filtered = allNotifs;
+
+    if (activeNotificationFilter === 'order') {
+        filtered = allNotifs.filter(n => n.type === 'order');
+    } else if (activeNotificationFilter === 'offer') {
+        filtered = allNotifs.filter(n => n.type === 'offer');
+    } else if (activeNotificationFilter === 'unread') {
+        filtered = allNotifs.filter(n => !n.read);
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state-card" style="text-align:center; padding: 2.5rem 1.25rem;">
+                <div style="width: 70px; height: 70px; border-radius: 50%; background: rgba(56,182,255,0.12); display: flex; align-items:center; justify-content:center; margin: 0 auto 1rem; color: var(--accent-cyan); font-size: 1.8rem;">
+                    <i class="far fa-bell-slash"></i>
+                </div>
+                <h4 style="color: var(--text-white); font-weight:700; margin-bottom: 0.35rem;">No Notifications</h4>
+                <p style="color: var(--text-light-blue); font-size: 0.82rem; max-width: 280px; margin: 0 auto 1.25rem;">
+                    ${activeNotificationFilter === 'unread' ? 'You have read all your notifications!' : 'You have no alerts at this moment.'}
+                </p>
+                
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(notif => {
+        const isUnread = !notif.read;
+        const iconClass = notif.icon || (notif.type === 'order' ? 'fa-receipt' : notif.type === 'offer' ? 'fa-percent' : 'fa-bell');
+        
+        let typeBadgeColor = 'var(--accent-cyan)';
+        let typeBadgeLabel = 'INFO';
+        if (notif.type === 'order') {
+            typeBadgeColor = '#10b981';
+            typeBadgeLabel = 'ORDER';
+        } else if (notif.type === 'offer') {
+            typeBadgeColor = 'var(--accent-coral)';
+            typeBadgeLabel = 'OFFER';
+        }
+
+        html += `
+            <div class="notification-item-card ${isUnread ? 'unread' : ''}" onclick="handleNotificationClick('${notif.id}')" style="cursor: pointer; position: relative;">
+                <div style="position: relative;">
+                    <img src="${notif.avatar || 'img/chefs/1.jpg'}" onerror="this.src='img/menu/1.jpg'" class="notif-avatar" alt="Avatar">
+                    <span style="position: absolute; bottom: -2px; right: -2px; width: 18px; height: 18px; border-radius: 50%; background: ${typeBadgeColor}; color: #fff; font-size: 0.6rem; display: flex; align-items:center; justify-content:center; border: 2px solid var(--card-dark);">
+                        <i class="fas ${iconClass}"></i>
+                    </span>
+                </div>
+                <div class="notif-content">
+                    <div class="d-flex align-items-center justify-content-between gap-1 mb-1">
+                        <div class="notif-user-name" style="font-weight: 700; font-size: 0.88rem;">${escapeHtml(notif.title)}</div>
+                        <span class="badge" style="font-size:0.6rem; background: rgba(255,255,255,0.08); color: ${typeBadgeColor}; border: 1px solid ${typeBadgeColor}44; border-radius: 6px; padding: 2px 6px;">${typeBadgeLabel}</span>
+                    </div>
+                    <div class="notif-text-msg" style="font-size: 0.8rem; line-height: 1.35; margin-bottom: 6px;">${escapeHtml(notif.message)}</div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="notif-time-tag"><i class="far fa-clock me-1"></i>${formatNotificationTime(notif.time)}</div>
+                        ${isUnread ? '<span style="font-size:0.68rem; color: var(--accent-coral); font-weight:700;"><i class="fas fa-circle me-1" style="font-size:0.45rem;"></i>New</span>' : '<span style="font-size:0.68rem; color: var(--text-muted);"><i class="fas fa-check me-1"></i>Read</span>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+window.renderMobileNotifications = renderMobileNotifications;

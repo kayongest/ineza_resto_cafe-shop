@@ -1442,6 +1442,18 @@ body {
     font-size: 1.25rem;
 }
 
+.nav-notif-dot {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--accent-coral, #ff5757);
+    border: 1.5px solid var(--bg-dark, #0d1527);
+    box-shadow: 0 0 6px var(--accent-coral, #ff5757);
+}
+
 .bottom-nav-item.active {
     color: var(--accent-cyan);
 }
@@ -2868,4 +2880,177 @@ body.light-theme .pay-option.active .pay-option-icon {
 .btn-whatsapp-modern i.fab {
     font-size: 1.15rem;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* =========================================
+   Notification Header Action Buttons
+   ========================================= */
+.notif-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px 5px 6px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.notif-action-btn:active {
+    transform: scale(0.96);
+}
+
+.notif-action-btn .btn-icon-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Mark Read (Cyan Theme) */
+.notif-btn-read {
+    background: rgba(56, 182, 255, 0.09);
+    border-color: rgba(56, 182, 255, 0.28);
+    color: var(--accent-cyan);
+}
+
+.notif-btn-read .btn-icon-circle {
+    background: rgba(56, 182, 255, 0.16);
+    color: var(--accent-cyan);
+}
+
+.notif-btn-read:hover {
+    background: rgba(56, 182, 255, 0.18);
+    border-color: rgba(56, 182, 255, 0.55);
+}
+
+.notif-btn-read:hover .btn-icon-circle {
+    background: var(--accent-cyan);
+    color: #fff;
+}
+
+/* Clear (Coral Theme) */
+.notif-btn-clear {
+    background: rgba(255, 87, 87, 0.09);
+    border-color: rgba(255, 87, 87, 0.28);
+    color: var(--accent-coral);
+}
+
+.notif-btn-clear .btn-icon-circle {
+    background: rgba(255, 87, 87, 0.16);
+    color: var(--accent-coral);
+}
+
+.notif-btn-clear:hover {
+    background: rgba(255, 87, 87, 0.18);
+    border-color: rgba(255, 87, 87, 0.55);
+}
+
+.notif-btn-clear:hover .btn-icon-circle {
+    background: var(--accent-coral);
+    color: #fff;
+}
+
+/* Light Theme Overrides */
+body.light-theme .notif-btn-read {
+    background: rgba(41, 128, 185, 0.08);
+    border-color: rgba(41, 128, 185, 0.25);
+    color: #0284c7;
+}
+
+body.light-theme .notif-btn-read .btn-icon-circle {
+    background: rgba(41, 128, 185, 0.14);
+}
+
+body.light-theme .notif-btn-clear {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+body.light-theme .notif-btn-clear .btn-icon-circle {
+    background: #fee2e2;
+}
+
+
+/* Empty State Modern Action Button */
+.notif-empty-view-all-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 18px 8px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    background: linear-gradient(135deg, rgba(56, 182, 255, 0.16) 0%, rgba(41, 128, 185, 0.22) 100%);
+    border: 1px solid rgba(56, 182, 255, 0.45);
+    color: var(--accent-cyan, #38b6ff);
+    box-shadow: 0 4px 14px rgba(56, 182, 255, 0.15);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+}
+
+.notif-empty-view-all-btn .empty-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(56, 182, 255, 0.25);
+    color: #fff;
+    font-size: 0.72rem;
+    transition: all 0.2s ease;
+}
+
+.notif-empty-view-all-btn:hover {
+    background: linear-gradient(135deg, rgba(56, 182, 255, 0.28) 0%, rgba(41, 128, 185, 0.36) 100%);
+    border-color: var(--accent-cyan, #38b6ff);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(56, 182, 255, 0.3);
+}
+
+.notif-empty-view-all-btn:hover .empty-btn-icon {
+    background: var(--accent-cyan, #38b6ff);
+    transform: rotate(360deg);
+}
+
+.notif-empty-view-all-btn:active {
+    transform: translateY(0) scale(0.96);
+}
+
+body.light-theme .notif-empty-view-all-btn {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0284c7;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1);
+}
+
+body.light-theme .notif-empty-view-all-btn .empty-btn-icon {
+    background: #bae6fd;
+    color: #0369a1;
+}
+
+body.light-theme .notif-empty-view-all-btn:hover {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+}
+
+body.light-theme .notif-empty-view-all-btn:hover .empty-btn-icon {
+    background: #ffffff;
+    color: #0284c7;
 }

@@ -350,45 +350,47 @@
 
         <!-- 5. NOTIFICATION VIEW -->
         <div id="view-notification" class="tab-view" style="padding-top: 0.75rem;">
+            <!-- Notifications Header & Quick Actions -->
+            <div class="user-greeting-banner" style="padding-bottom: 0.5rem;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="greeting-subtitle">Activity &amp; Alerts</div>
+                        <h2 class="greeting-headline">Notifications</h2>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="notif-action-btn notif-btn-read"
+                            onclick="markAllNotificationsAsRead()" title="Mark all notifications as read">
+                            <span class="btn-icon-circle"><i class="fas fa-check-double"></i></span>
+                            <span>Mark Read</span>
+                        </button>
+                        <button type="button" class="notif-action-btn notif-btn-clear"
+                            onclick="clearAllNotifications()" title="Clear all notifications">
+                            <span class="btn-icon-circle"><i class="fas fa-trash-alt"></i></span>
+                            <span>Clear</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Pills (All, Orders, Offers, Unread) -->
+            <div class="category-scroll-container mb-3" id="notifFilterPills" style="gap:8px; padding-left: 1.25rem; padding-right: 1.25rem;">
+                <button type="button" class="status-pill-btn active" onclick="setNotificationFilter('all', this)">
+                    All
+                </button>
+                <button type="button" class="status-pill-btn" onclick="setNotificationFilter('unread', this)">
+                    <i class="fas fa-circle text-coral me-1" style="font-size:0.5rem;"></i>Unread
+                </button>
+                <button type="button" class="status-pill-btn" onclick="setNotificationFilter('order', this)">
+                    <i class="fas fa-receipt me-1"></i>Orders
+                </button>
+                <button type="button" class="status-pill-btn" onclick="setNotificationFilter('offer', this)">
+                    <i class="fas fa-tag me-1"></i>Offers &amp; Deals
+                </button>
+            </div>
+
+            <!-- Notifications Cards List -->
             <div id="mobileNotificationList">
-                <!-- Notification Cards -->
-                <div class="notification-item-card unread">
-                    <img src="img/chefs/1.jpg" onerror="this.src='img/menu/1.jpg'" class="notif-avatar" alt="Lily">
-                    <div class="notif-content">
-                        <div class="notif-user-name">Lily MacDonald</div>
-                        <div class="notif-text-msg">Your order #0012345 has been confirmed and is being prepared in the
-                            kitchen.</div>
-                    </div>
-                    <div class="notif-time-tag"><i class="far fa-clock me-1"></i>12 min ago</div>
-                </div>
-
-                <div class="notification-item-card unread">
-                    <img src="img/chefs/2.jpg" onerror="this.src='img/menu/2.jpg'" class="notif-avatar" alt="Lily">
-                    <div class="notif-content">
-                        <div class="notif-user-name">Lily MacDonald</div>
-                        <div class="notif-text-msg">Driver is on the way with your delicious order!</div>
-                    </div>
-                    <div class="notif-time-tag"><i class="far fa-clock me-1"></i>12 min ago</div>
-                </div>
-
-                <div class="notification-item-card">
-                    <img src="img/chefs/3.jpg" onerror="this.src='img/menu/3.jpg'" class="notif-avatar" alt="Lily">
-                    <div class="notif-content">
-                        <div class="notif-user-name">Lily MacDonald</div>
-                        <div class="notif-text-msg">Special weekend discount of 60% OFF has been activated for you!
-                        </div>
-                    </div>
-                    <div class="notif-time-tag"><i class="far fa-clock me-1"></i>12 min ago</div>
-                </div>
-
-                <div class="notification-item-card">
-                    <img src="img/chefs/1.jpg" onerror="this.src='img/menu/4.jpg'" class="notif-avatar" alt="Lily">
-                    <div class="notif-content">
-                        <div class="notif-user-name">Lily MacDonald</div>
-                        <div class="notif-text-msg">Thank you for rating your previous meal 5 stars.</div>
-                    </div>
-                    <div class="notif-time-tag"><i class="far fa-clock me-1"></i>12 min ago</div>
-                </div>
+                <!-- Dynamically rendered via renderMobileNotifications() -->
             </div>
         </div>
 
@@ -536,7 +538,7 @@
             onclick="switchTab('notification'); toggleSidebarDrawer();">
             <i class="far fa-bell nav-icon"></i>
             <span>Notification</span>
-            <span class="sidebar-badge bg-coral">1</span>
+            <span class="sidebar-badge bg-coral" id="sidebarNotifBadge" style="display:none;">0</span>
             <i class="fas fa-chevron-right sidebar-chevron"></i>
         </a>
 
@@ -609,7 +611,10 @@
         <!-- 1. Notification Bell -->
         <div class="bottom-nav-item" data-tab="notification" onclick="switchTab('notification', this)"
             title="Notifications">
-            <i class="far fa-bell"></i>
+            <div style="position:relative; display:inline-flex; align-items:center; justify-content:center;">
+                <i class="far fa-bell"></i>
+                <span id="bottomNavNotifBadge" class="nav-notif-dot" style="display:none;"></span>
+            </div>
         </div>
 
         <!-- 2. Orders List -->
