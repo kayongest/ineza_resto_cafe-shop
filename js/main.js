@@ -3189,6 +3189,9 @@ try {
     storeSettingsChan.onmessage = function(e) {
         if (e.data && e.data.type === 'store_settings_updated' && e.data.settings) {
             applyLiveStoreSettingsToCustomerUI(e.data.settings);
+            if (typeof showToast === 'function') {
+                showToast('Store & brand settings updated in real-time!', 'info', 'Configuration Synchronized');
+            }
         } else if (e.data && e.data.type === 'cart_settings_updated') {
             checkTableServiceFloatingPill();
         }

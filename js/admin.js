@@ -171,14 +171,14 @@ function handleKitchenAudioSettingChange() {
 }
 window.handleKitchenAudioSettingChange = handleKitchenAudioSettingChange;
 
-function getKitchenAudioContext() {
+function getKitchenAudioContext(userInitiated) {
     if (!_kitchenAudioCtx) {
         var AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (AudioCtx) {
             _kitchenAudioCtx = new AudioCtx();
         }
     }
-    if (_kitchenAudioCtx && _kitchenAudioCtx.state === 'suspended') {
+    if (userInitiated && _kitchenAudioCtx && _kitchenAudioCtx.state === 'suspended') {
         _kitchenAudioCtx.resume().catch(function() {});
     }
     return _kitchenAudioCtx;
@@ -186,8 +186,17 @@ function getKitchenAudioContext() {
 
 function initKitchenAudioUnlock() {
     function unlock() {
-        var ctx = getKitchenAudioContext();
-        if (ctx && ctx.state === 'running') {
+        if (!_kitchenAudioCtx) {
+            var AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) _kitchenAudioCtx = new AudioCtx();
+        }
+        if (_kitchenAudioCtx && _kitchenAudioCtx.state === 'suspended') {
+            _kitchenAudioCtx.resume().then(function() {
+                window.removeEventListener('click', unlock, true);
+                window.removeEventListener('keydown', unlock, true);
+                window.removeEventListener('touchstart', unlock, true);
+            }).catch(function() {});
+        } else if (_kitchenAudioCtx && _kitchenAudioCtx.state === 'running') {
             window.removeEventListener('click', unlock, true);
             window.removeEventListener('keydown', unlock, true);
             window.removeEventListener('touchstart', unlock, true);
@@ -202,7 +211,7 @@ window.initKitchenAudioUnlock = initKitchenAudioUnlock;
 function playKitchenChime(type) {
     if (!isKitchenAudioEnabled()) return;
 
-    var ctx = getKitchenAudioContext();
+    var ctx = getKitchenAudioContext(true);
     if (!ctx) return;
     if (ctx.state === 'suspended') {
         ctx.resume().catch(function() {});
@@ -4929,11 +4938,9 @@ function applyStoreSettingsToUI(settings) {
         receiptPhoneTinEl.parentElement.innerHTML = `<i class="fas fa-phone me-1" style="color:#aa7262;"></i>TEL: ${settings.store_phone} | TIN: ${settings.store_tin}`;
     }
 
-    var receiptVatEl = document.querySelector('#printableReceiptArea span:contains("VAT")') || document.querySelector('#printableReceiptArea');
-    // If VAT label exists, keep 18% or configured percent
     var vatLine = document.getElementById('receiptVatLine');
     if (vatLine) {
-        vatLine.textContent = `VAT (${settings.vat_percent}% Included):`;
+        vatLine.textContent = 'VAT (' + (settings.vat_percent || '18') + '% Included):';
     }
 }
 window.applyStoreSettingsToUI = applyStoreSettingsToUI;
@@ -4958,6 +4965,28 @@ async function saveStoreSettingsForm() {
     var vatEl = document.getElementById('settingVatPercent');
     var currEl = document.getElementById('settingCurrency');
 
+    // Visual button loading state
+    var btnTop = document.getElementById('saveStoreSettingsBtnTop');
+    var btnBottom = document.getElementById('saveStoreSettingsBtnBottom');
+    var statusBadge = document.getElementById('storeSettingsStatusBadge');
+    var lastSavedText = document.getElementById('storeSettingsLastSavedText');
+
+    var originalTopHtml = btnTop ? btnTop.innerHTML : '';
+    var originalBottomHtml = btnBottom ? btnBottom.innerHTML : '';
+
+    if (btnTop) {
+        btnTop.disabled = true;
+        btnTop.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+    }
+    if (btnBottom) {
+        btnBottom.disabled = true;
+        btnBottom.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+    }
+    if (statusBadge) {
+        statusBadge.className = 'badge bg-warning text-dark rounded-pill px-2 py-1';
+        statusBadge.innerHTML = '<i class="fas fa-sync fa-spin me-1"></i>SAVING';
+    }
+
     var updated = {
         store_name: (nameEl ? nameEl.value : '').trim() || 'INEZA RESTO & COFFEE SHOP',
         store_location: (locEl ? locEl.value : '').trim() || '108 Kimironko St, Kigali - Rwanda',
@@ -4971,18 +5000,20 @@ async function saveStoreSettingsForm() {
         currency: (currEl ? currEl.value : '').trim() || 'RWF'
     };
 
-    // Update in-memory and local storage immediately
+    // 1. Update in-memory & local storage immediately
     currentStoreSettings = Object.assign({}, currentStoreSettings, updated);
     localStorage.setItem('ineza_store_settings', JSON.stringify(currentStoreSettings));
     applyStoreSettingsToUI(currentStoreSettings);
 
-    // Broadcast across windows (customer app, mobile PWA, kiosk)
+    // 2. Broadcast across tabs and PWA clients
     try {
         var chan = new BroadcastChannel('favcafe_settings_channel');
         chan.postMessage({ type: 'store_settings_updated', settings: currentStoreSettings });
     } catch (e) {}
 
-    // Persist to MySQL
+    var savedSuccessfully = false;
+
+    // 3. Persist to MySQL Server
     try {
         var res = await fetch('api/settings.php', {
             method: 'POST',
@@ -4992,18 +5023,51 @@ async function saveStoreSettingsForm() {
         if (res.ok) {
             var data = await res.json();
             if (data && data.status === 'success') {
-                if (typeof showToast === 'function') {
-                    showToast('Store configuration saved to database & synchronized system-wide!', 'success', 'SuperAdmin Configuration');
+                savedSuccessfully = true;
+                if (data.settings) {
+                    currentStoreSettings = Object.assign({}, currentStoreSettings, data.settings);
+                    localStorage.setItem('ineza_store_settings', JSON.stringify(currentStoreSettings));
                 }
-                return;
             }
         }
     } catch (err) {
-        console.warn('[Store Settings Save] Network error, saved locally', err);
+        console.warn('[Store Settings Save] Network error, preserved in local cache', err);
     }
 
-    if (typeof showToast === 'function') {
-        showToast('Configuration updated in local cache.', 'info', 'Saved Locally');
+    // Reset button state
+    if (btnTop) {
+        btnTop.disabled = false;
+        btnTop.innerHTML = originalTopHtml || '<i class="fas fa-save me-1"></i> Save Store Configuration';
+    }
+    if (btnBottom) {
+        btnBottom.disabled = false;
+        btnBottom.innerHTML = originalBottomHtml || '<i class="fas fa-save me-1"></i> Save Store Configuration';
+    }
+
+    var nowTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    if (savedSuccessfully) {
+        if (statusBadge) {
+            statusBadge.className = 'badge bg-success rounded-pill px-2 py-1';
+            statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i>SYNCED';
+        }
+        if (lastSavedText) {
+            lastSavedText.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Saved to MySQL Database at ' + nowTimeStr;
+        }
+        if (typeof showToast === 'function') {
+            showToast('Store & brand configuration saved to database & synchronized system-wide!', 'success', 'SuperAdmin Configuration');
+        }
+    } else {
+        if (statusBadge) {
+            statusBadge.className = 'badge bg-info text-dark rounded-pill px-2 py-1';
+            statusBadge.innerHTML = '<i class="fas fa-cloud-upload-alt me-1"></i>CACHED';
+        }
+        if (lastSavedText) {
+            lastSavedText.innerHTML = '<i class="fas fa-info-circle text-info me-1"></i>Saved in browser cache at ' + nowTimeStr + ' (offline mode).';
+        }
+        if (typeof showToast === 'function') {
+            showToast('Configuration updated in local storage and active across all views.', 'info', 'Saved Locally');
+        }
     }
 }
 window.saveStoreSettingsForm = saveStoreSettingsForm;

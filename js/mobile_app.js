@@ -940,6 +940,18 @@ function initStorageSyncListener() {
                 applyCartDrawerSettings();
             } else if (ev.data && ev.data.type === 'store_settings_updated' && ev.data.settings) {
                 applyStoreSettingsToMobile(ev.data.settings);
+                if (typeof showToast === 'function') {
+                    showToast('⚡ Store details & MoMo merchant updated live!', 'info');
+                }
+                if (typeof addAppNotification === 'function') {
+                    addAppNotification({
+                        type: 'info',
+                        title: 'Store Settings Updated',
+                        message: `Official store details were updated to ${ev.data.settings.store_name || 'INEZA RESTO & COFFEE SHOP'}.`,
+                        icon: 'fa-store',
+                        avatar: 'img/chefs/1.jpg'
+                    });
+                }
             }
         };
     } catch (e) {}
